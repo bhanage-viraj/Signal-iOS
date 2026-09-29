@@ -116,30 +116,75 @@ class ContactShareNoteField: ContactShareFieldBase<OWSContactNote> {
     }
 }
 
-// Stub class so that avatars conform to OWSContactField.
-class OWSContactAvatar: OWSContactField {
-
-    let avatarImage: UIImage
-    let avatarData: Data
-    let existingAttachment: ReferencedAttachment?
-
-    init(avatarImage: UIImage, avatarData: Data, existingAttachment: ReferencedAttachment?) {
-        self.avatarImage = avatarImage
-        self.avatarData = avatarData
-        self.existingAttachment = existingAttachment
+struct ContactShareAvatarOption {
+    enum Source: CaseIterable {
+        case systemContact
+        case signal
     }
 
-    var isValid: Bool { true }
+    let source: Source
+    let imageData: Data
+    let image: UIImage
 
-    var localizedLabel: String { "" }
+    static func localizedVoiceOverName(source: Source?) -> String {
+        switch source {
+        case .systemContact:
+            return OWSLocalizedString(
+                "CONTACT_SHARE_AVATAR_SYSTEM_CONTACT_PHOTO",
+                comment: "Name of the option to share a contact's photo from the phone's contacts. Read by VoiceOver on the option, and as the current value of the photo row when it's selected.",
+            )
+        case .signal:
+            return OWSLocalizedString(
+                "CONTACT_SHARE_AVATAR_SIGNAL_PHOTO",
+                comment: "Name of the option to share a contact's Signal profile photo. Read by VoiceOver on the option, and as the current value of the photo row when it's selected.",
+            )
+        case nil:
+            return OWSLocalizedString(
+                "CONTACT_SHARE_AVATAR_NO_PHOTO",
+                comment: "Name of the option to share a contact without a photo, which shows their initials instead. Read by VoiceOver on the option, and as the current value of the photo row when it's selected.",
+            )
+        }
+    }
 }
 
-class ContactShareAvatarField: ContactShareFieldBase<OWSContactAvatar> {
+class ContactShareAvatarField {
 
-    override func applyToContact(contact: ContactShareDraft) {
-        owsPrecondition(isIncluded)
+    let options: [ContactShareAvatarOption]
 
-        contact.avatarImageData = value.avatarData
-        contact.existingAvatarAttachment = value.existingAttachment
+    /// `nil` shares no avatar, which recipients see as the contact's initials.
+    var selectedSource: ContactShareAvatarOption.Source?
+
+    init?(contactShareDraft: ContactShareDraft) {
+        var options = [ContactShareAvatarOption]()
+        for source in ContactShareAvatarOption.Source.allCases {
+            let imageData: Data?
+            switch source {
+            case .systemContact:
+                imageData = contactShareDraft.systemContactAvatarImageData
+            case .signal:
+                imageData = contactShareDraft.signalAvatarImageData
+            }
+            guard let imageData, !options.contains(where: { $0.imageData == imageData }) else {
+                continue
+            }
+            guard let image = UIImage(data: imageData) else {
+                owsFailDebug("could not load avatar image.")
+                continue
+            }
+            options.append(ContactShareAvatarOption(source: source, imageData: imageData, image: image))
+        }
+        guard let firstOption = options.first else {
+            return nil
+        }
+        self.options = options
+        self.selectedSource = firstOption.source
+    }
+
+    var selectedOption: ContactShareAvatarOption? {
+        options.first { $0.source == selectedSource }
+    }
+
+    func applyToContact(contact: ContactShareDraft) {
+        contact.selectedAvatarImageData = selectedOption?.imageData
     }
 }

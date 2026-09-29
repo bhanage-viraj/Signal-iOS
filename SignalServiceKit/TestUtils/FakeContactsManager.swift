@@ -9,6 +9,7 @@ public import Contacts
 
 public class FakeContactsManager: ContactManager & ThreadRemoverObserver {
     public var mockSignalAccounts = [String: SignalAccount]()
+    public var mockCNContacts = [String: CNContact]()
 
     public func fetchSignalAccounts(for phoneNumbers: [String], transaction: DBReadTransaction) -> [SignalAccount?] {
         return phoneNumbers.map { mockSignalAccounts[$0] }
@@ -45,7 +46,7 @@ public class FakeContactsManager: ContactManager & ThreadRemoverObserver {
     }
 
     public func cnContact(withId contactId: String?) -> CNContact? {
-        return nil
+        return contactId.flatMap { mockCNContacts[$0] }
     }
 
     public func didRemoveThread(_ thread: TSThread, tx: DBWriteTransaction) {

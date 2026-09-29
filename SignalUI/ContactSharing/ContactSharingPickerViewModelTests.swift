@@ -15,6 +15,7 @@ import UIKit
 @MainActor
 struct ContactSharingPickerViewModelTests {
 
+    private let contactManager = FakeContactsManager()
     private let db = InMemoryDB()
     private let nicknameRecordStore = NicknameRecordStoreImpl()
     private let notificationCenter = NotificationCenter()
@@ -700,6 +701,46 @@ struct ContactSharingPickerViewModelTests {
         #expect(try await names(of: viewModel) == ["Alice", "Dave"])
     }
 
+    // MARK: - Avatars
+
+    @Test
+    func testAMergedRowShowsTheCardsPhoto() async throws {
+        let cardImageData = makeImageData(color: .red)
+        addContact(named: "Alice", phoneNumber: "+16505550101")
+        providers.systemContacts = [
+            makeSystemContact(
+                givenName: "Alicia",
+                phoneNumber: "+16505550101",
+                isInAddressBook: true,
+                imageData: cardImageData,
+            ),
+        ]
+
+        let viewModel = makeViewModel()
+        viewModel.loadData()
+
+        let row = try #require(try await displayedRows(of: viewModel).rows.first)
+        let avatarImage = try #require(viewModel.avatarImage(for: row, diameterPoints: 36))
+        #expect(avatarImage.pngData() == UIImage(data: cardImageData)?.pngData())
+    }
+
+    @Test
+    func testAMergedRowOffersTheRecipientsSignalPhoto() async throws {
+        let signalImageData = makeImageData(color: .blue)
+        let recipient = addContact(named: "Alice", phoneNumber: "+16505550101")
+        let userProfile = makeUserProfile(givenName: "Alice", familyName: "Adams")
+        providers.userProfiles[recipient.id] = userProfile
+        providers.signalAvatarData[userProfile.uniqueId] = signalImageData
+        providers.systemContacts = [
+            makeSystemContact(givenName: "Alicia", phoneNumber: "+16505550101"),
+        ]
+
+        let viewModel = makeViewModel()
+        viewModel.loadData()
+
+        #expect(try await contactShareDraft(forFirstRowOf: viewModel).signalAvatarImageData == signalImageData)
+    }
+
     // MARK: - Sharing
 
     @Test
@@ -917,7 +958,7 @@ struct ContactSharingPickerViewModelTests {
             avatarBuilder: AvatarBuilder(appReadiness: AppReadinessMock()),
             blockedRecipientIdentifiersProvider: { _ in providers.blockedRecipientIds },
             comparableValueConfigProvider: { comparableValueConfig },
-            contactManager: FakeContactsManager(),
+            contactManager: contactManager,
             contactsAccessRequester: { providers.requestContactsAccess() },
             contactsAuthorizationStatusProvider: { providers.contactsAuthorizationStatus },
             db: db,
@@ -926,14 +967,10 @@ struct ContactSharingPickerViewModelTests {
             notificationCenter: notificationCenter,
             phoneNumberUtil: PhoneNumberUtil(),
             phoneNumberVisibilityFetcher: phoneNumberVisibilityFetcher,
+            signalAvatarDataProvider: { providers.signalAvatarData[$0.uniqueId] },
             profileManager: OWSFakeProfileManager(),
             recipientDatabaseTable: recipientDatabaseTable,
             recipientHidingManager: recipientHidingManager,
-            recipientManager: SignalRecipientManagerImpl(
-                phoneNumberVisibilityFetcher: MockPhoneNumberVisibilityFetcher(),
-                recipientDatabaseTable: RecipientDatabaseTable(),
-                storageServiceManager: FakeStorageServiceManager(),
-            ),
             searchDebounceInterval: .zero,
             systemContactsProvider: { _ in providers.fetchSystemContacts() },
             systemContactsRefresher: { providers.refreshSystemContacts() },
@@ -1003,6 +1040,13 @@ struct ContactSharingPickerViewModelTests {
         }
     }
 
+    private func makeImageData(color: UIColor) -> Data {
+        UIGraphicsImageRenderer(size: .square(4)).pngData { context in
+            color.setFill()
+            context.fill(CGRect(origin: .zero, size: .square(4)))
+        }
+    }
+
     private func makeNameComponents(givenName: String, familyName: String? = nil) -> PersonNameComponents {
         var nameComponents = PersonNameComponents()
         nameComponents.givenName = givenName
@@ -1039,6 +1083,8 @@ struct ContactSharingPickerViewModelTests {
         phoneNumber: String? = nil,
         phoneNumbers: [String] = [],
         emailAddresses: [String] = [],
+        isInAddressBook: Bool = false,
+        imageData: Data? = nil,
     ) -> SystemContact {
         let cnContact = CNMutableContact()
         cnContact.givenName = givenName
@@ -1050,6 +1096,10 @@ struct ContactSharingPickerViewModelTests {
         }
         cnContact.emailAddresses = emailAddresses.map {
             CNLabeledValue(label: CNLabelHome, value: $0 as NSString)
+        }
+        cnContact.imageData = imageData
+        if isInAddressBook {
+            contactManager.mockCNContacts[cnContact.identifier] = cnContact
         }
         return SystemContact(cnContact: cnContact)
     }
@@ -1069,6 +1119,9 @@ private final class StubbedProviders {
     var displayNames: [SignalRecipient.RowId: DisplayName] = [:]
 
     var userProfiles: [SignalRecipient.RowId: OWSUserProfile] = [:]
+
+    /// Keyed by `OWSUserProfile.uniqueId`.
+    var signalAvatarData: [String: Data] = [:]
 
     private(set) var displayNamesFetchCount = 0
     private(set) var fetchSystemContactsCount = 0

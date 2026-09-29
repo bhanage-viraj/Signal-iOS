@@ -126,7 +126,10 @@ class ContactShareManagerImpl: ContactShareManager {
                     existingAttachment: stream,
                     with: existingAvatarAttachment.reference,
                 )
-            } else if let avatarImage = draft.avatarImage {
+            } else if
+                let selectedAvatarImageData = draft.selectedAvatarImageData,
+                let avatarImage = UIImage(data: selectedAvatarImageData)
+            {
                 // TODO: Use NormalizedImage.
                 guard let imageData = avatarImage.jpegDataSafe(compressionQuality: 0.9) else {
                     throw OWSAssertionError("Failed to get JPEG")

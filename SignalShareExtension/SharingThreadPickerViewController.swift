@@ -141,12 +141,14 @@ class SharingThreadPickerViewController: ConversationPickerViewController {
         case .contact(let contactData):
             let cnContact = try SystemContact.parseVCardData(contactData)
             let contactShareDraft = SSKEnvironment.shared.databaseStorageRef.read { tx in
-                return ContactShareDraft.load(
+                return ContactShareDraft.loadWithMatchingSignalAvatar(
                     cnContact: cnContact,
                     signalContact: SystemContact(cnContact: cnContact),
+                    blockingManager: SSKEnvironment.shared.blockingManagerRef,
                     contactManager: SSKEnvironment.shared.contactManagerRef,
                     phoneNumberUtil: SSKEnvironment.shared.phoneNumberUtilRef,
                     profileManager: SSKEnvironment.shared.profileManagerRef,
+                    recipientHidingManager: DependenciesBridge.shared.recipientHidingManager,
                     recipientManager: DependenciesBridge.shared.recipientManager,
                     tsAccountManager: DependenciesBridge.shared.tsAccountManager,
                     tx: tx,

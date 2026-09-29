@@ -28,10 +28,9 @@ final class ContactSharingPickerViewModel {
     private let nicknameRecordStore: any NicknameRecordStore
     private let phoneNumberUtil: PhoneNumberUtil
     private let phoneNumberVisibilityFetcher: any PhoneNumberVisibilityFetcher
-    private let profileManager: any ProfileManager
+    private let signalAvatarDataProvider: (OWSUserProfile) -> Data?
     private let recipientDatabaseTable: RecipientDatabaseTable
     private let recipientHidingManager: any RecipientHidingManager
-    private let recipientManager: any SignalRecipientManager
     private let searchDebounceInterval: DispatchQueue.SchedulerTimeType.Stride
     private let systemContactsProvider: (RawContactAuthorizationStatus) -> [SystemContact]
     private let systemContactsRefresher: () async -> Void
@@ -108,10 +107,10 @@ final class ContactSharingPickerViewModel {
         notificationCenter: NotificationCenter = .default,
         phoneNumberUtil: PhoneNumberUtil = SSKEnvironment.shared.phoneNumberUtilRef,
         phoneNumberVisibilityFetcher: any PhoneNumberVisibilityFetcher = DependenciesBridge.shared.phoneNumberVisibilityFetcher,
+        signalAvatarDataProvider: ((OWSUserProfile) -> Data?)? = nil,
         profileManager: any ProfileManager = SSKEnvironment.shared.profileManagerRef,
         recipientDatabaseTable: RecipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable,
         recipientHidingManager: any RecipientHidingManager = DependenciesBridge.shared.recipientHidingManager,
-        recipientManager: any SignalRecipientManager = DependenciesBridge.shared.recipientManager,
         searchDebounceInterval: DispatchQueue.SchedulerTimeType.Stride = .milliseconds(300),
         systemContactsProvider: ((RawContactAuthorizationStatus) -> [SystemContact])? = nil,
         systemContactsRefresher: (() async -> Void)? = nil,
@@ -137,10 +136,11 @@ final class ContactSharingPickerViewModel {
         self.nicknameRecordStore = nicknameRecordStore
         self.phoneNumberUtil = phoneNumberUtil
         self.phoneNumberVisibilityFetcher = phoneNumberVisibilityFetcher
-        self.profileManager = profileManager
+        self.signalAvatarDataProvider = signalAvatarDataProvider ?? { userProfile in
+            userProfile.loadAvatarData()
+        }
         self.recipientDatabaseTable = recipientDatabaseTable
         self.recipientHidingManager = recipientHidingManager
-        self.recipientManager = recipientManager
         self.searchDebounceInterval = searchDebounceInterval
         self.systemContactsProvider = systemContactsProvider ?? Self.fetchSystemContacts
         self.systemContactsRefresher = systemContactsRefresher ?? {
@@ -404,7 +404,13 @@ final class ContactSharingPickerViewModel {
 
     func avatarImage(for row: Row, diameterPoints: UInt) -> UIImage? {
         switch row {
-        case .signalContact(let signalContact, _):
+        case .signalContact(let signalContact, let systemContact):
+            if
+                let systemContact,
+                let addressBookAvatarImage = addressBookAvatarImage(cnContactId: systemContact.systemContact.cnContactId)
+            {
+                return addressBookAvatarImage
+            }
             return db.read { tx in
                 avatarBuilder.avatarImage(
                     forAddress: signalContact.recipient.address,
@@ -435,7 +441,11 @@ final class ContactSharingPickerViewModel {
             switch row {
             case .signalContact(let signalContact, let systemContact):
                 if let systemContact {
-                    draft = contactShareDraft(forSystemContact: systemContact, tx: tx)
+                    draft = contactShareDraft(
+                        forSystemContact: systemContact,
+                        recipient: signalContact.recipient,
+                        tx: tx,
+                    )
                     if row.namingSystemContact == nil {
                         draft.name = contactName(for: signalContact, tx: tx)
                     }
@@ -443,7 +453,7 @@ final class ContactSharingPickerViewModel {
                     draft = contactShareDraft(forSignalContact: signalContact, tx: tx)
                 }
             case .systemContact(let systemContact):
-                draft = contactShareDraft(forSystemContact: systemContact, tx: tx)
+                draft = contactShareDraft(forSystemContact: systemContact, recipient: nil, tx: tx)
             }
             draft.aci = row.shareableAci(recipientDatabaseTable: recipientDatabaseTable, transaction: tx)
             if
@@ -458,21 +468,24 @@ final class ContactSharingPickerViewModel {
         }
     }
 
-    private func contactShareDraft(forSystemContact systemContact: SystemContactWrapper, tx: DBReadTransaction) -> ContactShareDraft {
+    private func contactShareDraft(
+        forSystemContact systemContact: SystemContactWrapper,
+        recipient: SignalRecipient?,
+        tx: DBReadTransaction,
+    ) -> ContactShareDraft {
+        let signalAvatarData = recipient
+            .flatMap { userProfileProvider($0, tx) }
+            .flatMap(signalAvatarDataProvider)
+
         guard let cnContact = contactManager.cnContact(withId: systemContact.systemContact.cnContactId) else {
             Logger.warn("The address book card went away; sharing what was loaded from it.")
-            return systemContact.contactShareDraft(phoneNumberUtil: phoneNumberUtil)
+            return systemContact.contactShareDraft(phoneNumberUtil: phoneNumberUtil, signalAvatarData: signalAvatarData)
         }
 
         return ContactShareDraft.load(
             cnContact: cnContact,
-            signalContact: systemContact.systemContact,
             contactManager: contactManager,
-            phoneNumberUtil: phoneNumberUtil,
-            profileManager: profileManager,
-            recipientManager: recipientManager,
-            tsAccountManager: tsAccountManager,
-            tx: tx,
+            signalAvatarData: signalAvatarData,
         )
     }
 
@@ -488,6 +501,7 @@ final class ContactSharingPickerViewModel {
             phoneNumbers.append(OWSContactPhoneNumber(type: .mobile, phoneNumber: phoneNumber))
         }
 
+        let signalAvatarData = userProfile.flatMap(signalAvatarDataProvider)
         return ContactShareDraft(
             name: signalContact.contactName(profileNameComponents: { userProfile?.nameComponents }),
             addresses: [],
@@ -497,7 +511,9 @@ final class ContactSharingPickerViewModel {
             signalNickname: nil,
             signalNote: nil,
             existingAvatarAttachment: nil,
-            avatarImageData: userProfile?.loadAvatarData(),
+            systemContactAvatarImageData: nil,
+            signalAvatarImageData: signalAvatarData,
+            selectedAvatarImageData: signalAvatarData,
         )
     }
 
@@ -906,8 +922,8 @@ final class ContactSharingPickerViewModel {
 
         /// A share built without the address book card, for when it has gone away
         /// since the list was loaded. It carries everything `SystemContact` retains,
-        /// which is everything but postal addresses and the avatar.
-        func contactShareDraft(phoneNumberUtil: PhoneNumberUtil) -> ContactShareDraft {
+        /// which is everything but postal addresses and the card's photo.
+        func contactShareDraft(phoneNumberUtil: PhoneNumberUtil, signalAvatarData: Data?) -> ContactShareDraft {
             ContactShareDraft(
                 name: contactName,
                 addresses: [],
@@ -926,7 +942,9 @@ final class ContactSharingPickerViewModel {
                 signalNickname: nil,
                 signalNote: nil,
                 existingAvatarAttachment: nil,
-                avatarImageData: nil,
+                systemContactAvatarImageData: nil,
+                signalAvatarImageData: signalAvatarData,
+                selectedAvatarImageData: signalAvatarData,
             )
         }
 

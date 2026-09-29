@@ -163,7 +163,9 @@ public class ContactShareViewModel: Equatable {
             signalNickname: dbRecord.nickname,
             signalNote: dbRecord.note,
             existingAvatarAttachment: existingAvatarAttachment,
-            avatarImageData: avatarImageData,
+            systemContactAvatarImageData: nil,
+            signalAvatarImageData: nil,
+            selectedAvatarImageData: avatarImageData,
         )
     }
 

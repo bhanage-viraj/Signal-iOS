@@ -136,12 +136,14 @@ extension ConversationViewController: ContactPickerDelegate, ContactSharingPicke
         }
 
         let contactShareDraft = SSKEnvironment.shared.databaseStorageRef.read { tx in
-            return ContactShareDraft.load(
+            return ContactShareDraft.loadWithMatchingSignalAvatar(
                 cnContact: cnContact,
                 signalContact: systemContact,
+                blockingManager: SSKEnvironment.shared.blockingManagerRef,
                 contactManager: SSKEnvironment.shared.contactManagerRef,
                 phoneNumberUtil: SSKEnvironment.shared.phoneNumberUtilRef,
                 profileManager: SSKEnvironment.shared.profileManagerRef,
+                recipientHidingManager: DependenciesBridge.shared.recipientHidingManager,
                 recipientManager: DependenciesBridge.shared.recipientManager,
                 tsAccountManager: DependenciesBridge.shared.tsAccountManager,
                 tx: tx,
