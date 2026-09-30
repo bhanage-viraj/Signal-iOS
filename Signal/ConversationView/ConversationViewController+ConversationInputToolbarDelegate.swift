@@ -632,7 +632,7 @@ private extension ConversationViewController {
 
         dismissKeyboard()
 
-        if BuildFlags.accountIdentifierSharing {
+        if BuildFlags.accountIdentifierSharingSend {
             let contactsPicker = ContactSharingPickerViewController()
             contactsPicker.contactSharingDelegate = self
             let sheet = OWSNavigationController(rootViewController: contactsPicker)

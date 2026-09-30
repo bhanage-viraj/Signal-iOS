@@ -158,7 +158,7 @@ public class ContactShareDraft {
             phoneNumbers: phoneNumbers,
             emails: emails,
             addresses: addresses,
-            aci: BuildFlags.accountIdentifierSharing ? aci : nil,
+            aci: aci,
         )
     }
 

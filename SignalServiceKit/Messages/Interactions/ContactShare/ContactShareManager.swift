@@ -100,15 +100,13 @@ class ContactShareManagerImpl: ContactShareManager {
         contact.emails = contactProto.email.compactMap { OWSContactEmail(proto: $0) }
         contact.addresses = contactProto.address.compactMap { OWSContactAddress(proto: $0) }
 
-        if BuildFlags.accountIdentifierSharing, let aciBinary = contactProto.aciBinary {
+        if let aciBinary = contactProto.aciBinary {
             contact.aci = try? Aci.parseFrom(serviceIdBinary: aciBinary)
         }
-        if BuildFlags.accountIdentifierSharing, let nicknameProto = contactProto.nickname {
+        if let nicknameProto = contactProto.nickname {
             contact.nickname = ProfileName(givenName: nicknameProto.given, familyName: nicknameProto.family)?.nameComponents
         }
-        if BuildFlags.accountIdentifierSharing {
-            contact.note = contactProto.note?.strippedOrNil
-        }
+        contact.note = contactProto.note?.strippedOrNil
 
         return ValidatedContactShareProto(
             contact: contact,
@@ -208,11 +206,10 @@ class ContactShareManagerImpl: ContactShareManager {
 
         contactBuilder.setName(nameBuilder.buildInfallibly())
 
-        if BuildFlags.accountIdentifierSharing, let aci = contactShare.aci {
+        if let aci = contactShare.aci {
             contactBuilder.setAciBinary(aci.serviceIdBinary)
         }
         if
-            BuildFlags.accountIdentifierSharing,
             let nickname = contactShare.nickname,
             let profileName = ProfileName(givenName: nickname.givenName, familyName: nickname.familyName)
         {
@@ -225,7 +222,7 @@ class ContactShareManagerImpl: ContactShareManager {
             }
             contactBuilder.setNickname(nicknameBuilder.buildInfallibly())
         }
-        if BuildFlags.accountIdentifierSharing, let note = contactShare.note?.strippedOrNil {
+        if let note = contactShare.note?.strippedOrNil {
             contactBuilder.setNote(note)
         }
 

@@ -101,8 +101,10 @@ public enum BuildFlags {
     /// New notification settings. Don't enable until Storage Service is integrated
     public static let improvedNotifications = build <= .dev
 
-    /// The ability to share account identifiers when sharing contacts.
-    public static let accountIdentifierSharing = false
+    /// The new contact sharing picker, which can share signal contacts by ACI. We plan to turn this
+    /// on after receive support has baked in prod for a bit so that more devices can handle the
+    /// ACI share.
+    public static let accountIdentifierSharingSend = build <= .internal
 
     public static let phoneNumberlessCanLinkNewDevices = false
     public static let phoneNumberlessCanBeLinkedDevice = false

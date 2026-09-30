@@ -1573,7 +1573,7 @@ private extension CVComponentState.Builder {
         self.contactShare = ContactShare(state: state)
 
         let contactShareAction: CVMessageAction?
-        if BuildFlags.accountIdentifierSharing, let aci = contactShare.dbRecord.aci {
+        if let aci = contactShare.dbRecord.aci {
             contactShareAction = CVMessageAction(
                 title: CommonStrings.sendMessage,
                 accessibilityIdentifier: "send_message_to_contact_share",

@@ -88,7 +88,7 @@ public final class OWSContact: NSObject, NSSecureCoding, NSCopying {
             phoneNumbers: phoneNumbers,
             emails: emails,
             addresses: addresses,
-            aci: BuildFlags.accountIdentifierSharing ? aci : nil,
+            aci: aci,
         )
     }
 

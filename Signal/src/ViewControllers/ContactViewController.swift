@@ -86,7 +86,7 @@ class ContactViewController: OWSTableViewController2 {
         for contactShare: ContactShareViewModel,
         phoneNumberPartition: OWSContact.PhoneNumberPartition,
     ) -> ContactViewMode {
-        if BuildFlags.accountIdentifierSharing, let aci = contactShare.dbRecord.aci {
+        if let aci = contactShare.dbRecord.aci {
             let isInSystemContacts = !phoneNumberPartition.sendablePhoneNumbers.isEmpty || !phoneNumberPartition.invitablePhoneNumbers.isEmpty
             return .aciShare(aci: aci, isInSystemContacts: isInSystemContacts)
         }
