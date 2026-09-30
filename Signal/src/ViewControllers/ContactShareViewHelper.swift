@@ -40,24 +40,68 @@ class ContactShareViewHelper: NSObject, CNContactViewControllerDelegate {
     /// Stores the shared name so the new conversation has something to show
     /// for an account we may know nothing else about.
     func recordContactShareNameIfNecessary(_ name: OWSContactName, forAci aci: Aci, tx: DBWriteTransaction) {
-        guard name.givenName?.strippedOrNil?.isEmpty == false || name.familyName?.strippedOrNil?.isEmpty == false else {
-            return
-        }
-
-        let displayName = SSKEnvironment.shared.contactManagerRef.displayName(for: SignalServiceAddress(aci), tx: tx)
-        guard !displayName.hasProfileNameOrBetter else {
+        guard let sharedName = sharedNameToRecord(name, forAci: aci, tx: tx) else {
             return
         }
 
         let recipient = DependenciesBridge.shared.recipientFetcher.fetchOrCreate(serviceId: aci, tx: tx)
         DependenciesBridge.shared.aciContactShareNameManager.saveName(
-            givenName: name.givenName,
-            familyName: name.familyName,
+            givenName: sharedName.givenName,
+            familyName: sharedName.familyName,
             recipient: recipient,
             allowOverwrite: false,
             updateStorageService: true,
             tx: tx,
         )
+    }
+
+    /// Like ``recordContactShareNameIfNecessary(_:forAci:tx:)``, but only
+    /// opens a write transaction when there's a name to record.
+    func recordContactShareNameIfNecessary(_ name: OWSContactName, forAci aci: Aci) {
+        let databaseStorage = SSKEnvironment.shared.databaseStorageRef
+        let needsName = databaseStorage.read { tx in
+            return sharedNameToRecord(name, forAci: aci, tx: tx) != nil
+        }
+        guard needsName else {
+            return
+        }
+        databaseStorage.write { tx in
+            recordContactShareNameIfNecessary(name, forAci: aci, tx: tx)
+        }
+    }
+
+    /// The name to store for `aci`, or nil if nothing should be stored. Falls
+    /// back to the nickname, then the organization name, when the shared name
+    /// has no given or family name, as ``OWSContactName/displayName`` does.
+    private func sharedNameToRecord(
+        _ name: OWSContactName,
+        forAci aci: Aci,
+        tx: DBReadTransaction,
+    ) -> (givenName: String?, familyName: String?)? {
+        let sharedName: (givenName: String?, familyName: String?)
+        let givenName = name.givenName?.strippedOrNil
+        let familyName = name.familyName?.strippedOrNil
+        if givenName != nil || familyName != nil {
+            sharedName = (givenName, familyName)
+        } else if let fallbackName = name.nickname?.strippedOrNil ?? name.organizationName?.strippedOrNil {
+            sharedName = (fallbackName, nil)
+        } else {
+            return nil
+        }
+
+        let displayName = SSKEnvironment.shared.contactManagerRef.displayName(for: SignalServiceAddress(aci), tx: tx)
+        guard !displayName.hasProfileNameOrBetter else {
+            return nil
+        }
+
+        if
+            let recipient = DependenciesBridge.shared.recipientDatabaseTable.fetchRecipient(serviceId: aci, transaction: tx),
+            DependenciesBridge.shared.aciContactShareNameManager.fetchName(recipient: recipient, tx: tx) != nil
+        {
+            return nil
+        }
+
+        return sharedName
     }
 
     func audioCall(to phoneNumbers: [String], from viewController: UIViewController) {
