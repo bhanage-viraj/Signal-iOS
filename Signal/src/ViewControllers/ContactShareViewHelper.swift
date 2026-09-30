@@ -124,6 +124,11 @@ class ContactShareViewHelper: NSObject, CNContactViewControllerDelegate {
         presentThread(performAction: .videoCall, toAci: aci, sharedName: sharedName)
     }
 
+    func showAddToGroup(aci: Aci, sharedName: OWSContactName, fromViewController: UIViewController) {
+        recordContactShareNameIfNecessary(sharedName, forAci: aci)
+        AddToGroupViewController.presentForUser(SignalServiceAddress(aci), from: fromViewController)
+    }
+
     private func presentThread(
         performAction action: ConversationViewAction,
         toAci aci: Aci,

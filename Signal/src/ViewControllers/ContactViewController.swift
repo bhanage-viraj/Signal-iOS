@@ -137,6 +137,13 @@ class ContactViewController: OWSTableViewController2 {
         return sendablePhoneNumbers.contains(where: localIdentifiers.contains(phoneNumber:))
     }
 
+    private func canAddToGroup(aci: Aci) -> Bool {
+        return SSKEnvironment.shared.databaseStorageRef.read { tx in
+            return ThreadFinder().existsGroupThread(transaction: tx)
+                && !SSKEnvironment.shared.blockingManagerRef.isAddressBlocked(SignalServiceAddress(aci), transaction: tx)
+        }
+    }
+
     private var sharedAci: Aci? {
         switch viewMode {
         case .aciShare(let aci, _):
@@ -150,6 +157,7 @@ class ContactViewController: OWSTableViewController2 {
         AssertIsOnMainThread()
 
         var sections = [OWSTableSection]()
+        let isLocalUser = self.isLocalUser
 
         // Header
         let headerSection = OWSTableSection(items: [], headerView: buildHeaderView())
@@ -157,6 +165,40 @@ class ContactViewController: OWSTableViewController2 {
 
         // Contact Actions
         let actionsSection = OWSTableSection()
+
+        if showInviteToSignal() {
+            actionsSection.add(.disclosureItem(
+                icon: .settingsInvite,
+                withText: OWSLocalizedString("ACTION_INVITE", comment: ""),
+                actionBlock: { [weak self] in
+                    self?.didPressInvite()
+                },
+            ))
+        }
+
+        if showAddToContacts() {
+            actionsSection.add(.disclosureItem(
+                icon: .contactInfoAddToContacts,
+                withText: OWSLocalizedString(
+                    "CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER",
+                    comment: "",
+                )
+                ,
+                actionBlock: { [weak self] in
+                    self?.didPressAddToContacts()
+                },
+            ))
+        }
+
+        if let sharedAci, !isLocalUser, canAddToGroup(aci: sharedAci) {
+            actionsSection.add(.disclosureItem(
+                icon: .contactInfoAddToGroup,
+                withText: OWSLocalizedString("ADD_TO_GROUP_TITLE", comment: "Title of the 'add to group' view."),
+                actionBlock: { [weak self] in
+                    self?.didPressAddToGroup(aci: sharedAci)
+                },
+            ))
+        }
 
         // Message, Video, Audio buttons for Signal contacts as a horizontal stack of buttons
         if sharedAci != nil || viewMode == .systemContactWithSignal {
@@ -194,34 +236,14 @@ class ContactViewController: OWSTableViewController2 {
 
             let sectionHeaderView = UIView()
             sectionHeaderView.addSubview(buttonStack)
-            buttonStack.autoPinHeightToSuperview()
+            buttonStack.autoPinEdge(toSuperviewEdge: .top)
+            buttonStack.autoPinEdge(
+                toSuperviewEdge: .bottom,
+                withInset: actionsSection.items.isEmpty ? 0 : defaultSpacingBetweenSections ?? 0,
+            )
             buttonStack.autoHCenterInSuperview()
             buttonStack.autoPinWidthToSuperviewMargins(relation: .lessThanOrEqual)
             actionsSection.customHeaderView = sectionHeaderView
-        }
-
-        if showInviteToSignal() {
-            actionsSection.add(.disclosureItem(
-                icon: .settingsInvite,
-                withText: OWSLocalizedString("ACTION_INVITE", comment: ""),
-                actionBlock: { [weak self] in
-                    self?.didPressInvite()
-                },
-            ))
-        }
-
-        if showAddToContacts() {
-            actionsSection.add(.disclosureItem(
-                icon: .contactInfoAddToContacts,
-                withText: OWSLocalizedString(
-                    "CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER",
-                    comment: "",
-                )
-                ,
-                actionBlock: { [weak self] in
-                    self?.didPressAddToContacts()
-                },
-            ))
         }
 
         if actionsSection.customHeaderView != nil || !actionsSection.items.isEmpty {
@@ -419,6 +441,10 @@ extension ContactViewController {
         Logger.info("")
 
         contactShareViewHelper.showAddToContactsPrompt(contactShare: contactShare, from: self)
+    }
+
+    private func didPressAddToGroup(aci: Aci) {
+        contactShareViewHelper.showAddToGroup(aci: aci, sharedName: contactShare.dbRecord.name, fromViewController: self)
     }
 
     private func didPressPhoneNumber(phoneNumber: OWSContactPhoneNumber) {
