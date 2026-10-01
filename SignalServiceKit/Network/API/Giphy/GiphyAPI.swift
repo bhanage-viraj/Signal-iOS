@@ -75,7 +75,9 @@ public enum GiphyAPI {
             }
             Logger.info("Request succeeded.")
             let parsed = try JSONDecoder().decode(SearchResponse.self, from: responseData)
-            return parsed.data.compactMap { imageInfo(from: $0) }
+            return parsed.data.compactMap { lossy in
+                lossy.apiResponse.flatMap { imageInfo(from: $0) }
+            }
         } catch {
             Logger.warn("Request failed: \(error.shortDescription)")
             throw error
@@ -108,7 +110,22 @@ public enum GiphyAPI {
     }
 
     private struct SearchResponse: Decodable {
-        let data: [APIResponse]
+        let data: [LossyAPIResponse]
+    }
+
+    /// Wraps an `APIResponse` that may fail to decode, so one malformed item
+    /// doesn't fail decoding the entire `SearchResponse`.
+    private struct LossyAPIResponse: Decodable {
+        let apiResponse: APIResponse?
+
+        init(from decoder: Decoder) {
+            do {
+                apiResponse = try APIResponse(from: decoder)
+            } catch {
+                Logger.warn("Skipping item that failed to decode: \(error)")
+                apiResponse = nil
+            }
+        }
     }
 
     private struct APIResponse: Decodable {
