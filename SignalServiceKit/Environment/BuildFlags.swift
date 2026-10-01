@@ -107,7 +107,7 @@ public enum BuildFlags {
     public static let accountIdentifierSharingSend = build <= .internal
 
     public static let phoneNumberlessCanLinkNewDevices = false
-    public static let phoneNumberlessCanBeLinkedDevice = false
+    public static let phoneNumberlessCanBeLinkedDevice = true
 
     public static let phoneNumberlessRegistration = false
 
