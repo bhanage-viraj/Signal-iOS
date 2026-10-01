@@ -25,11 +25,6 @@ extension BackupArchive {
                 case adminDeletedMessage
             }
 
-            /// An error occurred serializing the proto.
-            /// - Note
-            /// Logging the raw error is safe, as it'll just contain proto field
-            /// names.
-            case protoSerializationError(RawError)
             /// An error occurred during file IO.
             /// - Note
             /// Logging the raw error is safe, as we generate the file we stream
@@ -296,10 +291,6 @@ extension BackupArchive {
 
         public var collapseKey: String? {
             switch type {
-            case .protoSerializationError(let rawError):
-                // We don't want to re-log every instance of this we see.
-                // Collapse them by the raw error itself.
-                return "\(rawError)"
             case
                 .referencedRecipientIdMissing,
                 .referencedThreadIdMissing,
@@ -386,7 +377,6 @@ extension BackupArchive {
         public var logLevel: BackupArchive.LogLevel {
             switch type {
             case
-                .protoSerializationError,
                 .referencedRecipientIdMissing,
                 .referencedThreadIdMissing,
                 .referencedCustomChatColorMissing,
