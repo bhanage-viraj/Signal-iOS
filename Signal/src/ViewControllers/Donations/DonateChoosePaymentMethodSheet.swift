@@ -261,13 +261,13 @@ class DonateChoosePaymentMethodSheet: StackSheetViewController {
     private func createSEPAButton() -> UIButton {
         var configuration: UIButton.Configuration
         if #available(iOS 26, *) {
-            configuration = UIButton.Configuration.glass()
+            configuration = .prominentGlass()
         } else {
             configuration = .bordered()
             configuration.background.cornerRadius = 12
             configuration.baseForegroundColor = .label
-            configuration.baseBackgroundColor = .Signal.secondaryGroupedBackground
         }
+        configuration.baseBackgroundColor = .Signal.secondaryGroupedBackground
 
         configuration.title = OWSLocalizedString(
             "DONATE_CHOOSE_BANK_TRANSFER_AS_PAYMENT_METHOD",
@@ -289,7 +289,7 @@ class DonateChoosePaymentMethodSheet: StackSheetViewController {
     }
 
     private func createIDEALButton() -> UIButton {
-        let backgroundColor = if #available(iOS 26, *) { UIColor(rgbHex: 0xEEF5F7) } else { UIColor(rgbHex: 0xCCD6F2) }
+        let backgroundColor = UIColor(rgbHex: 0xCCD6F2)
         var configuration: UIButton.Configuration
         if #available(iOS 26, *) {
             configuration = UIButton.Configuration.prominentGlass()
@@ -297,8 +297,8 @@ class DonateChoosePaymentMethodSheet: StackSheetViewController {
             configuration = .bordered()
             configuration.background.cornerRadius = 12
             configuration.baseForegroundColor = .label
-            configuration.baseBackgroundColor = backgroundColor
         }
+        configuration.baseBackgroundColor = backgroundColor
 
         configuration.image = UIImage(named: "logo_ideal")
         configuration.imagePadding = 8
