@@ -253,54 +253,34 @@ class ContactViewController: OWSTableViewController2 {
         // Contact Info
         let infoSection = OWSTableSection()
         infoSection.add(items: contactShare.phoneNumbers.map({ phoneNumber in
-            return OWSTableItem(
-                customCellBlock: {
-                    return Self.buildPhoneNumberCell(phoneNumber)
-                },
-                actionBlock: { [weak self] in
-                    self?.didPressPhoneNumber(phoneNumber: phoneNumber)
-                },
-            )
+            let menuActions = phoneNumberMenuActions(phoneNumber: phoneNumber)
+            return OWSTableItem(customCellBlock: {
+                return Self.buildPhoneNumberCell(phoneNumber, menuActions: menuActions)
+            })
         }))
         infoSection.add(items: contactShare.emails.map({ email in
-            return OWSTableItem(
-                customCellBlock: {
-                    return Self.buildEmailCell(email)
-                },
-                actionBlock: { [weak self] in
-                    self?.didPressEmail(email: email)
-                },
-            )
+            let menuActions = emailMenuActions(email: email)
+            return OWSTableItem(customCellBlock: {
+                return Self.buildEmailCell(email, menuActions: menuActions)
+            })
         }))
         infoSection.add(items: contactShare.addresses.map({ address in
-            return OWSTableItem(
-                customCellBlock: {
-                    return Self.buildAddressCell(address)
-                },
-                actionBlock: { [weak self] in
-                    self?.didPressAddress(address: address)
-                },
-            )
+            let menuActions = addressMenuActions(address: address)
+            return OWSTableItem(customCellBlock: {
+                return Self.buildAddressCell(address, menuActions: menuActions)
+            })
         }))
         if let nickname = contactShare.nickname {
-            infoSection.add(OWSTableItem(
-                customCellBlock: {
-                    return Self.buildNicknameCell(nickname)
-                },
-                actionBlock: { [weak self] in
-                    self?.presentCopyActionSheet(text: OWSFormat.formatNameComponents(nickname))
-                },
-            ))
+            let menuActions = [copyAction(text: OWSFormat.formatNameComponents(nickname))]
+            infoSection.add(OWSTableItem(customCellBlock: {
+                return Self.buildNicknameCell(nickname, menuActions: menuActions)
+            }))
         }
         if let note = contactShare.note {
-            infoSection.add(OWSTableItem(
-                customCellBlock: {
-                    return Self.buildNoteCell(note)
-                },
-                actionBlock: { [weak self] in
-                    self?.presentCopyActionSheet(text: note)
-                },
-            ))
+            let menuActions = [copyAction(text: note)]
+            infoSection.add(OWSTableItem(customCellBlock: {
+                return Self.buildNoteCell(note, menuActions: menuActions)
+            }))
         }
         sections.append(infoSection)
 
@@ -371,37 +351,45 @@ class ContactViewController: OWSTableViewController2 {
 
     // MARK: Custom cells
 
-    private class func buildTableViewCellWith(_ fieldContentView: UIView) -> UITableViewCell {
+    private class func buildTableViewCellWith(_ fieldContentView: UIView, menuActions: [UIMenuElement]) -> UITableViewCell {
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
         cell.contentView.addSubview(fieldContentView)
         fieldContentView.autoPinHeightToSuperview(withMargin: 10)
         fieldContentView.autoPinWidthToSuperviewMargins()
+
+        let contextMenuButton = ContextMenuButton(actions: menuActions)
+        contextMenuButton.accessibilityLabel = fieldContentView.subviews
+            .compactMap { $0.accessibilityLabel?.strippedOrNil }
+            .joined(separator: ", ")
+        cell.addSubview(contextMenuButton)
+        contextMenuButton.autoPinEdgesToSuperviewEdges()
+
         return cell
     }
 
-    private class func buildPhoneNumberCell(_ phoneNumber: OWSContactPhoneNumber) -> UITableViewCell {
+    private class func buildPhoneNumberCell(_ phoneNumber: OWSContactPhoneNumber, menuActions: [UIMenuElement]) -> UITableViewCell {
         let fieldContentView = ContactFieldViewHelper.contactFieldView(forPhoneNumber: phoneNumber)
-        return buildTableViewCellWith(fieldContentView)
+        return buildTableViewCellWith(fieldContentView, menuActions: menuActions)
     }
 
-    private class func buildEmailCell(_ email: OWSContactEmail) -> UITableViewCell {
+    private class func buildEmailCell(_ email: OWSContactEmail, menuActions: [UIMenuElement]) -> UITableViewCell {
         let fieldContentView = ContactFieldViewHelper.contactFieldView(forEmail: email)
-        return buildTableViewCellWith(fieldContentView)
+        return buildTableViewCellWith(fieldContentView, menuActions: menuActions)
     }
 
-    private class func buildAddressCell(_ address: OWSContactAddress) -> UITableViewCell {
+    private class func buildAddressCell(_ address: OWSContactAddress, menuActions: [UIMenuElement]) -> UITableViewCell {
         let fieldContentView = ContactFieldViewHelper.contactFieldView(forAddress: address)
-        return buildTableViewCellWith(fieldContentView)
+        return buildTableViewCellWith(fieldContentView, menuActions: menuActions)
     }
 
-    private class func buildNicknameCell(_ nickname: PersonNameComponents) -> UITableViewCell {
+    private class func buildNicknameCell(_ nickname: PersonNameComponents, menuActions: [UIMenuElement]) -> UITableViewCell {
         let fieldContentView = ContactFieldViewHelper.contactFieldView(forNickname: nickname)
-        return buildTableViewCellWith(fieldContentView)
+        return buildTableViewCellWith(fieldContentView, menuActions: menuActions)
     }
 
-    private class func buildNoteCell(_ note: String) -> UITableViewCell {
+    private class func buildNoteCell(_ note: String, menuActions: [UIMenuElement]) -> UITableViewCell {
         let fieldContentView = ContactFieldViewHelper.contactFieldView(forNote: note)
-        return buildTableViewCellWith(fieldContentView)
+        return buildTableViewCellWith(fieldContentView, menuActions: menuActions)
     }
 }
 
@@ -447,54 +435,45 @@ extension ContactViewController {
         contactShareViewHelper.showAddToGroup(aci: aci, sharedName: contactShare.dbRecord.name, fromViewController: self)
     }
 
-    private func didPressPhoneNumber(phoneNumber: OWSContactPhoneNumber) {
-        Logger.info("")
+    private func phoneNumberMenuActions(phoneNumber: OWSContactPhoneNumber) -> [UIMenuElement] {
+        return [
+            UIDeferredMenuElement.uncached { [weak self] completion in
+                completion(self?.signalPhoneNumberActions(phoneNumber: phoneNumber) ?? [])
+            },
+            copyAction(text: phoneNumber.phoneNumber),
+        ]
+    }
 
-        let actionSheet = ActionSheetController(title: nil, message: nil)
-
-        if let phoneNumber = phoneNumber.e164 {
-            let isRegistered = sendablePhoneNumbers.contains(phoneNumber)
-            if isRegistered {
-                func addAction(title: String, action: ConversationViewAction) {
-                    actionSheet.addAction(ActionSheetAction(
-                        title: title,
-                        style: .default,
-                        handler: { _ in
-                            let address = SignalServiceAddress(phoneNumber: phoneNumber)
-                            SignalApp.shared.presentConversationForAddress(address, action: action, animated: true)
-                        },
-                    ))
-                }
-                addAction(title: CommonStrings.sendMessage, action: .compose)
-                addAction(
-                    title: OWSLocalizedString(
-                        "ACTION_VOICE_CALL",
-                        comment: "Label for 'voice call' button in contact view.",
-                    ),
-                    action: .voiceCall,
-                )
-                addAction(
-                    title: OWSLocalizedString(
-                        "ACTION_VIDEO_CALL",
-                        comment: "Label for 'video call' button in contact view.",
-                    ),
-                    action: .voiceCall,
-                )
-            } else {
-                // TODO: We could offer callPhoneNumberWithSystemCall.
+    private func signalPhoneNumberActions(phoneNumber: OWSContactPhoneNumber) -> [UIMenuElement] {
+        guard let e164 = phoneNumber.e164, sendablePhoneNumbers.contains(e164) else {
+            // TODO: We could offer callPhoneNumberWithSystemCall.
+            return []
+        }
+        func action(title: String, icon: ThemeIcon, action: ConversationViewAction) -> UIAction {
+            return UIAction(title: title, image: Theme.iconImage(icon)) { _ in
+                let address = SignalServiceAddress(phoneNumber: e164)
+                SignalApp.shared.presentConversationForAddress(address, action: action, animated: true)
             }
         }
-        actionSheet.addAction(ActionSheetAction(
-            title: OWSLocalizedString(
-                "EDIT_ITEM_COPY_ACTION",
-                comment: "Short name for edit menu item to copy contents of media message.",
+        return [
+            action(title: CommonStrings.sendMessage, icon: .contextMenuMessage, action: .compose),
+            action(
+                title: OWSLocalizedString(
+                    "ACTION_VOICE_CALL",
+                    comment: "Label for 'voice call' button in contact view.",
+                ),
+                icon: .contextMenuVoiceCall,
+                action: .voiceCall,
             ),
-            style: .default,
-        ) { _ in
-            UIPasteboard.general.string = phoneNumber.phoneNumber
-        })
-        actionSheet.addAction(OWSActionSheets.cancelAction)
-        presentActionSheet(actionSheet)
+            action(
+                title: OWSLocalizedString(
+                    "ACTION_VIDEO_CALL",
+                    comment: "Label for 'video call' button in contact view.",
+                ),
+                icon: .contextMenuVideoCall,
+                action: .videoCall,
+            ),
+        ]
     }
 
     private func callPhoneNumberWithSystemCall(phoneNumber: OWSContactPhoneNumber) {
@@ -507,30 +486,19 @@ extension ContactViewController {
         UIApplication.shared.open(url as URL, options: [:])
     }
 
-    private func didPressEmail(email: OWSContactEmail) {
-        Logger.info("")
-
-        let actionSheet = ActionSheetController(title: nil, message: nil)
-        actionSheet.addAction(ActionSheetAction(
-            title: OWSLocalizedString(
-                "CONTACT_VIEW_OPEN_EMAIL_IN_EMAIL_APP",
-                comment: "Label for 'open email in email app' button in contact view.",
-            ),
-            style: .default,
-        ) { [weak self] _ in
-            self?.openEmailInEmailApp(email: email)
-        })
-        actionSheet.addAction(ActionSheetAction(
-            title: OWSLocalizedString(
-                "EDIT_ITEM_COPY_ACTION",
-                comment: "Short name for edit menu item to copy contents of media message.",
-            ),
-            style: .default,
-        ) { _ in
-            UIPasteboard.general.string = email.email
-        })
-        actionSheet.addAction(OWSActionSheets.cancelAction)
-        presentActionSheet(actionSheet)
+    private func emailMenuActions(email: OWSContactEmail) -> [UIMenuElement] {
+        return [
+            UIAction(
+                title: OWSLocalizedString(
+                    "CONTACT_VIEW_OPEN_EMAIL_IN_EMAIL_APP",
+                    comment: "Label for 'open email in email app' button in contact view.",
+                ),
+                image: Theme.iconImage(.contextMenuOpenInChat),
+            ) { [weak self] _ in
+                self?.openEmailInEmailApp(email: email)
+            },
+            copyAction(text: email.email),
+        ]
     }
 
     private func openEmailInEmailApp(email: OWSContactEmail) {
@@ -543,46 +511,31 @@ extension ContactViewController {
         UIApplication.shared.open(url as URL, options: [:])
     }
 
-    private func presentCopyActionSheet(text: String) {
-        let actionSheet = ActionSheetController(title: nil, message: nil)
-        actionSheet.addAction(ActionSheetAction(
+    private func copyAction(text: String) -> UIAction {
+        return UIAction(
             title: OWSLocalizedString(
                 "EDIT_ITEM_COPY_ACTION",
                 comment: "Short name for edit menu item to copy contents of media message.",
             ),
-            style: .default,
+            image: Theme.iconImage(.contextMenuCopy),
         ) { _ in
             UIPasteboard.general.string = text
-        })
-        actionSheet.addAction(OWSActionSheets.cancelAction)
-        presentActionSheet(actionSheet)
+        }
     }
 
-    private func didPressAddress(address: OWSContactAddress) {
-        Logger.info("")
-
-        let actionSheet = ActionSheetController(title: nil, message: nil)
-        actionSheet.addAction(ActionSheetAction(
-            title: OWSLocalizedString(
-                "CONTACT_VIEW_OPEN_ADDRESS_IN_MAPS_APP",
-                comment: "Label for 'open address in maps app' button in contact view.",
-            ),
-            style: .default,
-        ) { [weak self] _ in
-            self?.openAddressInMaps(address: address)
-        })
-        actionSheet.addAction(ActionSheetAction(
-            title: OWSLocalizedString(
-                "EDIT_ITEM_COPY_ACTION",
-                comment: "Short name for edit menu item to copy contents of media message.",
-            ),
-            style: .default,
-        ) { [weak self] _ in
-            guard let self else { return }
-            UIPasteboard.general.string = self.formatAddressForQuery(address: address)
-        })
-        actionSheet.addAction(OWSActionSheets.cancelAction)
-        presentActionSheet(actionSheet)
+    private func addressMenuActions(address: OWSContactAddress) -> [UIMenuElement] {
+        return [
+            UIAction(
+                title: OWSLocalizedString(
+                    "CONTACT_VIEW_OPEN_ADDRESS_IN_MAPS_APP",
+                    comment: "Label for 'open address in maps app' button in contact view.",
+                ),
+                image: Theme.iconImage(.contextMenuOpenInChat),
+            ) { [weak self] _ in
+                self?.openAddressInMaps(address: address)
+            },
+            copyAction(text: formatAddressForQuery(address: address)),
+        ]
     }
 
     private func openAddressInMaps(address: OWSContactAddress) {

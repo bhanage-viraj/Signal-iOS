@@ -358,6 +358,7 @@ class ProfileSettingsViewController: OWSTableViewController2 {
                     editUsernameAction,
                     deleteUsernameAction,
                 ])
+                contextMenuButton.accessibilityLabel = username
 
                 /// We're intentionally not using `cell.contentView` here,
                 /// because we don't want the button inset.
