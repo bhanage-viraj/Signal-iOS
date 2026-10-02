@@ -397,6 +397,12 @@ public class RemoteConfig {
         return !isEnabled(.wifiAwareDeviceTransferKillSwitch, defaultValue: false) && BuildFlags.wifiAwareDeviceTransfer
     }
 
+    // MARK: -
+
+    public var accountIdentifierSharingSend: Bool {
+        return BuildFlags.accountIdentifierSharingSend || isEnabled(.contactSharingV2)
+    }
+
     // MARK: - RingRTC
 
     /// How many successful calls per million should show a call quality survey for the user's region
@@ -712,6 +718,7 @@ private enum IsEnabledFlag: String, FlagType {
     case cardGiftDonationKillSwitch = "ios.cardGiftDonationKillSwitch"
     case cardMonthlyDonationKillSwitch = "ios.cardMonthlyDonationKillSwitch"
     case cardOneTimeDonationKillSwitch = "ios.cardOneTimeDonationKillSwitch"
+    case contactSharingV2 = "ios.contactSharingV2"
     case enableAutoAPNSRotation = "ios.enableAutoAPNSRotation"
     case enableGifSearch = "global.gifSearch"
     case messageResendKillSwitch = "ios.messageResendKillSwitch"
@@ -739,6 +746,7 @@ private enum IsEnabledFlag: String, FlagType {
         case .cardGiftDonationKillSwitch: false
         case .cardMonthlyDonationKillSwitch: false
         case .cardOneTimeDonationKillSwitch: false
+        case .contactSharingV2: false
         case .enableAutoAPNSRotation: false
         case .enableGifSearch: false
         case .messageResendKillSwitch: false
