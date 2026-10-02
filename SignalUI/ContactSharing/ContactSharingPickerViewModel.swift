@@ -12,30 +12,38 @@ import UIKit
 @MainActor
 final class ContactSharingPickerViewModel {
 
-    typealias CNContactID = String
+    typealias BlockedRecipientIdentifiersProvider = (DBReadTransaction) -> Set<SignalRecipient.RowId>
+    typealias ComparableValueConfigProvider = () -> DisplayName.ComparableValue.Config
+    typealias ContactsAccessRequester = () async -> Void
+    typealias ContactsAuthorizationStatusProvider = () -> RawContactAuthorizationStatus
+    typealias DisplayNamesForRecipientsProvider = ([SignalRecipient], DBReadTransaction) -> [DisplayName]
+    typealias SignalAvatarDataProvider = (OWSUserProfile) -> Data?
+    typealias SystemContactsProvider = (RawContactAuthorizationStatus) -> [SystemContact]
+    typealias SystemContactsRefresher = () async -> Void
+    typealias UserProfileProvider = (SignalRecipient, DBReadTransaction) -> OWSUserProfile?
 
     // MARK: - Dependencies
 
     private let avatarBuilder: AvatarBuilder
-    private let blockedRecipientIdentifiersProvider: (DBReadTransaction) -> Set<SignalRecipient.RowId>
-    private let comparableValueConfigProvider: () -> DisplayName.ComparableValue.Config
+    private let blockedRecipientIdentifiersProvider: BlockedRecipientIdentifiersProvider
+    private let comparableValueConfigProvider: ComparableValueConfigProvider
     private let contactManager: any ContactManager
-    private let contactsAccessRequester: () async -> Void
-    private let contactsAuthorizationStatusProvider: () -> RawContactAuthorizationStatus
+    private let contactsAccessRequester: ContactsAccessRequester
+    private let contactsAuthorizationStatusProvider: ContactsAuthorizationStatusProvider
     private let db: any DB
-    private let displayNamesForRecipientsProvider: ([SignalRecipient], DBReadTransaction) -> [DisplayName]
+    private let displayNamesForRecipientsProvider: DisplayNamesForRecipientsProvider
     private let keyValueStore = NewKeyValueStore(collection: "ContactSharingPicker")
     private let nicknameRecordStore: any NicknameRecordStore
     private let phoneNumberUtil: PhoneNumberUtil
     private let phoneNumberVisibilityFetcher: any PhoneNumberVisibilityFetcher
-    private let signalAvatarDataProvider: (OWSUserProfile) -> Data?
     private let recipientDatabaseTable: RecipientDatabaseTable
     private let recipientHidingManager: any RecipientHidingManager
     private let searchDebounceInterval: DispatchQueue.SchedulerTimeType.Stride
-    private let systemContactsProvider: (RawContactAuthorizationStatus) -> [SystemContact]
-    private let systemContactsRefresher: () async -> Void
+    private let signalAvatarDataProvider: SignalAvatarDataProvider
+    private let systemContactsProvider: SystemContactsProvider
+    private let systemContactsRefresher: SystemContactsRefresher
     private let tsAccountManager: any TSAccountManager
-    private let userProfileProvider: (SignalRecipient, DBReadTransaction) -> OWSUserProfile?
+    private let userProfileProvider: UserProfileProvider
 
     // MARK: - State
 
@@ -96,26 +104,26 @@ final class ContactSharingPickerViewModel {
 
     init(
         avatarBuilder: AvatarBuilder = SSKEnvironment.shared.avatarBuilderRef,
-        blockedRecipientIdentifiersProvider: ((DBReadTransaction) -> Set<SignalRecipient.RowId>)? = nil,
-        comparableValueConfigProvider: (() -> DisplayName.ComparableValue.Config)? = nil,
+        blockedRecipientIdentifiersProvider: BlockedRecipientIdentifiersProvider? = nil,
+        comparableValueConfigProvider: ComparableValueConfigProvider? = nil,
         contactManager: any ContactManager = SSKEnvironment.shared.contactManagerRef,
-        contactsAccessRequester: (() async -> Void)? = nil,
-        contactsAuthorizationStatusProvider: (() -> RawContactAuthorizationStatus)? = nil,
+        contactsAccessRequester: ContactsAccessRequester? = nil,
+        contactsAuthorizationStatusProvider: ContactsAuthorizationStatusProvider? = nil,
         db: any DB = SSKEnvironment.shared.databaseStorageRef,
-        displayNamesForRecipientsProvider: (([SignalRecipient], DBReadTransaction) -> [DisplayName])? = nil,
+        displayNamesForRecipientsProvider: DisplayNamesForRecipientsProvider? = nil,
         nicknameRecordStore: any NicknameRecordStore = NicknameRecordStoreImpl(),
         notificationCenter: NotificationCenter = .default,
         phoneNumberUtil: PhoneNumberUtil = SSKEnvironment.shared.phoneNumberUtilRef,
         phoneNumberVisibilityFetcher: any PhoneNumberVisibilityFetcher = DependenciesBridge.shared.phoneNumberVisibilityFetcher,
-        signalAvatarDataProvider: ((OWSUserProfile) -> Data?)? = nil,
         profileManager: any ProfileManager = SSKEnvironment.shared.profileManagerRef,
         recipientDatabaseTable: RecipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable,
         recipientHidingManager: any RecipientHidingManager = DependenciesBridge.shared.recipientHidingManager,
         searchDebounceInterval: DispatchQueue.SchedulerTimeType.Stride = .milliseconds(300),
-        systemContactsProvider: ((RawContactAuthorizationStatus) -> [SystemContact])? = nil,
-        systemContactsRefresher: (() async -> Void)? = nil,
+        signalAvatarDataProvider: SignalAvatarDataProvider? = nil,
+        systemContactsProvider: SystemContactsProvider? = nil,
+        systemContactsRefresher: SystemContactsRefresher? = nil,
         tsAccountManager: any TSAccountManager = DependenciesBridge.shared.tsAccountManager,
-        userProfileProvider: ((SignalRecipient, DBReadTransaction) -> OWSUserProfile?)? = nil,
+        userProfileProvider: UserProfileProvider? = nil,
     ) {
         self.avatarBuilder = avatarBuilder
         self.blockedRecipientIdentifiersProvider = blockedRecipientIdentifiersProvider ?? { tx in
@@ -136,12 +144,12 @@ final class ContactSharingPickerViewModel {
         self.nicknameRecordStore = nicknameRecordStore
         self.phoneNumberUtil = phoneNumberUtil
         self.phoneNumberVisibilityFetcher = phoneNumberVisibilityFetcher
-        self.signalAvatarDataProvider = signalAvatarDataProvider ?? { userProfile in
-            userProfile.loadAvatarData()
-        }
         self.recipientDatabaseTable = recipientDatabaseTable
         self.recipientHidingManager = recipientHidingManager
         self.searchDebounceInterval = searchDebounceInterval
+        self.signalAvatarDataProvider = signalAvatarDataProvider ?? { userProfile in
+            userProfile.loadAvatarData()
+        }
         self.systemContactsProvider = systemContactsProvider ?? Self.fetchSystemContacts
         self.systemContactsRefresher = systemContactsRefresher ?? {
             await Self.refreshSystemContacts(contactManager: SSKEnvironment.shared.contactManagerImplRef)
@@ -375,12 +383,12 @@ final class ContactSharingPickerViewModel {
                 matchedContactIds.insert(systemContact.systemContact.cnContactId)
             }
 
-            rows.append(.signalContact(signalContact, systemContact: systemContact))
+            rows.append(Row(type: .signalContact(signalContact, systemContact: systemContact)))
         }
 
         for wrapper in systemContactWrappers where wrapper.hasName {
             if !matchedContactIds.contains(wrapper.systemContact.cnContactId) {
-                rows.append(.systemContact(wrapper))
+                rows.append(Row(type: .systemContact(wrapper)))
             }
         }
 
@@ -398,16 +406,12 @@ final class ContactSharingPickerViewModel {
 
     // MARK: - Avatars
 
-    private func addressBookAvatarImage(cnContactId: CNContactID) -> UIImage? {
-        contactManager.avatarImage(for: cnContactId)
-    }
-
-    func avatarImage(for row: Row, diameterPoints: UInt) -> UIImage? {
-        switch row {
+    func avatarImage(forRow row: Row, diameterPoints: UInt) -> UIImage? {
+        switch row.type {
         case .signalContact(let signalContact, let systemContact):
             if
                 let systemContact,
-                let addressBookAvatarImage = addressBookAvatarImage(cnContactId: systemContact.systemContact.cnContactId)
+                let addressBookAvatarImage = contactManager.avatarImage(for: systemContact.systemContact.cnContactId)
             {
                 return addressBookAvatarImage
             }
@@ -420,7 +424,7 @@ final class ContactSharingPickerViewModel {
                 )
             }
         case .systemContact(let systemContact):
-            if let addressBookAvatarImage = addressBookAvatarImage(cnContactId: systemContact.systemContact.cnContactId) {
+            if let addressBookAvatarImage = contactManager.avatarImage(for: systemContact.systemContact.cnContactId) {
                 return addressBookAvatarImage
             }
             return db.read { tx in
@@ -438,7 +442,7 @@ final class ContactSharingPickerViewModel {
     func contactShareDraft(forRow row: Row) -> ContactShareDraft {
         db.read { tx in
             let draft: ContactShareDraft
-            switch row {
+            switch row.type {
             case .signalContact(let signalContact, let systemContact):
                 if let systemContact {
                     draft = contactShareDraft(
@@ -447,7 +451,7 @@ final class ContactSharingPickerViewModel {
                         tx: tx,
                     )
                     if row.namingSystemContact == nil {
-                        draft.name = contactName(for: signalContact, tx: tx)
+                        draft.name = contactName(signalContact: signalContact, tx: tx)
                     }
                 } else {
                     draft = contactShareDraft(forSignalContact: signalContact, tx: tx)
@@ -517,7 +521,7 @@ final class ContactSharingPickerViewModel {
         )
     }
 
-    private func contactName(for signalContact: SignalContact, tx: DBReadTransaction) -> OWSContactName {
+    private func contactName(signalContact: SignalContact, tx: DBReadTransaction) -> OWSContactName {
         signalContact.contactName(profileNameComponents: {
             userProfileProvider(signalContact.recipient, tx)?.nameComponents
         })
@@ -602,19 +606,27 @@ final class ContactSharingPickerViewModel {
 
     // MARK: - Row
 
-    enum Row {
-        case signalContact(SignalContact, systemContact: SystemContactWrapper?)
-        case systemContact(SystemContactWrapper)
+    struct Row {
+        fileprivate enum RowType {
+            case signalContact(SignalContact, systemContact: SystemContactWrapper?)
+            case systemContact(SystemContactWrapper)
+        }
 
-        var signalContact: SignalContact? {
-            switch self {
+        fileprivate let type: RowType
+
+        fileprivate init(type: RowType) {
+            self.type = type
+        }
+
+        fileprivate var signalContact: SignalContact? {
+            switch type {
             case .signalContact(let signalContact, _): signalContact
             case .systemContact: nil
             }
         }
 
         var systemContact: SystemContactWrapper? {
-            switch self {
+            switch type {
             case .signalContact(_, let systemContact): systemContact
             case .systemContact(let systemContact): systemContact
             }
@@ -632,7 +644,7 @@ final class ContactSharingPickerViewModel {
         }
 
         var identity: Identity {
-            switch self {
+            switch type {
             case .signalContact(let signalContact, _): .recipient(signalContact.recipient.id)
             case .systemContact(let systemContact): .systemContact(systemContact.systemContact.cnContactId)
             }
@@ -645,8 +657,8 @@ final class ContactSharingPickerViewModel {
 
         /// The system contact this row is named and sorted by, which is the attached
         /// one unless a Signal contact would name it better.
-        var namingSystemContact: SystemContactWrapper? {
-            switch self {
+        fileprivate var namingSystemContact: SystemContactWrapper? {
+            switch type {
             case .systemContact(let systemContact):
                 return systemContact
             case .signalContact(_, let systemContact):
@@ -659,7 +671,7 @@ final class ContactSharingPickerViewModel {
             if let namingSystemContact {
                 return namingSystemContact.displayName
             }
-            switch self {
+            switch type {
             case .signalContact(let signalContact, _):
                 return signalContact.resolvedDisplayName
             case .systemContact(let systemContact):
@@ -671,7 +683,7 @@ final class ContactSharingPickerViewModel {
             if let namingSystemContact {
                 return namingSystemContact.comparableValue
             }
-            switch self {
+            switch type {
             case .signalContact(let signalContact, _):
                 return signalContact.comparableValue
             case .systemContact(let systemContact):
@@ -703,10 +715,7 @@ final class ContactSharingPickerViewModel {
             }
         }
 
-        func shareableAci(
-            recipientDatabaseTable: RecipientDatabaseTable,
-            transaction: DBReadTransaction,
-        ) -> Aci? {
+        func shareableAci(recipientDatabaseTable: RecipientDatabaseTable, transaction: DBReadTransaction) -> Aci? {
             guard let rowId = signalContact?.recipient.id else {
                 return nil
             }
@@ -736,7 +745,7 @@ final class ContactSharingPickerViewModel {
             systemContact?.systemContact.emailAddresses ?? []
         }
 
-        func matches(searchText: String) -> Bool {
+        fileprivate func matches(searchText: String) -> Bool {
             if displayName.localizedCaseInsensitiveContains(searchText) {
                 return true
             }
@@ -765,7 +774,7 @@ final class ContactSharingPickerViewModel {
 
         // MARK: Sorting
 
-        struct SortKey {
+        fileprivate struct SortKey {
             let isGroupedAtEnd: Bool
             let comparableValue: DisplayName.ComparableValue
             let comparableIdentifier: String
@@ -779,7 +788,7 @@ final class ContactSharingPickerViewModel {
             }
         }
 
-        var sortKey: SortKey {
+        fileprivate var sortKey: SortKey {
             SortKey(
                 isGroupedAtEnd: isGroupedAtEnd,
                 comparableValue: comparableValue,

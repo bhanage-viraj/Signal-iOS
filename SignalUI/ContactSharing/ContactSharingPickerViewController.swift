@@ -506,7 +506,7 @@ public class ContactSharingPickerViewController: OWSTableViewController2, UISear
             return cachedAvatar.image
         }
 
-        let avatarImage = viewModel.avatarImage(for: row, diameterPoints: AvatarBuilder.smallAvatarSizePoints)
+        let avatarImage = viewModel.avatarImage(forRow: row, diameterPoints: AvatarBuilder.smallAvatarSizePoints)
 
         cachedAvatars[row.identity] = avatarImage.map { .image($0) } ?? .noImage
         return avatarImage

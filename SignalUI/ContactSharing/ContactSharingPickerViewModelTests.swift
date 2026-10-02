@@ -720,7 +720,7 @@ struct ContactSharingPickerViewModelTests {
         viewModel.loadData()
 
         let row = try #require(try await displayedRows(of: viewModel).rows.first)
-        let avatarImage = try #require(viewModel.avatarImage(for: row, diameterPoints: 36))
+        let avatarImage = try #require(viewModel.avatarImage(forRow: row, diameterPoints: 36))
         #expect(avatarImage.pngData() == UIImage(data: cardImageData)?.pngData())
     }
 
@@ -967,11 +967,11 @@ struct ContactSharingPickerViewModelTests {
             notificationCenter: notificationCenter,
             phoneNumberUtil: PhoneNumberUtil(),
             phoneNumberVisibilityFetcher: phoneNumberVisibilityFetcher,
-            signalAvatarDataProvider: { providers.signalAvatarData[$0.uniqueId] },
             profileManager: OWSFakeProfileManager(),
             recipientDatabaseTable: recipientDatabaseTable,
             recipientHidingManager: recipientHidingManager,
             searchDebounceInterval: .zero,
+            signalAvatarDataProvider: { providers.signalAvatarData[$0.uniqueId] },
             systemContactsProvider: { _ in providers.fetchSystemContacts() },
             systemContactsRefresher: { providers.refreshSystemContacts() },
             tsAccountManager: MockTSAccountManager(),
