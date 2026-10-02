@@ -235,7 +235,7 @@ public struct ConversationStyle {
         isDarkThemeEnabled: Bool,
     ) -> ColorOrGradientValue {
         if UIAccessibility.isReduceTransparencyEnabled, hasWallpaper {
-            return .solidColor(color: Theme.backgroundColor)
+            return .solidColor(color: UIColor.Signal.background)
         }
         if
             let blurEffect = bubbleBackgroundBlurEffect(
@@ -246,7 +246,18 @@ public struct ConversationStyle {
         {
             return .blur(blurEffect: blurEffect)
         }
-        let color = isDarkThemeEnabled ? UIColor(rgbHex: 0x2C2C2E) : UIColor(rgbHex: 0xE9E9E9)
+        let color = UIColor { traitCollection in
+            switch (traitCollection.userInterfaceStyle, traitCollection.userInterfaceLevel) {
+            case (.dark, .elevated):
+                UIColor(rgbHex: 0x3D3D3F)
+            case (.dark, _):
+                UIColor(rgbHex: 0x2C2C2E)
+            case (_, .elevated):
+                UIColor(rgbHex: 0xEBEBEB)
+            case (_, _):
+                UIColor(rgbHex: 0xE9E9E9)
+            }
+        }
         return .solidColor(color: color)
     }
 
