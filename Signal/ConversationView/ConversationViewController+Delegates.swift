@@ -184,10 +184,6 @@ extension ConversationViewController: ContactShareViewControllerDelegate {
         }
     }
 
-    public func contactShareViewControllerDidCancel(_ viewController: ContactShareViewController) {
-        dismiss(animated: true, completion: nil)
-    }
-
     public func titleForContactShareViewController(_ viewController: ContactShareViewController) -> String? {
         return nil
     }

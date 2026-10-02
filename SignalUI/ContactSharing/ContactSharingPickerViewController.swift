@@ -211,7 +211,7 @@ public class ContactSharingPickerViewController: OWSTableViewController2, UISear
             comment: "Title for the 'Select Contact' view",
         )
 
-        navigationItem.leftBarButtonItem = .cancelButton { [weak self] in
+        navigationItem.rightBarButtonItem = .cancelButton { [weak self] in
             guard let self else { return }
             self.contactSharingDelegate?.contactSharingPickerDidCancel(self)
         }

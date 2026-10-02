@@ -12,8 +12,6 @@ public protocol ContactShareViewControllerDelegate: AnyObject {
         didApproveContactShare contactShare: ContactShareDraft,
     )
 
-    func contactShareViewControllerDidCancel(_ viewController: ContactShareViewController)
-
     func titleForContactShareViewController(_ viewController: ContactShareViewController) -> String?
 
     func recipientsDescriptionForContactShareViewController(_ viewController: ContactShareViewController) -> String?
@@ -93,9 +91,6 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
     override public func viewDidLoad() {
         super.viewDidLoad()
 
-        navigationItem.leftBarButtonItem = .cancelButton { [weak self] in
-            self?.didPressCancel()
-        }
         if let title = shareDelegate?.titleForContactShareViewController(self) {
             navigationItem.title = title
         } else {
@@ -131,6 +126,11 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
         let footerHeight = footerView.frame.height - footerView.safeAreaInsets.bottom
         tableView.contentInset.bottom = footerHeight
         tableView.verticalScrollIndicatorInsets.bottom = footerHeight
+    }
+
+    override public func contentSizeCategoryDidChange() {
+        super.contentSizeCategoryDidChange()
+        updateContent()
     }
 
     // MARK: UI
@@ -222,7 +222,22 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
             ))
         }
 
-        contents = OWSTableContents(sections: [OWSTableSection(items: tableItems)])
+        let section = OWSTableSection(items: tableItems)
+        if contactShareDraft.aci != nil {
+            let format = OWSLocalizedString(
+                "CONTACT_SHARE_SIGNAL_ACCOUNT_NOTICE_FORMAT",
+                comment: "Notice at the top of the 'Share Contact' view when the shared contact includes their Signal account. Embeds {{ contact name }}.",
+            )
+            section.headerAttributedTitle = NSAttributedString(
+                string: String(format: format, contactShareDraft.displayName),
+            )
+            .styled(
+                with: .font(Self.defaultFooterFont),
+                .color(Self.defaultFooterTextColor),
+            )
+        }
+
+        contents = OWSTableContents(sections: [section])
     }
 
     private func updateProceedButtonState() {
@@ -266,15 +281,6 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
         shareDelegate.contactShareViewController(self, didApproveContactShare: filteredContactShare)
     }
 
-    private func didPressCancel() {
-        guard let shareDelegate else {
-            owsFailDebug("missing delegate.")
-            return
-        }
-
-        shareDelegate.contactShareViewControllerDidCancel(self)
-    }
-
     private func initialsAvatarImage(diameter: UInt) -> UIImage? {
         SSKEnvironment.shared.databaseStorageRef.read { tx in
             SSKEnvironment.shared.avatarBuilderRef.defaultAvatarImage(
@@ -288,7 +294,7 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
     private func showAvatarPicker(avatarField: ContactShareAvatarField) {
         let sheet = ContactShareAvatarPickerSheet(
             options: avatarField.options,
-            initialsImage: initialsAvatarImage(diameter: 80),
+            initialsImage: initialsAvatarImage(diameter: 96),
             selectedSource: avatarField.selectedSource,
         ) { [weak self] selectedSource in
             avatarField.selectedSource = selectedSource
@@ -299,7 +305,7 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
 
     private func openContactNameEditingView() {
         let view = EditContactShareNameViewController(contactShareDraft: contactShareDraft, delegate: self)
-        navigationController?.pushViewController(view, animated: true)
+        present(OWSNavigationController(rootViewController: view), animated: true)
     }
 
     private class ContactShareFieldCell: UITableViewCell {
@@ -419,7 +425,7 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
         didFinishWith contactName: OWSContactName,
     ) {
         contactShareDraft.name = contactName
-        tableView.reloadData()
+        updateContent()
     }
 
     // MARK: - ApprovalFooterDelegate

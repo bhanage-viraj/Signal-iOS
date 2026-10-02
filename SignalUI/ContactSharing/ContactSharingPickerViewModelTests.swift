@@ -101,14 +101,26 @@ struct ContactSharingPickerViewModelTests {
     }
 
     @Test
-    func testARegisteredRecipientShowsTheContactIcon() async throws {
+    func testACardMatchedToARegisteredRecipientShowsTheContactIcon() async throws {
+        addContact(named: "Alice", phoneNumber: "+16505550101")
+        providers.systemContacts = [makeSystemContact(givenName: "Alice", phoneNumber: "+16505550101")]
+
+        let viewModel = makeViewModel()
+        viewModel.loadData()
+
+        let row = try #require(try await displayedRows(of: viewModel).rows.first)
+        #expect(row.shouldShowContactIcon, "An address book entry with an ACI to share, so the row is marked.")
+    }
+
+    @Test
+    func testASignalOnlyRowShowsNoContactIcon() async throws {
         addContact(named: "Alice")
 
         let viewModel = makeViewModel()
         viewModel.loadData()
 
         let row = try #require(try await displayedRows(of: viewModel).rows.first)
-        #expect(row.shouldShowContactIcon, "There's an ACI to share, so the row is marked.")
+        #expect(!row.shouldShowContactIcon, "There's an ACI to share, but no address book entry.")
     }
 
     @Test

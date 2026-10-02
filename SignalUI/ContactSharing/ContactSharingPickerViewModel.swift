@@ -637,7 +637,7 @@ final class ContactSharingPickerViewModel {
         }
 
         var shouldShowContactIcon: Bool {
-            guard let recipient = signalContact?.recipient, recipient.isRegistered else {
+            guard systemContact != nil, let recipient, recipient.isRegistered else {
                 return false
             }
             return recipient.aci != nil

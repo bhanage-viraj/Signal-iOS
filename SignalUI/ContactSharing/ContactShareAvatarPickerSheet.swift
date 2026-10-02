@@ -29,7 +29,8 @@ final class ContactShareAvatarPickerSheet: SheetNavigationController {
 
 private final class ContactShareAvatarPickerViewController: NavStackSheetViewController {
 
-    static let avatarDiameter: CGFloat = 80
+    static let avatarDiameter: CGFloat = 96
+    private static let minimumSheetHeight: CGFloat = 300
 
     private let options: [ContactShareAvatarOption]
     private let initialsImage: UIImage?
@@ -56,10 +57,14 @@ private final class ContactShareAvatarPickerViewController: NavStackSheetViewCon
     }
 
     override var stackViewInsets: UIEdgeInsets {
-        .init(top: 24, leading: 16, bottom: 0, trailing: 16)
+        .init(top: 38, leading: 16, bottom: 0, trailing: 16)
     }
 
     override var minimumBottomInsetIncludingSafeArea: CGFloat { 32 }
+
+    override func customSheetHeight() -> CGFloat {
+        max(super.customSheetHeight(), Self.minimumSheetHeight - view.safeAreaInsets.bottom)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -68,6 +73,14 @@ private final class ContactShareAvatarPickerViewController: NavStackSheetViewCon
             "CONTACT_SHARE_AVATAR_PICKER_TITLE",
             comment: "Title for the sheet for choosing which photo to include when sharing a contact.",
         )
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .dynamicTypeSubheadlineClamped
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.textColor = .Signal.secondaryLabel
+        titleLabel.accessibilityTraits = .header
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        navigationItem.titleView = titleLabel
         navigationItem.leftBarButtonItem = .closeButton { [weak self] in
             self?.dismiss(animated: true)
         }
@@ -85,6 +98,7 @@ private final class ContactShareAvatarPickerViewController: NavStackSheetViewCon
         let avatarStack = UIStackView(arrangedSubviews: avatarButtons)
         avatarStack.axis = .horizontal
         avatarStack.spacing = 16
+        avatarStack.distribution = .fillEqually
         stackView.addArrangedSubview(avatarStack)
 
         updateSelection()
@@ -134,7 +148,15 @@ private final class ContactShareAvatarPickerViewController: NavStackSheetViewCon
             avatarView.isUserInteractionEnabled = false
             addSubview(avatarView)
             avatarView.autoPinEdgesToSuperviewEdges()
-            avatarView.autoSetDimensions(to: .square(ContactShareAvatarPickerViewController.avatarDiameter))
+            avatarView.autoPinToSquareAspectRatio()
+            avatarView.autoSetDimension(
+                .width,
+                toSize: ContactShareAvatarPickerViewController.avatarDiameter,
+                relation: .lessThanOrEqual,
+            )
+            NSLayoutConstraint.autoSetPriority(.defaultHigh) {
+                avatarView.autoSetDimension(.width, toSize: ContactShareAvatarPickerViewController.avatarDiameter)
+            }
 
             selectionIndicator.isUserInteractionEnabled = false
             addSubview(selectionIndicator)

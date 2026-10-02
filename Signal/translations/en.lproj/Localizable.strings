@@ -2461,6 +2461,9 @@
 /* Error indicating that an invalid contact cannot be shared. */
 "CONTACT_SHARE_INVALID_CONTACT" = "Invalid contact.";
 
+/* Notice at the top of the 'Share Contact' view when the shared contact includes their Signal account. Embeds {{ contact name }}. */
+"CONTACT_SHARE_SIGNAL_ACCOUNT_NOTICE_FORMAT" = "Anyone you share this profile with will be able to message %1$@ on Signal.";
+
 /* Alert body when contacts disabled while trying to share a contact. */
 "CONTACT_SHARING_NO_ACCESS_BODY" = "Signal needs access to your contacts. Go to iOS Settings and turn on contacts. Your contacts are encrypted and not visible to the Signal service.";
 

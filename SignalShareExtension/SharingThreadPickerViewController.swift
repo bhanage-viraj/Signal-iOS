@@ -157,6 +157,11 @@ class SharingThreadPickerViewController: ConversationPickerViewController {
             let approvalView = ContactShareViewController(contactShareDraft: contactShareDraft)
             approvalVC = approvalView
             approvalView.shareDelegate = self
+            if withCancelButton {
+                approvalView.navigationItem.leftBarButtonItem = .cancelButton { [weak self] in
+                    self?.shareViewDelegate?.shareViewWasCancelled()
+                }
+            }
 
         case .other:
             // We know that the first element of typedItems isn't .text or .contact
@@ -625,10 +630,6 @@ extension SharingThreadPickerViewController: ContactShareViewControllerDelegate 
 
     func contactShareViewController(_ viewController: ContactShareViewController, didApproveContactShare contactShare: ContactShareDraft) {
         send(.contact(contactShare: contactShare))
-    }
-
-    func contactShareViewControllerDidCancel(_ viewController: ContactShareViewController) {
-        shareViewDelegate?.shareViewWasCancelled()
     }
 
     func titleForContactShareViewController(_ viewController: ContactShareViewController) -> String? {
