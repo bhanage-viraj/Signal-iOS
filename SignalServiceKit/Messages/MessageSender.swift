@@ -1862,7 +1862,7 @@ public class MessageSenderImpl: MessageSender, DeviceMessageBuilder {
             }
         }
 
-        try await chatConnectionManager.withAuthService(.attachments) {
+        try await chatConnectionManager.withAuthService(.messages) {
             if messageSend.isSelfSend {
                 try await $0.sendSyncMessage(
                     timestamp: messageSend.message.timestamp,
