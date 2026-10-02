@@ -65,12 +65,12 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
     private let attachmentUploadStore: AttachmentUploadStore
     private let attachmentThumbnailService: AttachmentThumbnailService
     private let backupRequestManager: BackupRequestManager
-    private let chatConnectionManager: ChatConnectionManager
     private let dateProvider: DateProvider
     private let db: any DB
     private let fileSystem: Upload.Shims.FileSystem
     private let interactionStore: InteractionStore
     private let remoteConfigProvider: any RemoteConfigProvider
+    private let serviceProvider: any ServiceProvider
     private let signalService: OWSSignalServiceProtocol
     private let sleepTimer: Upload.Shims.SleepTimer
     private let storyStore: StoryStore
@@ -114,12 +114,12 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
         attachmentUploadStore: AttachmentUploadStore,
         attachmentThumbnailService: AttachmentThumbnailService,
         backupRequestManager: BackupRequestManager,
-        chatConnectionManager: ChatConnectionManager,
         dateProvider: @escaping DateProvider,
         db: any DB,
         fileSystem: Upload.Shims.FileSystem,
         interactionStore: InteractionStore,
         remoteConfigProvider: any RemoteConfigProvider,
+        serviceProvider: any ServiceProvider,
         signalService: OWSSignalServiceProtocol,
         sleepTimer: Upload.Shims.SleepTimer,
         storyStore: StoryStore,
@@ -130,12 +130,12 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
         self.attachmentUploadStore = attachmentUploadStore
         self.attachmentThumbnailService = attachmentThumbnailService
         self.backupRequestManager = backupRequestManager
-        self.chatConnectionManager = chatConnectionManager
         self.dateProvider = dateProvider
         self.db = db
         self.fileSystem = fileSystem
         self.interactionStore = interactionStore
         self.remoteConfigProvider = remoteConfigProvider
+        self.serviceProvider = serviceProvider
         self.signalService = signalService
         self.sleepTimer = sleepTimer
         self.storyStore = storyStore
@@ -185,7 +185,7 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
         let sourceURL = dataSource.fileUrl
         let metadata = try attachmentEncrypter.encryptAttachment(at: sourceURL, output: temporaryFile)
         let localMetadata = try Upload.LocalUploadMetadata.validateAndBuild(fileUrl: temporaryFile, metadata: metadata)
-        let form = try await chatConnectionManager.withAuthService(.attachments) {
+        let form = try await serviceProvider.withAuthService(.attachments) {
             try await $0.getUploadForm(uploadSize: UInt64(localMetadata.encryptedDataLength)).asUploadForm()
         }
 
@@ -232,7 +232,7 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
             throw OWSAssertionError("invalid link n sync attachment size")
         }
         let metadata = Upload.LinkNSyncUploadMetadata(fileUrl: sourceURL, encryptedDataLength: fileSize)
-        let form = try await chatConnectionManager.withAuthService(.attachments) {
+        let form = try await serviceProvider.withAuthService(.attachments) {
             try await $0.getUploadForm(uploadSize: UInt64(metadata.encryptedDataLength)).asUploadForm()
         }
 
@@ -703,7 +703,7 @@ public class AttachmentUploadManagerImpl: AttachmentUploadManager {
             updateRecord = true
             switch type {
             case .transitTier:
-                uploadForm = try await chatConnectionManager.withAuthService(.attachments) {
+                uploadForm = try await serviceProvider.withAuthService(.attachments) {
                     try await $0.getUploadForm(uploadSize: UInt64(safeCast: localMetadata.encryptedDataLength)).asUploadForm()
                 }
             case .mediaTier(let auth, _):

@@ -6,7 +6,7 @@
 import Foundation
 public import LibSignalClient
 
-public protocol ChatConnectionManager {
+public protocol ChatConnectionManager: ServiceProvider {
     func updateCanOpenWebSocket()
     func waitForIdentifiedConnectionToOpen() async throws(CancellationError)
     func waitForUnidentifiedConnectionToOpen() async throws(CancellationError)
@@ -30,7 +30,9 @@ public protocol ChatConnectionManager {
     func clearRegistrationOverride() async
 
     func keyTransparencyClient() async throws -> KeyTransparency.Client
+}
 
+public protocol ServiceProvider {
     /// Access a libsignal "service" on the active unauthenticated connection.
     ///
     /// Intended to be used with code completion; ``UnauthServiceSelector``
@@ -71,7 +73,9 @@ extension ChatConnectionManager {
             requestUnidentifiedConnection(),
         ]
     }
+}
 
+extension ServiceProvider {
     public func withUnauthService<Service, Output>(
         _ service: Service,
         do callback: (Service.Api) async throws -> Output,
@@ -240,6 +244,38 @@ public class ChatConnectionManagerImpl: ChatConnectionManager {
 }
 
 #if TESTABLE_BUILD
+
+struct MockServiceProvider: ServiceProvider {
+    private let mockServices: [Any]
+
+    init(mockServices: [Any]) {
+        self.mockServices = mockServices
+    }
+
+    func withUnauthServiceImpl<Service, Output>(
+        _ service: Service,
+        do callback: (Service.Api) async throws -> Output,
+    ) async throws -> Output where Service: UnauthServiceSelector {
+        for mockService in mockServices {
+            if let mockService = mockService as? Service.Api {
+                return try await callback(mockService)
+            }
+        }
+        owsFail("no mock service provided for \(Service.Api.self)")
+    }
+
+    func withAuthServiceImpl<Service, Output>(
+        _ service: Service,
+        do callback: (Service.Api) async throws -> Output,
+    ) async throws -> Output where Service: AuthServiceSelector {
+        for mockService in mockServices {
+            if let mockService = mockService as? Service.Api {
+                return try await callback(mockService)
+            }
+        }
+        owsFail("no mock service provided for \(Service.Api.self)")
+    }
+}
 
 public class ChatConnectionManagerMock: ChatConnectionManager {
 

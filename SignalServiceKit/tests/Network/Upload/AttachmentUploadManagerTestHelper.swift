@@ -75,7 +75,7 @@ class AttachmentUploadManagerMockHelper {
     var mockDB = InMemoryDB()
     var mockURLSession = AttachmentUploadManagerImpl.Mocks.URLSession()
     var mockServiceManager = OWSSignalServiceMock()
-    var mockChatConnectionManager = AttachmentUploadManagerImpl.Mocks.ChatConnectionManager()
+    var mockAuthMessagesService = MockAuthMessageService()
     var mockFileSystem = AttachmentUploadManagerImpl.Mocks.FileSystem()
     var mockInteractionStore = MockInteractionStore()
     var mockStoryStore = StoryStoreImpl()
@@ -140,14 +140,14 @@ class AttachmentUploadManagerMockHelper {
             return self.mockURLSession
         }
 
-        mockChatConnectionManager.performRequestBlock = {
+        mockAuthMessagesService.getUploadFormMock.set({ _ in
             let item = self.authFormRequestBlock.removeFirst()
             guard case let .uploadForm(authDataTaskBlock) = item else {
                 throw OWSAssertionError("Mock request missing")
             }
             self.capturedRequests.append(.uploadForm)
             return try authDataTaskBlock()
-        }
+        })
 
         mockURLSession.performRequestBlock = { request, maxResponseSize, ignoreAppExpiry in
             switch self.activeUploadRequestMocks.removeFirst() {

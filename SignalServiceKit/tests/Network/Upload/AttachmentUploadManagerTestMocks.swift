@@ -10,7 +10,6 @@ import LibSignalClient
 extension AttachmentUploadManagerImpl {
     enum Mocks {
         typealias URLSession = _AttachmentUploadManager_OWSURLSessionMock
-        typealias ChatConnectionManager = _AttachmentUploadManager_ChatConnectionManagerMock
 
         typealias AttachmentEncrypter = _Upload_AttachmentEncrypterMock
         typealias FileSystem = _Upload_FileSystemMock
@@ -72,10 +71,11 @@ public class _AttachmentUploadManager_OWSURLSessionMock: BaseOWSURLSessionMock {
     }
 }
 
-struct MockAuthMessageService: AuthMessagesService {
-    var performRequestBlock: (@Sendable () throws -> UploadForm)
+final class MockAuthMessageService: AuthMessagesService {
+    let getUploadFormMock = AtomicValue<((_ uploadSize: UInt64) async throws -> UploadForm)?>(nil, lock: UnfairLock())
+
     func getUploadForm(uploadSize: UInt64) async throws -> UploadForm {
-        try performRequestBlock()
+        return try await getUploadFormMock.get()!(uploadSize)
     }
 
     func sendMessage(
@@ -94,17 +94,6 @@ struct MockAuthMessageService: AuthMessagesService {
         urgent: Bool,
     ) async throws {
         owsFail("not implemented")
-    }
-}
-
-class _AttachmentUploadManager_ChatConnectionManagerMock: ChatConnectionManagerMock {
-    var performRequestBlock: (@Sendable () throws -> UploadForm)?
-    override func withAuthServiceImpl<Service, Output>(
-        _ service: Service,
-        do callback: (Service.Api) async throws -> Output,
-    ) async throws -> Output where Service: AuthServiceSelector {
-        let service = MockAuthMessageService(performRequestBlock: performRequestBlock!)
-        return try await callback(service as! Service.Api)
     }
 }
 
