@@ -95,6 +95,10 @@ final class MockAuthMessageService: AuthMessagesService {
     ) async throws {
         owsFail("not implemented")
     }
+
+    func reportMessage(_ messageGuid: UUID, from source: Aci, spamToken: Data) async throws {
+        owsFail("not implemented")
+    }
 }
 
 class _AttachmentUploadManager_BackupRequestManagerMock: BackupRequestManager {
