@@ -37,6 +37,10 @@ class ScreenshotBlockingManager {
 
     /// Whether blocking screenshots of the app's windows is available at all.
     nonisolated static var isAvailable: Bool {
+        guard BuildFlags.screenshotBlocking else {
+            return false
+        }
+
         if #available(iOS 27, *) {
             return true
         }
