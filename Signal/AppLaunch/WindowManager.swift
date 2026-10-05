@@ -136,10 +136,10 @@ class WindowManager {
 
         /// Sets whether the windows that exist, and any created later, are
         /// blocked from appearing in screenshots.
+        @MainActor
         func setBlocksScreenshots(_ blocksScreenshots: Bool) {
-            AssertIsOnMainThread()
-
             self.blocksScreenshots = blocksScreenshots
+
             for window in allWindows {
                 ScreenshotBlocking.setBlocksScreenshots(blocksScreenshots, of: window)
             }
@@ -229,8 +229,12 @@ class WindowManager {
 
     /// Sets whether the app's windows are blocked from appearing in
     /// screenshots.
+    @MainActor
     func setBlocksScreenshots(_ blocksScreenshots: Bool) {
-        AssertIsOnMainThread()
+        if blocksScreenshots == self.blocksScreenshots {
+            return
+        }
+
         Logger.info("\(blocksScreenshots)")
 
         self.blocksScreenshots = blocksScreenshots

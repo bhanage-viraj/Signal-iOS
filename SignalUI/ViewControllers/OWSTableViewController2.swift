@@ -1308,9 +1308,9 @@ private class OWSTablePreviewViewController: OWSTableViewController2 {
                 OWSTableItem.MenuPickerOption<MenuOption>(
                     title: option.rawValue,
                     value: option,
-                    onSelect: { [weak self] selectedOption in
-                        print("Selected menu picker option: \(selectedOption).")
-                        self?.selectedMenuOption = selectedOption
+                    onSelect: { [weak self] in
+                        print("Selected menu picker option: \(option).")
+                        self?.selectedMenuOption = option
                         self?.updateTableContents()
                     },
                 )

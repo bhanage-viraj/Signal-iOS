@@ -18,6 +18,8 @@ public class ToastController: NSObject, ToastViewDelegate {
         }
     }
 
+    static let defaultToastDuration: DispatchTimeInterval = .seconds(4)
+
     static var currentToastController: ToastController?
 
     private weak var toastView: ToastView?
@@ -25,13 +27,20 @@ public class ToastController: NSObject, ToastViewDelegate {
     private let toastText: String
     private let toastIcon: UIImage?
     private let toastButton: Button?
+    private let toastDuration: DispatchTimeInterval
 
     // MARK: Initializers
 
-    public init(text: String, image: UIImage? = nil, button: Button? = nil) {
+    public init(
+        text: String,
+        image: UIImage? = nil,
+        button: Button? = nil,
+        duration: DispatchTimeInterval? = nil,
+    ) {
         self.toastText = text
         self.toastIcon = image
         self.toastButton = button
+        self.toastDuration = duration ?? Self.defaultToastDuration
         isDismissing = false
 
         super.init()
@@ -46,7 +55,6 @@ public class ToastController: NSObject, ToastViewDelegate {
         from edge: ALEdge,
         of view: UIView,
         inset: CGFloat,
-        dismissAfter: DispatchTimeInterval = .seconds(4),
     ) {
         let toastView = ToastView()
         toastView.text = self.toastText
@@ -100,7 +108,7 @@ public class ToastController: NSObject, ToastViewDelegate {
 
         toastView.animateIn()
 
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + dismissAfter) {
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + toastDuration) {
             // intentional strong reference to self.
             // As with an AlertController, the caller likely expects toast to
             // be presented and dismissed without maintaining a strong reference to ToastController
@@ -424,8 +432,14 @@ extension UIViewController {
         image: UIImage? = nil,
         button: ToastController.Button? = nil,
         extraVInset: CGFloat = 0,
+        duration: DispatchTimeInterval? = nil,
     ) {
-        let toastController = ToastController(text: text, image: image, button: button)
+        let toastController = ToastController(
+            text: text,
+            image: image,
+            button: button,
+            duration: duration,
+        )
         let bottomInset = view.safeAreaInsets.bottom + 8 + extraVInset
         toastController.presentToastView(from: .bottom, of: view, inset: bottomInset)
     }

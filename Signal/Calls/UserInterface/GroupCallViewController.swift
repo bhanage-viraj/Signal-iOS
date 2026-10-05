@@ -2080,13 +2080,15 @@ extension GroupCallViewController: CallControlsDelegate {
                 )
             }
 
-            let toastController = ToastController(text: text)
             // Leave the toast up longer than usual because this message is pretty long.
+            let toastController = ToastController(
+                text: text,
+                duration: .seconds(8),
+            )
             toastController.presentToastView(
                 from: .top,
                 of: view,
                 inset: view.safeAreaInsets.top + 8,
-                dismissAfter: .seconds(8),
             )
             return
         }

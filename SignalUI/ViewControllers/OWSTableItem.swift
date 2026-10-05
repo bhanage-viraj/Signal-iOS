@@ -243,15 +243,18 @@ public class OWSTableItem {
 
     public struct MenuPickerOption<Value: Equatable> {
         public let title: String
+        public let isEnabled: Bool
         public let value: Value
-        public let onSelect: (Value) -> Void
+        public let onSelect: () -> Void
 
         public init(
             title: String,
+            isEnabled: Bool = true,
             value: Value,
-            onSelect: @escaping (Value) -> Void,
+            onSelect: @escaping () -> Void,
         ) {
             self.title = title
+            self.isEnabled = isEnabled
             self.value = value
             self.onSelect = onSelect
         }
@@ -287,8 +290,9 @@ public class OWSTableItem {
                 children: menuOptions.map { option in
                     UIAction(
                         title: option.title,
+                        attributes: option.isEnabled ? [] : .disabled,
                         state: option.value == selectedMenuOption ? .on : .off,
-                        handler: { _ in option.onSelect(option.value) },
+                        handler: { _ in option.onSelect() },
                     )
                 },
             )

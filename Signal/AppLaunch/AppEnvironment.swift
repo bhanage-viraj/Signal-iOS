@@ -63,6 +63,7 @@ public class AppEnvironment: NSObject {
 
     }
 
+    @MainActor
     func setUp(appReadiness: AppReadiness, callService: CallService) {
 
         // MARK: Set up singletons
@@ -223,6 +224,7 @@ public class AppEnvironment: NSObject {
         )
 
         self.screenshotBlockingManager = ScreenshotBlockingManager(
+            dateProvider: Date.provider,
             db: DependenciesBridge.shared.db,
             windowManager: windowManagerRef,
         )

@@ -477,6 +477,7 @@ final class AppLifecycleManager: NSObject, UNUserNotificationCenterDelegate {
         screenLockUI.startObserving()
     }
 
+    @MainActor
     private func setUpMainAppEnvironment(
         launchContext: LaunchContext,
     ) async -> (AppSetup.FinalContinuation, DeviceSleepBlockObject) {
