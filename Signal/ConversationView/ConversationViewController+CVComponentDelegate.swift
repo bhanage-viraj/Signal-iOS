@@ -1485,6 +1485,8 @@ extension ConversationViewController: CVComponentDelegate {
                 actionSheet.addAction(.ok)
                 present(actionSheet, animated: true)
             }
+        case .donate:
+            DonationViewsUtil.presentOneTimeDonationView(fromViewController: self, completion: nil)
         case .unrecognized(let actionId):
             owsFailDebug("Ignoring unrecognized actionId \(actionId)")
         }

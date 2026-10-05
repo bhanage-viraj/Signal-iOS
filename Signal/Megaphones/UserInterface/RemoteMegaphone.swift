@@ -79,49 +79,14 @@ class RemoteMegaphone: Megaphone {
         case .finish:
             markAsCompleteWithSneakyTransaction()
         case .donate:
-            let done = { [weak self] in
-                guard let self else { return }
-                // Snooze regardless of outcome.
-                self.markAsSnoozedWithSneakyTransaction()
-            }
-
-            let tsAccountManager = DependenciesBridge.shared.tsAccountManager
-            guard
-                let registeredState = try? tsAccountManager.registeredStateWithMaybeSneakyTransaction(),
-                let donationAllowedToken = DonationAllowedToken(registeredState: registeredState, remoteConfig: .current)
-            else {
-                done()
-                DonationViewsUtil.openDonateWebsite()
-                return
-            }
-
-            let donateVc = DonateViewController(preferredDonateMode: .oneTime, donationAllowedToken: donationAllowedToken) { finishResult in
-                let frontVc = { CurrentAppContext().frontmostViewController() }
-                switch finishResult {
-                case let .completedDonation(donateSheet, receiptCredentialSuccessMode):
-                    donateSheet.dismiss(animated: true) {
-                        guard
-                            let frontVc = frontVc(),
-                            let badgeThanksSheetPresenter = BadgeThanksSheetPresenter.fromGlobalsWithSneakyTransaction(
-                                successMode: receiptCredentialSuccessMode,
-                            )
-                        else { return }
-
-                        Task {
-                            await badgeThanksSheetPresenter.presentAndRecordBadgeThanks(
-                                fromViewController: frontVc,
-                            )
-                        }
-                    }
-                case let .monthlySubscriptionCancelled(donateSheet, toastText):
-                    donateSheet.dismiss(animated: true) {
-                        frontVc()?.presentToast(text: toastText)
-                    }
-                }
-            }
-
-            let navController = OWSNavigationController(rootViewController: donateVc)
-            fromViewController.present(navController, animated: true, completion: done)
+            DonationViewsUtil.presentOneTimeDonationView(
+                fromViewController: fromViewController,
+                completion: { [weak self] in
+                    guard let self else { return }
+                    // Snooze regardless of outcome.
+                    self.markAsSnoozedWithSneakyTransaction()
+                },
+            )
         case .donateFriend:
             let done = { [weak self] in
                 guard let self else { return }

@@ -132,6 +132,7 @@ extension RemoteAnnouncementModel.Manifest {
     public enum Action: Codable, Equatable {
         case unrecognized(actionId: String)
         case backupSettings
+        case donate
 
         public var actionId: String {
             switch self {
@@ -139,6 +140,8 @@ extension RemoteAnnouncementModel.Manifest {
                 return conditionalId
             case .backupSettings:
                 return "backupSettings"
+            case .donate:
+                return "donate"
             }
         }
 
@@ -147,6 +150,8 @@ extension RemoteAnnouncementModel.Manifest {
                 switch actionId {
                 case "backupSettings":
                     return .backupSettings
+                case "donate":
+                    return .donate
                 default:
                     return .unrecognized(actionId: actionId)
                 }
