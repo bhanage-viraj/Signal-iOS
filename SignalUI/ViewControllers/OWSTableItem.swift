@@ -241,6 +241,75 @@ public class OWSTableItem {
         })
     }
 
+    public struct MenuPickerOption<Value: Equatable> {
+        public let title: String
+        public let value: Value
+        public let onSelect: (Value) -> Void
+
+        public init(
+            title: String,
+            value: Value,
+            onSelect: @escaping (Value) -> Void,
+        ) {
+            self.title = title
+            self.value = value
+            self.onSelect = onSelect
+        }
+    }
+
+    /// An item with a trailing button, titled with the selected option, that
+    /// presents the options as a menu.
+    public static func menuPicker<Value: Equatable>(
+        withText text: String,
+        menuTitle: String?,
+        menuOptions: [MenuPickerOption<Value>],
+        selectedMenuOption: Value,
+    ) -> OWSTableItem {
+        return OWSTableItem(customCellBlock: {
+            var configuration = UIButton.Configuration.plain()
+            configuration.title = menuOptions.first(where: { $0.value == selectedMenuOption })?.title
+            configuration.baseForegroundColor = .Signal.secondaryLabel
+            configuration.image = UIImage(
+                systemName: "chevron.up.chevron.down",
+                withConfiguration: UIImage.SymbolConfiguration(scale: .small),
+            )
+            configuration.imagePlacement = .trailing
+            configuration.imagePadding = 6
+            configuration.contentInsets = .zero
+
+            let button = UIButton(configuration: configuration)
+            button.setContentHuggingHorizontalHigh()
+            button.setCompressionResistanceHorizontalHigh()
+            button.showsMenuAsPrimaryAction = true
+            button.menu = UIMenu(
+                title: menuTitle ?? "",
+                options: .singleSelection,
+                children: menuOptions.map { option in
+                    UIAction(
+                        title: option.title,
+                        state: option.value == selectedMenuOption ? .on : .off,
+                        handler: { _ in option.onSelect(option.value) },
+                    )
+                },
+            )
+
+            let cell = OWSTableItem.buildCell(
+                itemName: text,
+                accessoryContentView: button,
+            )
+
+            // Expose the row as a single element, so VoiceOver reads the
+            // item's name and selected option together and activating it
+            // opens the menu.
+            button.accessibilityLabel = text
+            button.accessibilityValue = configuration.title
+            cell.accessibilityElements = [button]
+
+            cell.selectionStyle = .none
+            return cell
+        })
+    }
+
     // MARK: - Table View Cells
 
     public class func newCell() -> UITableViewCell {

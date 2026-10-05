@@ -1261,3 +1261,71 @@ extension TextViewWithPlaceholderDelegate where Self: OWSTableViewController2 {
         _textViewDidUpdateText(textView)
     }
 }
+
+// MARK: -
+
+#if DEBUG
+
+private class OWSTablePreviewViewController: OWSTableViewController2 {
+
+    private enum MenuOption: String, CaseIterable {
+        case first = "First option"
+        case second = "Second option"
+        case third = "Third option"
+    }
+
+    private var selectedMenuOption: MenuOption = .first
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        title = "Table"
+
+        updateTableContents()
+    }
+
+    private func updateTableContents() {
+        let contents = OWSTableContents()
+
+        let section = OWSTableSection()
+        section.add(.disclosureItem(
+            withText: "Disclosure item",
+            actionBlock: {
+                print("Tapped disclosure item.")
+            },
+        ))
+        section.add(.switch(
+            withText: "Switch item",
+            isOn: { true },
+            actionBlock: { uiSwitch in
+                print("Toggled switch item: \(uiSwitch.isOn).")
+            },
+        ))
+        section.add(.menuPicker(
+            withText: "Menu picker item",
+            menuTitle: "Options",
+            menuOptions: MenuOption.allCases.map { option in
+                OWSTableItem.MenuPickerOption<MenuOption>(
+                    title: option.rawValue,
+                    value: option,
+                    onSelect: { [weak self] selectedOption in
+                        print("Selected menu picker option: \(selectedOption).")
+                        self?.selectedMenuOption = selectedOption
+                        self?.updateTableContents()
+                    },
+                )
+            },
+            selectedMenuOption: selectedMenuOption,
+        ))
+        contents.add(section)
+
+        self.contents = contents
+    }
+}
+
+@available(iOS 17, *)
+#Preview("Table") {
+    UINavigationController(rootViewController: OWSTablePreviewViewController())
+}
+
+#endif
