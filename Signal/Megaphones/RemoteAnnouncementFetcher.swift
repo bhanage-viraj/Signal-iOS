@@ -90,10 +90,19 @@ public class RemoteAnnouncementFetcher: RemoteReleaseNotesFetcher<RemoteAnnounce
                 // Now that its moved to the attachment_files dir, we can remove it from its temporary download location, so .owned is safe.
                 let dataSourcePath = DataSourcePath(fileUrl: mediaFileUrl, ownership: .owned)
                 let mimeType = translation.mediaMimeType ?? "image/webp"
+
+                let renderingFlag: AttachmentReference.RenderingFlag = {
+                    if MimeTypeUtil.isSupportedVideoMimeType(mimeType) {
+                        return .shouldLoop
+                    } else {
+                        return .default
+                    }
+                }()
+
                 pendingAttachment = try await attachmentContentValidator.validateDataSourceContents(
                     dataSourcePath,
                     mimeType: mimeType,
-                    renderingFlag: .default,
+                    renderingFlag: renderingFlag,
                     sourceFilename: nil,
                 )
             }
