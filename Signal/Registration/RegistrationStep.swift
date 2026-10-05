@@ -12,6 +12,7 @@ public enum RegistrationStep: Equatable {
 
     case registrationSplash
     case changeNumberSplash
+    case signalLoginSplash(RegistrationSignalLoginSplashState)
     case permissions
 
     // MARK: - Quick Restore
@@ -156,6 +157,7 @@ public enum RegistrationStep: Equatable {
         switch self {
         case .registrationSplash: return "registrationSplash"
         case .changeNumberSplash: return "changeNumberSplash"
+        case .signalLoginSplash: return "signalLoginSplash"
         case .permissions: return "permissions"
         case .scanQuickRegistrationQrCode: return "scanQuickRegistrationQrCode"
         case .phoneNumberEntry: return "phoneNumberEntry"

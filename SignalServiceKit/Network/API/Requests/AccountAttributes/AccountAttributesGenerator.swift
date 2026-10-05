@@ -33,12 +33,10 @@ public struct AccountAttributesGenerator {
     ) throws -> AccountAttributes {
         owsAssertDebug(tsAccountManager.registrationState(tx: tx).isPrimaryDevice == true)
 
-        guard
-            let aciRegistrationId = tsAccountManager.getRegistrationId(for: .aci, tx: tx),
-            let pniRegistrationId = tsAccountManager.getRegistrationId(for: .pni, tx: tx)
-        else {
-            throw OWSGenericError("couldn't fetch registration IDs")
+        guard let aciRegistrationId = tsAccountManager.getRegistrationId(for: .aci, tx: tx) else {
+            throw OWSGenericError("couldn't fetch aci registration id")
         }
+        let pniRegistrationId = tsAccountManager.getRegistrationId(for: .pni, tx: tx)
 
         let isManualMessageFetchEnabled = tsAccountManager.isManualMessageFetchEnabled(tx: tx)
 

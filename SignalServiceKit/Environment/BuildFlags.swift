@@ -109,7 +109,7 @@ public enum BuildFlags {
     public static let phoneNumberlessCanLinkNewDevices = false
     public static let phoneNumberlessCanBeLinkedDevice = true
 
-    public static let phoneNumberlessRegistration = false
+    public static let phoneNumberlessRegistration = build <= .dev
 
     public static let stickerReply = build <= .dev
 }

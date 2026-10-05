@@ -211,6 +211,14 @@ public class RegistrationNavigationController: OWSNavigationController {
                 // No state to update.
                 update: nil,
             )
+        case .signalLoginSplash(let state):
+            return Controller(
+                type: RegistrationSignalLoginSplashViewController.self,
+                make: { presenter in
+                    return RegistrationSignalLoginSplashViewController(state: state, presenter: presenter)
+                },
+                update: nil,
+            )
         case .permissions:
             return Controller(
                 type: RegistrationPermissionsViewController.self,
@@ -586,6 +594,11 @@ extension RegistrationNavigationController: RegistrationPhoneNumberPresenter {
         logger.info("Early exiting registration")
         SignalApp.shared.showConversationSplitView()
     }
+
+    func registerWithoutNumber() {
+        coordinator.registerWithoutNumber()
+        pushNextStepController()
+    }
 }
 
 extension RegistrationNavigationController: RegistrationChangePhoneNumberPresenter {
@@ -789,6 +802,18 @@ extension RegistrationNavigationController: RegistrationRestoreFromBackupConfirm
 
 extension RegistrationNavigationController: RegistrationSignalLoginPresenter {
     func submitLogin(aci: Aci, aep: SignalServiceKit.AccountEntropyPool) { }
+}
+
+extension RegistrationNavigationController: RegistrationSignalLoginSplashPresenter {
+    func exitSignalLogin() {
+        coordinator.exitSignalLogin()
+        pushNextStepController()
+    }
+
+    func purchaseSignalLogin() {
+        coordinator.purchaseSignalLogin()
+        pushNextStepController()
+    }
 }
 
 private protocol AnyController {

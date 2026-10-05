@@ -7,6 +7,7 @@ import Contacts
 import Foundation
 import LibSignalClient
 public import SignalServiceKit
+import StoreKit
 
 public protocol RegistrationCoordinatorLoaderDelegate: AnyObject {
     func clearPersistedMode(transaction: DBWriteTransaction)
@@ -127,6 +128,39 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     }
 
     @MainActor
+    public func registerWithoutNumber() {
+        logger.info("")
+
+        deps.db.write { tx in
+            updatePersistedState(tx) {
+                $0.signalLoginState = .splash
+            }
+        }
+    }
+
+    @MainActor
+    public func exitSignalLogin() {
+        logger.info("")
+
+        deps.db.write { tx in
+            updatePersistedState(tx) {
+                $0.signalLoginState = nil
+            }
+        }
+    }
+
+    @MainActor
+    public func purchaseSignalLogin() {
+        logger.info("")
+
+        deps.db.write { tx in
+            updatePersistedState(tx) {
+                $0.signalLoginState = .purchase
+            }
+        }
+    }
+
+    @MainActor
     public func submitProspectiveChangeNumberE164(_ e164: E164) {
         logger.info("")
         self.inMemoryState.changeNumberProspectiveE164 = e164
@@ -173,6 +207,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 .svrAuthCredential,
                 .svrAuthCredentialCandidates,
                 .registrationRecoveryPassword,
+                .signalLogin,
                 .profileSetup:
                 break
             }
@@ -209,6 +244,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             .registrationRecoveryPassword,
             .svrAuthCredential,
             .svrAuthCredentialCandidates,
+            .signalLogin,
             .profileSetup:
             owsFailBeta("Shouldn't be resending SMS from non session paths.")
         case .session:
@@ -227,6 +263,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             .registrationRecoveryPassword,
             .svrAuthCredential,
             .svrAuthCredentialCandidates,
+            .signalLogin,
             .profileSetup:
             owsFailBeta("Shouldn't be sending voice code from non session paths.")
         case .session:
@@ -244,6 +281,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             .registrationRecoveryPassword,
             .svrAuthCredential,
             .svrAuthCredentialCandidates,
+            .signalLogin,
             .profileSetup:
             owsFailBeta("Shouldn't be submitting verification code from non session paths.")
             return Guarantee.wrapAsync { await self.nextStep() }
@@ -348,6 +386,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             .registrationRecoveryPassword,
             .svrAuthCredential,
             .svrAuthCredentialCandidates,
+            .signalLogin,
             .profileSetup:
             owsFailBeta("Shouldn't be submitting captcha from non session paths.")
             return Guarantee.wrapAsync { await self.nextStep() }
@@ -427,7 +466,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     )))
                 }
             }
-        case .opening, .quickRestore, .manualRestore, .svrAuthCredential, .svrAuthCredentialCandidates, .profileSetup, .session:
+        case .opening, .quickRestore, .manualRestore, .svrAuthCredential, .svrAuthCredentialCandidates, .signalLogin, .profileSetup, .session:
             // We aren't checking against any local state, rely on the request.
             break
         }
@@ -449,6 +488,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 .registrationRecoveryPassword,
                 .svrAuthCredential,
                 .svrAuthCredentialCandidates,
+                .signalLogin,
                 .session:
                 return false
             case .profileSetup:
@@ -483,6 +523,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             .manualRestore,
             .registrationRecoveryPassword,
             .svrAuthCredentialCandidates,
+            .signalLogin,
             .session:
             logger.error("Invalid state from which to skip!")
             return
@@ -881,6 +922,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         // we get to that step without asking again.
         var hasEnteredE164 = false
 
+        var signalLoginProduct: StoreKit.Product?
+
         // When changing number, we ask the user to confirm old number and
         // enter the new number before confirming the new number.
         // This tracks that first check before the confirm.
@@ -1017,8 +1060,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         /// but this value is not set until the user accepts it or enters their own value.
         var e164: E164?
 
-        var aciRegistrationId: UInt32!
-        var pniRegistrationId: UInt32!
+        var aciRegistrationId: UInt32?
+        var pniRegistrationId: UInt32?
 
         /// If we ever get a response from a server where we failed reglock,
         /// we know the e164 the request was for has reglock enabled.
@@ -1177,6 +1220,37 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
         var sessionState: SessionState?
 
+        enum SignalLoginState: Codable {
+            /// The user chose "Register Without Number", but they haven't yet chosen to
+            /// purchase a new Signal Login or use an existing Signal Login.
+            case splash
+
+            /// The user chose to purchase a new Signal Login, so we must present the
+            /// StoreKit interface for completing a purchase. This state transitions
+            /// back to `splash` if the user cancels the purchase. This state
+            /// transitions to `redeemTransaction` if the purchase is successful.
+            case purchase
+
+            /// We've successfully completed a purchase, and now we need to anonymously
+            /// and durably redeem it for a receipt credential. This state transitions
+            /// to `redeemCredential`.
+            case redeemTransaction(
+                transactionId: StoreKit.Transaction.ID,
+                purchaseDate: Date,
+                receiptCredentialRequestContext: ByteArrayCodable<ReceiptCredentialRequestContext>,
+            )
+
+            /// We have a receipt credential, and we need to redeem it for an account.
+            /// This state transitions to the account setup process (i.e., it sets
+            /// `accountIdentity` to the result from creating the account).
+            case redeemCredential(
+                accountEntropyPool: SignalServiceKit.AccountEntropyPool,
+                receiptCredential: ByteArrayCodable<ReceiptCredential>,
+            )
+        }
+
+        var signalLoginState: SignalLoginState?
+
         /// Once we get an account identity response from the server
         /// for registering, re-registering, or changing phone number,
         /// we remember it so we don't re-register when we quit the app
@@ -1247,6 +1321,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             case deprecatedRecoveredSVRMasterKey = "recoveredSVRMasterKey"
             case deprecatedBackupKeyAccountEntropyPool = "backupKeyAccountEntropyPool"
             case localFileBackupURLBookmarkData
+            case signalLoginState
         }
     }
 
@@ -1325,6 +1400,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 if $0.aciRegistrationId == nil {
                     $0.aciRegistrationId = RegistrationIdGenerator.generate()
                 }
+                // TODO: [#less] Don't generate this unless it's necessary.
                 if $0.pniRegistrationId == nil {
                     $0.pniRegistrationId = RegistrationIdGenerator.generate()
                 }
@@ -1477,8 +1553,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 tx: tx,
             )
 
-            deps.tsAccountManager.setRegistrationId(persistedState.aciRegistrationId, for: .aci, tx: tx)
-            deps.tsAccountManager.setRegistrationId(persistedState.pniRegistrationId, for: .pni, tx: tx)
+            deps.tsAccountManager.setRegistrationId(persistedState.aciRegistrationId!, for: .aci, tx: tx)
+            if accountIdentity.localIdentifiers.hasPhoneNumber {
+                deps.tsAccountManager.setRegistrationId(persistedState.pniRegistrationId!, for: .pni, tx: tx)
+            }
 
             block(tx)
 
@@ -1698,6 +1776,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         /// Verifying via SMS code using a `RegistrationSession`.
         /// Used as a fallback if the above paths are unavailable or fail.
         case session(RegistrationSession)
+        case signalLogin(PersistedState.SignalLoginState)
         /// After registration is done, all the steps involving setting up
         /// profile state (which may not be needed). Profile name,
         /// setting up a PIN, etc.
@@ -1711,6 +1790,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             case .registrationRecoveryPassword: return "registrationRecoveryPassword"
             case .svrAuthCredential: return "svrAuthCredential"
             case .svrAuthCredentialCandidates: return "svrAuthCredentialCandidates"
+            case .signalLogin: return "signalLogin"
             case .session: return "session"
             case .profileSetup: return "profileSetup"
             }
@@ -1769,6 +1849,9 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             // Conversely, to get off the session path and keep going
             // to e.g. the profile setup, we _must_ clear out the session.
             return .session(session)
+        }
+        if let signalLoginState = persistedState.signalLoginState {
+            return .signalLogin(signalLoginState)
         }
         if let accountIdentity = persistedState.accountIdentity {
             // If we have an account identity, that means we already registered
@@ -1832,6 +1915,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             )
         case .session(let session):
             return await nextStepForSessionPath(session)
+        case .signalLogin(let signalLoginState):
+            return await nextStepForSignalLogin(signalLoginState)
         case .profileSetup(let accountIdentity):
             return await nextStepForProfileSetup(accountIdentity)
         }
@@ -3582,6 +3667,173 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
     }
 
+    // MARK: - Receipt Credential Pathway
+
+    private func setSignalLoginState(
+        _ signalLoginState: PersistedState.SignalLoginState,
+        in localValue: inout PersistedState.SignalLoginState,
+    ) {
+        localValue = signalLoginState
+        deps.db.write { tx in
+            updatePersistedState(tx) {
+                $0.signalLoginState = signalLoginState
+            }
+        }
+    }
+
+    @MainActor
+    private func nextStepForSignalLogin(_ currentState: PersistedState.SignalLoginState) async -> RegistrationStep {
+        var currentState = currentState
+        while true {
+            switch currentState {
+            case .splash:
+                let product: StoreKit.Product
+                do {
+                    product = try await fetchSignalLoginProduct()
+                } catch {
+                    owsFailDebug("couldn't fetch product")
+                    return .showErrorSheet(.genericError)
+                }
+                return .signalLoginSplash(RegistrationSignalLoginSplashState(
+                    formattedPrice: product.displayPrice,
+                ))
+
+            case .purchase:
+                let product: StoreKit.Product
+                do {
+                    product = try await fetchSignalLoginProduct()
+                } catch {
+                    owsFailDebug("couldn't fetch product")
+                    return .showErrorSheet(.genericError)
+                }
+                let purchaseResult: StoreKit.Product.PurchaseResult
+                do {
+                    purchaseResult = try await product.purchase()
+                } catch Product.PurchaseError.purchaseNotAllowed {
+                    owsFail("purchase not allowed")
+                } catch Product.PurchaseError.productUnavailable, StoreKitError.notAvailableInStorefront {
+                    owsFail("purchase not available")
+                } catch StoreKitError.userCancelled {
+                    setSignalLoginState(.splash, in: &currentState)
+                    continue
+                } catch {
+                    owsFail("unknown error: \(error)")
+                }
+                let verificationResult: StoreKit.VerificationResult<StoreKit.Transaction>
+                switch purchaseResult {
+                case .success(let _verificationResult):
+                    verificationResult = _verificationResult
+                case .userCancelled:
+                    setSignalLoginState(.splash, in: &currentState)
+                    continue
+                case .pending:
+                    return .showErrorSheet(.genericError)
+                @unknown default:
+                    owsFailDebug("couldn't complete purchase due to unknown error")
+                    return .showErrorSheet(.genericError)
+                }
+                // Create (and persist!) the receipt credential request context. We must
+                // use the same context when retrying `createLoginReceiptCredential`
+                // requests for the same `transactionId`.
+                let serverParams = TSConstants.serverPublicParams()
+                let receiptSerial = failIfThrows { try ReceiptSerial(contents: Randomness.generateRandomBytes(UInt(ReceiptSerial.SIZE))) }
+                let receiptOperations = ClientZkReceiptOperations(serverPublicParams: serverParams)
+                let requestContext = failIfThrows { try receiptOperations.createReceiptCredentialRequestContext(receiptSerial: receiptSerial) }
+                setSignalLoginState(.redeemTransaction(
+                    transactionId: verificationResult.unsafePayloadValue.id,
+                    purchaseDate: verificationResult.unsafePayloadValue.purchaseDate,
+                    receiptCredentialRequestContext: ByteArrayCodable(requestContext),
+                ), in: &currentState)
+
+            case .redeemTransaction(let transactionId, let purchaseDate, let receiptCredentialRequestContext):
+                let product: StoreKit.Product
+                do {
+                    product = try await fetchSignalLoginProduct()
+                } catch {
+                    owsFailDebug("couldn't fetch product")
+                    return .showErrorSheet(.genericError)
+                }
+                // We've now persisted the transaction ID, so we no longer need access to
+                // the payment. We do this as the first step of this state rather than the
+                // last step of the prior state to ensure it happens if the app crashes
+                // while it's in progress (i.e., after we call setSignalLoginState).
+                if let latestTransaction = await product.latestTransaction, latestTransaction.unsafePayloadValue.id == transactionId {
+                    await latestTransaction.unsafePayloadValue.finish()
+                }
+                let receiptCredentialRequestContext = receiptCredentialRequestContext.wrappedValue
+                let receiptCredential: ReceiptCredential
+                do {
+                    receiptCredential = try await deps.serviceProvider.withUnauthService(.loginPurchase) {
+                        return try await $0.createLoginReceiptCredential(
+                            paymentProcessor: .appleAppStore,
+                            purchaseIdentifier: String(transactionId),
+                            receiptCredentialRequestContext: receiptCredentialRequestContext,
+                            serverParams: TSConstants.serverPublicParams(),
+                            purchaseTime: purchaseDate,
+                        )
+                    }
+                } catch {
+                    owsFail("\(error)")
+                }
+                // We need a durable AEP to ensure idempotency for retries when creating
+                // the account. We store it in Signal Login-scoped state to avoid
+                // intefering with other registration flows that store AEPs.
+                let accountEntropyPool = getOrGenerateAccountEntropyPool()
+                setSignalLoginState(.redeemCredential(
+                    accountEntropyPool: accountEntropyPool,
+                    receiptCredential: ByteArrayCodable(receiptCredential),
+                ), in: &currentState)
+
+            case .redeemCredential(let accountEntropyPool, let receiptCredential):
+                let receiptCredential = receiptCredential.wrappedValue
+                // If we crash, we need to restore the AEP before retrying the request.
+                inMemoryState.accountEntropyPool = accountEntropyPool
+                deps.db.write { tx in
+                    updateMasterKeyAndLocalState(masterKey: accountEntropyPool.getMasterKey(), tx: tx)
+                }
+                let serverParams = TSConstants.serverPublicParams()
+                let receiptOperations = ClientZkReceiptOperations(serverPublicParams: serverParams)
+                let receiptCredentialPresentation: ReceiptCredentialPresentation
+                do {
+                    receiptCredentialPresentation = try receiptOperations.createReceiptCredentialPresentation(receiptCredential: receiptCredential)
+                } catch {
+                    owsFailDebug("couldn't present credential: \(error)")
+                    return .showErrorSheet(.genericError)
+                }
+                return await makeRegisterOrChangeNumberRequest(
+                    .receiptCredential(receiptCredentialPresentation),
+                    reglockToken: nil,
+                    responseHandler: { response in
+                        switch response {
+                        case .success(let accountIdentity):
+                            deps.db.write { tx in
+                                updatePersistedState(tx) {
+                                    $0.signalLoginState = nil
+                                    $0.accountIdentity = accountIdentity
+                                }
+                            }
+                            return await nextStep()
+                        default:
+                            owsFail("couldn't create account: \(response)")
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    private func fetchSignalLoginProduct() async throws -> StoreKit.Product {
+        if let result = inMemoryState.signalLoginProduct {
+            return result
+        }
+        let products = try await Product.products(for: ["signup"])
+        guard let result = products.first else {
+            throw OWSGenericError("couldn't load product: not found")
+        }
+        inMemoryState.signalLoginProduct = result
+        return result
+    }
+
     // MARK: - Profile Setup Pathway
 
     /// Returns the next step the user needs to go through _after_ the actual account
@@ -4375,6 +4627,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 }
             }
             let accountAttributes = makeAccountAttributes(
+                verificationMethod: method,
                 isManualMessageFetchEnabled: isManualMessageFetchEnabled,
                 reglockToken: reglockToken,
             )
@@ -4496,7 +4749,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
 
         let aciPreKeyBundle = await deps.preKeyManager.createPreKeysForRegistration(forIdentity: .aci)
-        let pniPreKeyBundle = await deps.preKeyManager.createPreKeysForRegistration(forIdentity: .pni)
+        var pniPreKeyBundle: RegistrationPreKeyUploadBundle?
+        if verificationMethod.shouldIncludePniMaterial {
+            pniPreKeyBundle = await deps.preKeyManager.createPreKeysForRegistration(forIdentity: .pni)
+        }
 
         let shouldSkipDeviceTransfer = self.shouldSkipDeviceTransfer()
         let signalService = self.deps.signalService
@@ -4525,10 +4781,12 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             aciPreKeyBundle,
             uploadDidSucceed: isPrekeyUploadSuccess,
         )
-        await deps.preKeyManager.finalizeRegistrationPreKeyBundle(
-            pniPreKeyBundle,
-            uploadDidSucceed: isPrekeyUploadSuccess,
-        )
+        if let pniPreKeyBundle {
+            await deps.preKeyManager.finalizeRegistrationPreKeyBundle(
+                pniPreKeyBundle,
+                uploadDidSucceed: isPrekeyUploadSuccess,
+            )
+        }
         return await responseHandler(accountResponse)
     }
 
@@ -4550,6 +4808,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             newPhoneNumber = _newPhoneNumber
         case .recoveryPassword(.phoneNumber(let _newPhoneNumber), _):
             newPhoneNumber = _newPhoneNumber
+        case .receiptCredential:
+            owsFail("not supported")
         }
 
         let pniResult = await deps.changeNumberPniManager.generatePniIdentity(
@@ -4707,13 +4967,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     }
 
     private func makeAccountAttributes(
+        verificationMethod: RegistrationRequestFactory.VerificationMethod,
         isManualMessageFetchEnabled: Bool,
         reglockToken: RegistrationLock?,
     ) -> AccountAttributes {
         return AccountAttributes(
             isManualMessageFetchEnabled: isManualMessageFetchEnabled,
-            registrationId: persistedState.aciRegistrationId,
-            pniRegistrationId: persistedState.pniRegistrationId,
+            registrationId: persistedState.aciRegistrationId!,
+            pniRegistrationId: verificationMethod.shouldIncludePniMaterial ? persistedState.pniRegistrationId! : nil,
             unidentifiedAccessKey: inMemoryState.udAccessKey.keyData.base64EncodedString(),
             unrestrictedUnidentifiedAccess: inMemoryState.allowUnrestrictedUD,
             reglockToken: reglockToken?.canonicalStringRepresentation,
@@ -4946,7 +5207,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     private func contactSupportRegistrationPINMode() -> ContactSupportActionSheet.EmailFilter.RegistrationPINMode {
         switch getPathway() {
-        case .opening, .quickRestore, .manualRestore:
+        case .opening, .quickRestore, .manualRestore, .signalLogin:
             owsFailBeta("Should not be asking for PIN during opening path.")
             return .v2WithUnknownReglockState
         case .svrAuthCredential, .svrAuthCredentialCandidates, .registrationRecoveryPassword:

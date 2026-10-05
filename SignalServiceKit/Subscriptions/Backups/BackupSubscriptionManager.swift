@@ -308,6 +308,10 @@ final class BackupSubscriptionManagerImpl: BackupSubscriptionManager {
                     continue
                 }
 
+                guard transaction.productID == Constants.paidTierBackupsProductId else {
+                    continue
+                }
+
                 if
                     let latestEntitlingTransaction = await latestTransaction(onlyEntitling: true),
                     latestEntitlingTransaction.id == transaction.id

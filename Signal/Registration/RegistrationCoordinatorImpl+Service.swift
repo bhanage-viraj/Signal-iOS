@@ -70,7 +70,7 @@ extension RegistrationCoordinatorImpl {
             skipDeviceTransfer: Bool,
             apnRegistrationId: RegistrationRequestFactory.ApnRegistrationId?,
             aciPreKeyBundle: RegistrationPreKeyUploadBundle,
-            pniPreKeyBundle: RegistrationPreKeyUploadBundle,
+            pniPreKeyBundle: RegistrationPreKeyUploadBundle?,
             signalService: OWSSignalServiceProtocol,
             logger: PrefixedLogger,
         ) async -> AccountResponse {

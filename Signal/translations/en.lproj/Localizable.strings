@@ -8248,6 +8248,9 @@
 /* Button on the Signal Login card on the 'Signal Login details' screen to show the full account ID and recovery key. */
 "REGISTRATION_SIGNAL_LOGIN_DETAILS_VIEW_DETAILS_BUTTON" = "View Details";
 
+/* Explanation text for the 'Signal Login' screen. */
+"REGISTRATION_SIGNAL_LOGIN_EXPLANATION" = "Register without a phone number using Signal Login. With a one-time purchase, you’ll receive an account ID to get started.";
+
 /* Toast shown after copying the account ID on the 'Signal Login' details sheet. */
 "REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_COPIED_TOAST" = "Account ID copied";
 
@@ -8280,6 +8283,9 @@
 
 /* Title for help button for the 'Signal Login' screen. */
 "REGISTRATION_SIGNAL_LOGIN_NEED_HELP_TITLE" = "Need Help?";
+
+/* Button to initiate a purchase on the 'Signal Login' screen. The replacement is a localized cost (e.g., $2.99). */
+"REGISTRATION_SIGNAL_LOGIN_PAY" = "Pay %1$@";
 
 /* Title text for the 'Signal Login' screen. */
 "REGISTRATION_SIGNAL_LOGIN_TITLE" = "Signal Login";

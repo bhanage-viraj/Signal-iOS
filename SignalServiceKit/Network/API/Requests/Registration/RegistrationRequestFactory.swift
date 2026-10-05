@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import LibSignalClient
+public import LibSignalClient
 
 public enum RegistrationRequestFactory {
 
@@ -209,6 +209,16 @@ public enum RegistrationRequestFactory {
         /// The ID of an existing, validated RegistrationSession.
         case sessionId(E164, String)
         case recoveryPassword(RegistrationIdentifier, RegistrationRecoveryPassword)
+        case receiptCredential(ReceiptCredentialPresentation)
+
+        public var shouldIncludePniMaterial: Bool {
+            switch self {
+            case .receiptCredential:
+                return false
+            case .sessionId, .recoveryPassword:
+                return true
+            }
+        }
     }
 
     public struct ApnRegistrationId: Codable {
@@ -245,7 +255,7 @@ public enum RegistrationRequestFactory {
         skipDeviceTransfer: Bool,
         apnRegistrationId: ApnRegistrationId?,
         aciPreKeyBundle: RegistrationPreKeyUploadBundle,
-        pniPreKeyBundle: RegistrationPreKeyUploadBundle,
+        pniPreKeyBundle: RegistrationPreKeyUploadBundle?,
         logger: PrefixedLogger,
     ) -> TSRequest {
         owsAssertDebug((apnRegistrationId != nil) != accountAttributes.isManualMessageFetchEnabled)
@@ -263,9 +273,9 @@ public enum RegistrationRequestFactory {
             aciIdentityKey: OWSRequestFactory.IdentityKey(aciPreKeyBundle.identityKeyPair.identityKey),
             aciSignedPreKey: OWSRequestFactory.SignedPreKey(aciPreKeyBundle.signedPreKey),
             aciPqLastResortPreKey: OWSRequestFactory.KyberPreKey(aciPreKeyBundle.lastResortPreKey),
-            pniIdentityKey: OWSRequestFactory.IdentityKey(pniPreKeyBundle.identityKeyPair.identityKey),
-            pniSignedPreKey: OWSRequestFactory.SignedPreKey(pniPreKeyBundle.signedPreKey),
-            pniPqLastResortPreKey: OWSRequestFactory.KyberPreKey(pniPreKeyBundle.lastResortPreKey),
+            pniIdentityKey: pniPreKeyBundle.map { OWSRequestFactory.IdentityKey($0.identityKeyPair.identityKey) },
+            pniSignedPreKey: pniPreKeyBundle.map { OWSRequestFactory.SignedPreKey($0.signedPreKey) },
+            pniPqLastResortPreKey: pniPreKeyBundle.map { OWSRequestFactory.KyberPreKey($0.lastResortPreKey) },
             apnToken: apnRegistrationId,
         )
 
@@ -280,6 +290,9 @@ public enum RegistrationRequestFactory {
                 username = phoneNumber.stringValue
             }
             request.recoveryPassword = OWSRequestFactory.RegistrationRecoveryPassword(recoveryPassword)
+        case .receiptCredential(let receiptCredentialPresentation):
+            username = "no_number"
+            request.receiptCredentialPresentation = ByteArrayCodable(receiptCredentialPresentation)
         }
 
         var result = TSRequest(url: url, method: "POST", body: .encodable(request), logger: logger)
@@ -292,14 +305,15 @@ public enum RegistrationRequestFactory {
     struct RegistrationRequest: Encodable {
         var sessionId: String?
         var recoveryPassword: OWSRequestFactory.RegistrationRecoveryPassword?
+        var receiptCredentialPresentation: ByteArrayCodable<ReceiptCredentialPresentation>?
         var accountAttributes: AccountAttributes
         var skipDeviceTransfer: Bool
         var aciIdentityKey: OWSRequestFactory.IdentityKey
         var aciSignedPreKey: OWSRequestFactory.SignedPreKey
         var aciPqLastResortPreKey: OWSRequestFactory.KyberPreKey
-        var pniIdentityKey: OWSRequestFactory.IdentityKey
-        var pniSignedPreKey: OWSRequestFactory.SignedPreKey
-        var pniPqLastResortPreKey: OWSRequestFactory.KyberPreKey
+        var pniIdentityKey: OWSRequestFactory.IdentityKey?
+        var pniSignedPreKey: OWSRequestFactory.SignedPreKey?
+        var pniPqLastResortPreKey: OWSRequestFactory.KyberPreKey?
         var apnToken: ApnRegistrationId?
     }
 
@@ -330,6 +344,8 @@ public enum RegistrationRequestFactory {
             newPhoneNumber = _newPhoneNumber
         case .recoveryPassword(.phoneNumber(let _newPhoneNumber), _):
             newPhoneNumber = _newPhoneNumber
+        case .receiptCredential:
+            owsFail("not supported")
         }
 
         var request = ChangeNumberRequest(
@@ -351,6 +367,8 @@ public enum RegistrationRequestFactory {
             request.sessionId = sessionId
         case .recoveryPassword(_, let recoveryPassword):
             request.recoveryPassword = OWSRequestFactory.RegistrationRecoveryPassword(recoveryPassword)
+        case .receiptCredential:
+            owsFail("not supported")
         }
 
         return TSRequest(url: url, method: "PUT", body: .encodable(request), logger: logger)

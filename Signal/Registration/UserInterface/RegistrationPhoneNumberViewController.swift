@@ -16,6 +16,8 @@ protocol RegistrationPhoneNumberPresenter: RegistrationMethodPresenter {
     /// Completely exit registration. Not to be confused with  `cancelChosenRestoreMethod`
     /// which returns to the splash screen.
     func exitRegistration()
+
+    func registerWithoutNumber()
 }
 
 // MARK: - RegistrationPhoneNumberViewController
@@ -175,8 +177,8 @@ class RegistrationPhoneNumberViewController: OWSViewController {
             "REGISTER_WITHOUT_NUMBER",
             comment: "A button in registration that allows the user to register by purchasing a Signal Login rather than providing their phone number.",
         )),
-        primaryAction: UIAction { _ in
-            // TODO: [#less] .
+        primaryAction: UIAction { [weak self] _ in
+            self?.presenter?.registerWithoutNumber()
         },
     )
 
