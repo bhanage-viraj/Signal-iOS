@@ -416,6 +416,7 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
     public func markAllAsRead(updateStorageService: Bool, transaction: DBWriteTransaction) {
         markAllAsRead(transaction: transaction)
         updateWith(isMarkedUnread: false, updateStorageService: updateStorageService, transaction: transaction)
+        DependenciesBridge.shared.unreadReminderManager.reconcile(thread: self, tx: transaction)
     }
 
     private func markAllAsRead(transaction: DBWriteTransaction) {
@@ -551,7 +552,6 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
     public func updateWith(
         isArchived: Bool? = nil,
         isMarkedUnread: Bool? = nil,
-        mutedUntilTimestamp: UInt64? = nil,
         audioPlaybackRate: Float? = nil,
         updateStorageService: Bool,
         transaction: DBWriteTransaction,
@@ -559,7 +559,6 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
         guard
             isArchived != nil
             || isMarkedUnread != nil
-            || mutedUntilTimestamp != nil
             || audioPlaybackRate != nil
         else {
             return
@@ -571,9 +570,6 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
             }
             if let isMarkedUnread {
                 $0.isMarkedUnread = isMarkedUnread
-            }
-            if let mutedUntilTimestamp {
-                $0.mutedUntilTimestamp = mutedUntilTimestamp
             }
             if let audioPlaybackRate {
                 $0.audioPlaybackRate = audioPlaybackRate

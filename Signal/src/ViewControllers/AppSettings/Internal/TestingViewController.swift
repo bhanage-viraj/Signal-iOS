@@ -53,6 +53,13 @@ class TestingViewController: OWSTableViewController2 {
         }
         contents.add(messagingSection)
 
+        let notificationSection = OWSTableSection(title: "Notifications")
+        addTestableFlag(
+            DebugFlags.unreadReminderIntervalSecs,
+            toSection: notificationSection,
+        )
+        contents.add(notificationSection)
+
         let voiceMessageSection = OWSTableSection(title: "Voice Messages")
         for voiceMessageFlag in DebugFlags.voiceMessageTestableFlags {
             addTestableFlag(

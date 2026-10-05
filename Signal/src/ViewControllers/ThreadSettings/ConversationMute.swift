@@ -9,6 +9,7 @@ import SignalUI
 struct ConversationMuteManager {
     private let dateProvider: DateProvider = Date.provider
     private let db: DB = DependenciesBridge.shared.db
+    private let threadMuteManager: ThreadMuteManager = DependenciesBridge.shared.threadMuteManager
 
     func mute(_ threadViewModel: ThreadViewModel, choice: ConversationMuteChoice) {
         mute([threadViewModel], choice: choice)
@@ -43,10 +44,11 @@ struct ConversationMuteManager {
     ) {
         db.write { transaction in
             for threadViewModel in threadViewModels {
-                threadViewModel.threadRecord.updateWith(
-                    mutedUntilTimestamp: timestamp,
+                threadMuteManager.setMutedUntilTimestamp(
+                    timestamp,
+                    for: threadViewModel.threadRecord,
                     updateStorageService: true,
-                    transaction: transaction,
+                    tx: transaction,
                 )
             }
         }

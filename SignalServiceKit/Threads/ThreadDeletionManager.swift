@@ -57,6 +57,7 @@ final class ThreadDeletionManagerImpl: ThreadDeletionManager {
     private let storyManager: Shims.StoryManager
     private let threadRemover: any ThreadRemover
     private let threadReplyInfoStore: ThreadReplyInfoStore
+    private let unreadReminderManager: UnreadReminderManager
 
     private let logger = PrefixedLogger(prefix: "[ThreadDeleteMgr]")
 
@@ -70,6 +71,7 @@ final class ThreadDeletionManagerImpl: ThreadDeletionManager {
         storyManager: Shims.StoryManager,
         threadRemover: any ThreadRemover,
         threadReplyInfoStore: ThreadReplyInfoStore,
+        unreadReminderManager: UnreadReminderManager,
     ) {
         self.db = db
         self.deleteForMeOutgoingSyncMessageManager = deleteForMeOutgoingSyncMessageManager
@@ -80,6 +82,7 @@ final class ThreadDeletionManagerImpl: ThreadDeletionManager {
         self.storyManager = storyManager
         self.threadRemover = threadRemover
         self.threadReplyInfoStore = threadReplyInfoStore
+        self.unreadReminderManager = unreadReminderManager
     }
 
     func deleteThreads(
@@ -198,6 +201,7 @@ final class ThreadDeletionManagerImpl: ThreadDeletionManager {
         }
 
         intentsManager.deleteAllIntents(withGroupIdentifier: thread.uniqueId)
+        unreadReminderManager.reconcile(thread: thread, tx: tx)
     }
 
     private func shouldHardDeleteThread(_ thread: TSThread, localIdentifiers: LocalIdentifiers) -> Bool {

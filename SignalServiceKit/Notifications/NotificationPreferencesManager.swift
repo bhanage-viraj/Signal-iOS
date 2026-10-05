@@ -53,6 +53,7 @@ public struct NotificationPreferencesManager {
         static let notifyForCallsWhenMuted = false
         static let notifyForRepliesWhenMuted = true
         static let areReactionNotificationsEnabled = true
+        static let showUnreadReminders = true
     }
 
     private enum Key {
@@ -67,6 +68,7 @@ public struct NotificationPreferencesManager {
         static let notifyForRepliesWhenMuted = "NotifyForRepliesWhenMuted"
         static let notifyForMentionsWhenMuted = "NotifyForMentionsWhenMuted"
         static let notifyForCallsWhenMuted = "NotifyForCallsWhenMuted"
+        static let showUnreadReminders = "ShowUnreadReminders"
     }
 
     private let kvStore = NewKeyValueStore(collection: "NotificationPreferences")
@@ -217,6 +219,18 @@ public struct NotificationPreferencesManager {
     public func setNotifyForRepliesWhenMuted(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
         thread.updateWithShouldNotifyForRepliesWhenMuted(value, transaction: tx)
         // [Notifications] TODO: Storage Service sync
+    }
+
+    // MARK: - Unread reminders
+
+    public func globalShowUnreadReminders(tx: DBReadTransaction) -> Bool {
+        kvStore.fetchValue(Bool.self, forKey: Key.showUnreadReminders, tx: tx) ?? Defaults.showUnreadReminders
+    }
+
+    /// Prefer `UnreadReminderManager.setGlobalShowUnreadReminders`, which
+    /// also reschedules or cancels pending reminders.
+    func setGlobalShowUnreadReminders(_ value: Bool, tx: DBWriteTransaction) {
+        kvStore.writeValue(value, forKey: Key.showUnreadReminders, tx: tx)
     }
 
     // MARK: -

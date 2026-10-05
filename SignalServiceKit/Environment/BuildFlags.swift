@@ -271,6 +271,14 @@ public enum DebugFlags {
         messageSendsFail,
     ]
 
+    // MARK: - TestableFlag: Notifications
+
+    public static let unreadReminderIntervalSecs = TestableFlag<Int>(
+        0,
+        title: LocalizationNotNeeded("Unread Reminder Interval (secs)"),
+        details: LocalizationNotNeeded("How long after a message arrives in a muted chat its unread reminder fires. 0 = use the default interval."),
+    )
+
     // MARK: - TestableFlag: Voice Messages
 
     public static let voiceMessageBitRate = TestableFlag<Int>(

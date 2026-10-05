@@ -120,6 +120,14 @@ public class NoopNotificationPresenterImpl: NotificationPresenter {
         Logger.warn("")
     }
 
+    public func scheduleUnreadReminder(threadUniqueId: String, threadIdentifier: String?, title: String?, body: String, initialDelay: TimeInterval, latestFireDate: Date, tx: DBWriteTransaction) {
+        Logger.warn("")
+    }
+
+    public func cancelUnreadReminder(threadUniqueId: String, tx: DBReadTransaction) {
+        Logger.warn("")
+    }
+
     public func scheduleNotifyForNewLinkedDevice(deviceLinkTimestamp: Date) {
         Logger.warn("")
     }

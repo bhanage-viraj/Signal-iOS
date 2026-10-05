@@ -190,8 +190,10 @@ public class DependenciesBridge {
     public let svrLocalStorage: SVRLocalStorage
     public let threadReplyInfoStore: ThreadReplyInfoStore
     public let threadDeletionManager: ThreadDeletionManager
+    public let threadMuteManager: ThreadMuteManager
     public let threadStore: ThreadStore
     public let tsAccountManager: TSAccountManager
+    public let unreadReminderManager: UnreadReminderManager
     public let usernameApiClient: UsernameApiClient
     public let usernameEducationManager: UsernameEducationManager
     public let usernameLinkManager: UsernameLinkManager
@@ -343,8 +345,10 @@ public class DependenciesBridge {
         svrLocalStorage: SVRLocalStorage,
         threadReplyInfoStore: ThreadReplyInfoStore,
         threadDeletionManager: ThreadDeletionManager,
+        threadMuteManager: ThreadMuteManager,
         threadStore: ThreadStore,
         tsAccountManager: TSAccountManager,
+        unreadReminderManager: UnreadReminderManager,
         usernameApiClient: UsernameApiClient,
         usernameEducationManager: UsernameEducationManager,
         usernameLinkManager: UsernameLinkManager,
@@ -496,8 +500,10 @@ public class DependenciesBridge {
         self.svrLocalStorage = svrLocalStorage
         self.threadReplyInfoStore = threadReplyInfoStore
         self.threadDeletionManager = threadDeletionManager
+        self.threadMuteManager = threadMuteManager
         self.threadStore = threadStore
         self.tsAccountManager = tsAccountManager
+        self.unreadReminderManager = unreadReminderManager
         self.usernameApiClient = usernameApiClient
         self.usernameEducationManager = usernameEducationManager
         self.usernameLinkManager = usernameLinkManager

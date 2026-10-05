@@ -67,6 +67,7 @@ public class OWSReceiptManager: NSObject {
 
     private let appReadiness: any AppReadiness
     private let messageSenderJobQueue: MessageSenderJobQueue
+    private let unreadReminderManager: UnreadReminderManager
     private var pendingReceiptRecorder: any PendingReceiptRecorder {
         SSKEnvironment.shared.pendingReceiptRecorderRef
     }
@@ -88,9 +89,11 @@ public class OWSReceiptManager: NSObject {
         databaseStorage: SDSDatabaseStorage,
         messageSenderJobQueue: MessageSenderJobQueue,
         notificationPresenter: NotificationPresenter,
+        unreadReminderManager: UnreadReminderManager,
     ) {
         self.appReadiness = appReadiness
         self.messageSenderJobQueue = messageSenderJobQueue
+        self.unreadReminderManager = unreadReminderManager
 
         super.init()
 
@@ -694,6 +697,11 @@ public class OWSReceiptManager: NSObject {
                 break
             }
         }
+
+        db.read { tx in
+            // There may be nothing left to remind about
+            unreadReminderManager.reconcile(thread: thread, tx: tx)
+        }
     }
 
     /// Whether another batch is worth running after the given one.
@@ -923,6 +931,9 @@ public class OWSReceiptManager: NSObject {
 
             // Clear notifications for all the now-marked-read messages in one batch.
             SSKEnvironment.shared.notificationPresenterRef.cancelNotifications(messageIds: [incomingMessage.uniqueId] + markedAsReadIds)
+
+            // There may be nothing left to remind about
+            unreadReminderManager.reconcile(thread: thread, tx: tx)
         case let outgoingMessage as TSOutgoingMessage:
             // Outgoing messages are always "read", but if we get a receipt
             // from our linked device about one that indicates that any reactions

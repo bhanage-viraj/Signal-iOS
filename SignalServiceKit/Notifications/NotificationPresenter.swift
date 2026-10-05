@@ -56,6 +56,23 @@ public protocol NotificationPresenter {
         presentAtJoin: Bool,
     )
 
+    /// Schedule or update an existing unread reminder
+    /// - Parameter initialDelay: The notification delay from the first message.
+    /// Ignored if not the first message.
+    /// - Parameter latestFireDate: The date after which an unread reminder
+    /// shouldn't fire
+    func scheduleUnreadReminder(
+        threadUniqueId: String,
+        threadIdentifier: String?,
+        title: String?,
+        body: String,
+        initialDelay: TimeInterval,
+        latestFireDate: Date,
+        tx: DBWriteTransaction,
+    )
+
+    func cancelUnreadReminder(threadUniqueId: String, tx: DBReadTransaction)
+
     func scheduleNotifyForNewLinkedDevice(deviceLinkTimestamp: Date)
 
     func scheduleNotifyForBackupsEnabled(backupsTimestamp: Date)

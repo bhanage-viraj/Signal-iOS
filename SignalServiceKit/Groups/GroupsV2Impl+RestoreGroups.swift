@@ -167,6 +167,7 @@ public extension GroupsV2Impl {
                         blockingManager: SSKEnvironment.shared.blockingManagerRef,
                         groupsV2: SSKEnvironment.shared.groupsV2Ref,
                         profileManager: SSKEnvironment.shared.profileManagerRef,
+                        threadMuteManager: DependenciesBridge.shared.threadMuteManager,
                     )
                     _ = recordUpdater.mergeRecord(groupRecord, transaction: tx)
                 }

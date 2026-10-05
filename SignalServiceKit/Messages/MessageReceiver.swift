@@ -1753,6 +1753,9 @@ public final class MessageReceiver {
 
         DependenciesBridge.shared.attachmentDownloadManager.enqueueDownloadOfAttachmentsForMessage(message, tx: tx)
         SSKEnvironment.shared.notificationPresenterRef.notifyUser(forIncomingMessage: message, thread: updatedThread, transaction: tx)
+        if updatedThread.isMuted {
+            DependenciesBridge.shared.unreadReminderManager.didReceiveMessage(message, in: updatedThread, tx: tx)
+        }
 
         if CurrentAppContext().isMainApp {
             DispatchQueue.main.async {

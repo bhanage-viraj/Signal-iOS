@@ -1844,6 +1844,9 @@
 		B93296692BBB3FF200B8BD39 /* ProfileName.swift in Sources */ = {isa = PBXBuildFile; fileRef = B95BBAC12BB36025009EFB4A /* ProfileName.swift */; };
 		B9418CC62FF4EBB5007E3787 /* GroupMemberSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9418CC52FF4EBB5007E3787 /* GroupMemberSearchViewController.swift */; };
 		B9448F3A305B2E9100FBC57E /* NavStackSheetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9448F39305B2E9100FBC57E /* NavStackSheetViewController.swift */; };
+		B9448F3C305DAA5100FBC57E /* UnreadReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9448F3B305DAA5100FBC57E /* UnreadReminderManager.swift */; };
+		B9448F40305DAAEA00FBC57E /* UnreadReminderManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9448F3E305DAAEA00FBC57E /* UnreadReminderManagerTest.swift */; };
+		B9448F49305DAE2100FBC57E /* ThreadMuteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9448F48305DAE2100FBC57E /* ThreadMuteManager.swift */; };
 		B9488E752CDED27200C1294B /* ScrollOffset.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9488E742CDED27200C1294B /* ScrollOffset.swift */; };
 		B94E48012D385D7800128318 /* linear_indeterminate.json in Resources */ = {isa = PBXBuildFile; fileRef = B94E48002D385D7800128318 /* linear_indeterminate.json */; };
 		B94E922D2E381478007BA81B /* ContextualActionBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B94E922C2E381478007BA81B /* ContextualActionBuilder.swift */; };
@@ -6253,6 +6256,9 @@
 		B93296662BB5CF7500B8BD39 /* NicknameRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NicknameRecordStore.swift; sourceTree = "<group>"; };
 		B9418CC52FF4EBB5007E3787 /* GroupMemberSearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupMemberSearchViewController.swift; sourceTree = "<group>"; };
 		B9448F39305B2E9100FBC57E /* NavStackSheetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackSheetViewController.swift; sourceTree = "<group>"; };
+		B9448F3B305DAA5100FBC57E /* UnreadReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnreadReminderManager.swift; sourceTree = "<group>"; };
+		B9448F3E305DAAEA00FBC57E /* UnreadReminderManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnreadReminderManagerTest.swift; sourceTree = "<group>"; };
+		B9448F48305DAE2100FBC57E /* ThreadMuteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreadMuteManager.swift; sourceTree = "<group>"; };
 		B9488E742CDED27200C1294B /* ScrollOffset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollOffset.swift; sourceTree = "<group>"; };
 		B94E48002D385D7800128318 /* linear_indeterminate.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = linear_indeterminate.json; sourceTree = "<group>"; };
 		B94E922C2E381478007BA81B /* ContextualActionBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextualActionBuilder.swift; sourceTree = "<group>"; };
@@ -11965,6 +11971,7 @@
 				664657402AC4FB720099DE1C /* NotificationPresenter.swift */,
 				88D23D0A23CEBF4400B0E74B /* NotificationPresenterImpl.swift */,
 				5063B41D2C5432A30041CA51 /* ResolvableValue.swift */,
+				B9448F3B305DAA5100FBC57E /* UnreadReminderManager.swift */,
 				88D23D0923CEBF4400B0E74B /* UserNotificationsPresenter.swift */,
 			);
 			path = Notifications;
@@ -12125,6 +12132,14 @@
 				B9327B3D2BBCC2EB00CCDBBA /* MockNicknameManager.swift */,
 			);
 			path = Contacts;
+			sourceTree = "<group>";
+		};
+		B9448F3F305DAAEA00FBC57E /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				B9448F3E305DAAEA00FBC57E /* UnreadReminderManagerTest.swift */,
+			);
+			path = Notifications;
 			sourceTree = "<group>";
 		};
 		B9488E732CDED25900C1294B /* SwiftUI */ = {
@@ -15206,6 +15221,7 @@
 				D9C964152BE56DE20058F143 /* MessageBackup */,
 				F942621C289B1B5500460798 /* Messages */,
 				F94261CF289B1B5400460798 /* Network */,
+				B9448F3F305DAAEA00FBC57E /* Notifications */,
 				0436E4B12E5E2DC80011E125 /* Polls */,
 				5079F3C12DA47554008430EC /* Preconditions */,
 				724D47B42B97C250001BE973 /* Profiles */,
@@ -15669,6 +15685,7 @@
 				6671DC862CD44C9B002620EF /* LastVisibleInteractionStore.swift */,
 				D9CA614A2C2F675E00F99EA3 /* PrivateStoryThreadDeletionManager.swift */,
 				D9F9A63E2C013EF100EF13EC /* ThreadDeletionManager.swift */,
+				B9448F48305DAE2100FBC57E /* ThreadMuteManager.swift */,
 				502D45432A05A34B00B8BCE0 /* ThreadRemover.swift */,
 				5033D46029D638FD007FEADA /* ThreadStore.swift */,
 				661170C92ABA522200A1B16D /* TSContactThread.swift */,
@@ -20584,6 +20601,7 @@
 				668A01152C2B6077007B8808 /* Threading.m in Sources */,
 				729E0B0A2CA4AEB0002EC961 /* Threading.swift in Sources */,
 				5033D45F29D4DAAC007FEADA /* ThreadMerger.swift in Sources */,
+				B9448F49305DAE2100FBC57E /* ThreadMuteManager.swift in Sources */,
 				502D45442A05A34B00B8BCE0 /* ThreadRemover.swift in Sources */,
 				45161BA928A2E54B0055AB45 /* ThreadReplyInfo.swift in Sources */,
 				502D45482A0AD7BE00B8BCE0 /* ThreadReplyInfoStore.swift in Sources */,
@@ -20686,6 +20704,7 @@
 				50D6A93F2AA9167400B7F093 /* UniqueObjectRecipientMerger.swift in Sources */,
 				6600F34C298C81CD00B1EDB7 /* UnknownEnumCodable.swift in Sources */,
 				664BA8472BB5CE1A005638E0 /* UnpreparedOutgoingMessage.swift in Sources */,
+				B9448F3C305DAA5100FBC57E /* UnreadReminderManager.swift in Sources */,
 				C1DF3F462B0283C5004B6986 /* Upload.swift in Sources */,
 				C1DF3F432B0283C5004B6986 /* UploadEndpoint.swift in Sources */,
 				C1DF3F492B0283C5004B6986 /* UploadEndpointCDN2.swift in Sources */,
@@ -20992,6 +21011,7 @@
 				726C94252D6F48DA00ABF9B9 /* UncooperativeTimeoutTest.swift in Sources */,
 				F9426255289B1B5500460798 /* UnfairLockTest.swift in Sources */,
 				6600F34F298C823C00B1EDB7 /* UnknownEnumCodableTest.swift in Sources */,
+				B9448F40305DAAEA00FBC57E /* UnreadReminderManagerTest.swift in Sources */,
 				F9D5BFD12979B027001737E5 /* URLPathComponentsTest.swift in Sources */,
 				F945FE502984822D00C835C7 /* UserDefaults.swift in Sources */,
 				D9A3E22B2A0D633500E2A8B5 /* UsernameLookupRecordTest.swift in Sources */,

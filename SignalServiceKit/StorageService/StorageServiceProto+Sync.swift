@@ -195,6 +195,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
     private let recipientHidingManager: RecipientHidingManager
     private let remoteConfigProvider: any RemoteConfigProvider
     private let signalServiceAddressCache: SignalServiceAddressCache
+    private let threadMuteManager: ThreadMuteManager
     private let tsAccountManager: TSAccountManager
     private let usernameLookupManager: UsernameLookupManager
 
@@ -216,6 +217,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         recipientHidingManager: RecipientHidingManager,
         remoteConfigProvider: any RemoteConfigProvider,
         signalServiceAddressCache: SignalServiceAddressCache,
+        threadMuteManager: ThreadMuteManager,
         tsAccountManager: TSAccountManager,
         usernameLookupManager: UsernameLookupManager,
     ) {
@@ -237,6 +239,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         self.recipientHidingManager = recipientHidingManager
         self.remoteConfigProvider = remoteConfigProvider
         self.signalServiceAddressCache = signalServiceAddressCache
+        self.threadMuteManager = threadMuteManager
         self.tsAccountManager = tsAccountManager
         self.usernameLookupManager = usernameLookupManager
     }
@@ -649,7 +652,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         }
 
         if record.mutedUntilTimestamp != localThread.mutedUntilTimestamp {
-            localThread.updateWith(mutedUntilTimestamp: record.mutedUntilTimestamp, updateStorageService: false, transaction: tx)
+            threadMuteManager.setMutedUntilTimestamp(record.mutedUntilTimestamp, for: localThread, updateStorageService: false, tx: tx)
         }
 
         if let aci = serviceIds.aci {
@@ -962,6 +965,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
     private let blockingManager: BlockingManager
     private let groupsV2: GroupsV2
     private let profileManager: ProfileManager
+    private let threadMuteManager: ThreadMuteManager
 
     init(
         authedAccount: AuthedAccount,
@@ -970,6 +974,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
         blockingManager: BlockingManager,
         groupsV2: GroupsV2,
         profileManager: ProfileManager,
+        threadMuteManager: ThreadMuteManager,
     ) {
         self.authedAccount = authedAccount
         self.isPrimaryDevice = isPrimaryDevice
@@ -978,6 +983,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
         self.blockingManager = blockingManager
         self.groupsV2 = groupsV2
         self.profileManager = profileManager
+        self.threadMuteManager = threadMuteManager
     }
 
     func unknownFields(for record: StorageServiceProtoGroupV2Record) -> UnknownStorage? { record.unknownFields }
@@ -1116,7 +1122,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             }
 
             if record.mutedUntilTimestamp != groupThread.mutedUntilTimestamp {
-                groupThread.updateWith(mutedUntilTimestamp: record.mutedUntilTimestamp, updateStorageService: false, transaction: transaction)
+                threadMuteManager.setMutedUntilTimestamp(record.mutedUntilTimestamp, for: groupThread, updateStorageService: false, tx: transaction)
             }
         } else {
             // Save this and re-apply it after we successfully restore the group.
@@ -1247,6 +1253,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
     private let usernameEducationManager: UsernameEducationManager
     private let adminDeleteManager: AdminDeleteManager
     private let blockingManager: BlockingManager
+    private let threadMuteManager: ThreadMuteManager
     private let threadStore: ThreadStore
 
     init(
@@ -1279,6 +1286,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         usernameEducationManager: UsernameEducationManager,
         adminDeleteManager: AdminDeleteManager,
         blockingManager: BlockingManager,
+        threadMuteManager: ThreadMuteManager,
         threadStore: ThreadStore,
     ) {
         self.localIdentifiers = localIdentifiers
@@ -1311,6 +1319,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         self.usernameEducationManager = usernameEducationManager
         self.adminDeleteManager = adminDeleteManager
         self.blockingManager = blockingManager
+        self.threadMuteManager = threadMuteManager
         self.threadStore = threadStore
     }
 
@@ -1895,10 +1904,17 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         releaseNotesThread.updateWith(
             isArchived: updatedArchivedValue,
             isMarkedUnread: updatedUnreadValue,
-            mutedUntilTimestamp: updatedMutedTimestampValue,
             updateStorageService: false,
             transaction: transaction,
         )
+        if let updatedMutedTimestampValue {
+            threadMuteManager.setMutedUntilTimestamp(
+                updatedMutedTimestampValue,
+                for: releaseNotesThread,
+                updateStorageService: false,
+                tx: transaction,
+            )
+        }
 
         return .merged(needsUpdate: needsUpdate, ())
     }

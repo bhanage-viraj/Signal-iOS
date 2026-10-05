@@ -320,7 +320,6 @@ extension AppSetup.GlobalsContinuation {
             appReadiness: appReadiness,
         )
 
-        let receiptManager = OWSReceiptManager(appReadiness: appReadiness, databaseStorage: databaseStorage, messageSenderJobQueue: messageSenderJobQueue, notificationPresenter: notificationPresenter)
         let signalProtocolStoreManager = SignalProtocolStoreManager(
             aciProtocolStore: aciProtocolStore,
             pniProtocolStore: pniProtocolStore,
@@ -366,6 +365,21 @@ extension AppSetup.GlobalsContinuation {
             notificationPreferencesManager: notificationPreferencesManager,
             recipientDatabaseTable: recipientDatabaseTable,
             usernameLookupManager: usernameLookupManager,
+        )
+
+        let unreadReminderManager = UnreadReminderManager(
+            contactManager: contactManager,
+            notificationPreferencesManager: notificationPreferencesManager,
+            notificationPresenter: notificationPresenter,
+            tsAccountManager: tsAccountManager,
+        )
+        let threadMuteManager = ThreadMuteManager(unreadReminderManager: unreadReminderManager)
+        let receiptManager = OWSReceiptManager(
+            appReadiness: appReadiness,
+            databaseStorage: databaseStorage,
+            messageSenderJobQueue: messageSenderJobQueue,
+            notificationPresenter: notificationPresenter,
+            unreadReminderManager: unreadReminderManager,
         )
 
         let authCredentialStore = AuthCredentialStore()
@@ -997,6 +1011,7 @@ extension AppSetup.GlobalsContinuation {
             storyManager: ThreadDeletionManagerImpl.Wrappers.StoryManager(),
             threadRemover: threadRemover,
             threadReplyInfoStore: threadReplyInfoStore,
+            unreadReminderManager: unreadReminderManager,
         )
 
         let deleteForMeAddressableMessageFinder = DeleteForMeAddressableMessageFinderImpl()
@@ -1953,8 +1968,10 @@ extension AppSetup.GlobalsContinuation {
             svrLocalStorage: svrLocalStorage,
             threadReplyInfoStore: threadReplyInfoStore,
             threadDeletionManager: threadDeletionManager,
+            threadMuteManager: threadMuteManager,
             threadStore: threadStore,
             tsAccountManager: tsAccountManager,
+            unreadReminderManager: unreadReminderManager,
             usernameApiClient: usernameApiClient,
             usernameEducationManager: usernameEducationManager,
             usernameLinkManager: usernameLinkManager,

@@ -167,6 +167,7 @@ public enum AppNotificationCategory: String, CaseIterable {
     case backupsEnabled = "Signal.AppNotificationCategory.backupsEnabled"
     case backupsMediaTierQuotaConsumed = "Signal.AppNotificationCategory.backupsMediaTierQuotaConsumed"
     case listMediaIntegrityCheckFailure = "Signal.AppNotificationCategory.listMediaIntegrityCheckFailure"
+    case unreadReminder = "Signal.AppNotificationCategory.unreadReminder"
     case pollEndNotification = "Signal.AppNotificationCategory.pollEndNotification"
     case pollVoteNotification = "Signal.AppNotificationCategory.pollVoteNotification"
     case attachmentBackfill = "Signal.AppNotificationCategory.attachmentBackfill"
@@ -206,7 +207,8 @@ public enum AppNotificationCategory: String, CaseIterable {
             .backupsEnabled,
             .backupsMediaTierQuotaConsumed,
             .listMediaIntegrityCheckFailure,
-            .internalError:
+            .internalError,
+            .unreadReminder:
             return false
         }
     }
@@ -234,6 +236,8 @@ public enum AppNotificationCategory: String, CaseIterable {
         case .missedCallFromNoLongerVerifiedIdentity:
             return []
         case .internalError:
+            return []
+        case .unreadReminder:
             return []
         case .incomingGroupStoryReply:
             return [.reply]
@@ -1741,6 +1745,36 @@ public class NotificationPresenterImpl: NotificationPresenter {
             isMainAppAndActive: notificationSuppressionRule != nil,
             notificationSuppressionRule: notificationSuppressionRule ?? .none,
         )
+    }
+
+    // MARK: - Unread reminders
+
+    public func scheduleUnreadReminder(
+        threadUniqueId: String,
+        threadIdentifier: String?,
+        title: String?,
+        body: String,
+        initialDelay: TimeInterval,
+        latestFireDate: Date,
+        tx: DBWriteTransaction,
+    ) {
+        enqueueNotificationAction(afterCommitting: tx) {
+            await self.presenter.scheduleUnreadReminder(
+                threadUniqueId: threadUniqueId,
+                threadIdentifier: threadIdentifier,
+                title: title,
+                body: body,
+                initialDelay: initialDelay,
+                latestFireDate: latestFireDate,
+                sound: Sounds.notificationSoundWithSneakyTransaction(forThreadUniqueId: threadUniqueId),
+            )
+        }
+    }
+
+    public func cancelUnreadReminder(threadUniqueId: String, tx: DBReadTransaction) {
+        enqueueNotificationAction(afterCommitting: tx) {
+            self.presenter.cancelUnreadReminder(threadUniqueId: threadUniqueId)
+        }
     }
 
     // MARK: - Cancellation

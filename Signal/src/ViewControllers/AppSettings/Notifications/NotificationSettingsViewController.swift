@@ -27,6 +27,7 @@ class NotificationSettingsViewController: OWSTableViewController2 {
         contents.add(buildSoundsSection())
         contents.add(buildNotificationsSection())
         if BuildFlags.improvedNotifications {
+            contents.add(buildUnreadRemindersSection())
             contents.add(buildReactionsSection())
         }
         contents.add(buildContactJoinedSignalSection())
@@ -127,6 +128,33 @@ class NotificationSettingsViewController: OWSTableViewController2 {
             ))
         }
         return notificationsSection
+    }
+
+    private func buildUnreadRemindersSection() -> OWSTableSection {
+        let db = DependenciesBridge.shared.db
+        let notificationPreferencesManager = DependenciesBridge.shared.notificationPreferencesManager
+        let unreadRemindersSection = OWSTableSection()
+        unreadRemindersSection.footerTitle = OWSLocalizedString(
+            "SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_FOOTER",
+            comment: "Explanation for the switch controlling whether reminders about unread messages in muted chats are shown.",
+        )
+        unreadRemindersSection.add(.switch(
+            withText: OWSLocalizedString(
+                "SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS",
+                comment: "Label for the switch controlling whether reminders about unread messages in muted chats are shown.",
+            ),
+            isOn: {
+                db.read { tx in
+                    notificationPreferencesManager.globalShowUnreadReminders(tx: tx)
+                }
+            },
+            actionBlock: { uiSwitch in
+                db.write { tx in
+                    DependenciesBridge.shared.unreadReminderManager.setGlobalShowUnreadReminders(uiSwitch.isOn, tx: tx)
+                }
+            },
+        ))
+        return unreadRemindersSection
     }
 
     private func buildReactionsSection() -> OWSTableSection {
