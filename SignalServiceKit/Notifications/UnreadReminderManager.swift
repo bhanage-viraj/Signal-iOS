@@ -67,9 +67,10 @@ public struct UnreadReminderManager {
     public func setGlobalShowUnreadReminders(_ value: Bool, tx: DBWriteTransaction) {
         notificationPreferencesManager.setGlobalShowUnreadReminders(value, tx: tx)
 
+        // Threads with a per-thread preference are unaffected.
         var mutedThreads = [TSThread]()
         ThreadFinder().enumerateNonStoryThreads(tx: tx) { thread in
-            if thread.isMuted {
+            if thread.isMuted, thread.shouldNotifyForUnreadRemindersWhenMuted == nil {
                 mutedThreads.append(thread)
             }
             return true
@@ -83,12 +84,24 @@ public struct UnreadReminderManager {
         }
     }
 
+    /// - Parameter value: `nil` inherits the global preference
+    public func setShowUnreadReminders(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+        notificationPreferencesManager.setShowUnreadReminders(value, thread: thread, tx: tx)
+
+        guard thread.isMuted else { return }
+        if notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx) {
+            scheduleReminderIfNeeded(thread: thread, tx: tx)
+        } else {
+            notificationPresenter.cancelUnreadReminder(threadUniqueId: thread.uniqueId, tx: tx)
+        }
+    }
+
     // MARK: - Scheduling
 
     private func scheduleReminderIfNeeded(thread: TSThread, tx: DBWriteTransaction) {
         guard
             BuildFlags.improvedNotifications,
-            notificationPreferencesManager.globalShowUnreadReminders(tx: tx)
+            notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx)
         else {
             return
         }

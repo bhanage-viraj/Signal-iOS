@@ -146,3 +146,25 @@ class UnreadReminderSummaryTest: SSKBaseTest {
         }
     }
 }
+
+class UnreadReminderPreferenceTest: SSKBaseTest {
+    func testPerChatPreferenceFallsBackToGlobalSetting() {
+        let notificationPreferencesManager = DependenciesBridge.shared.notificationPreferencesManager
+        let unreadReminderManager = DependenciesBridge.shared.unreadReminderManager
+        write { tx in
+            let thread = ContactThreadFactory().create(transaction: tx)
+            XCTAssertTrue(notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx))
+
+            unreadReminderManager.setGlobalShowUnreadReminders(false, tx: tx)
+            XCTAssertFalse(notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx))
+
+            // A per-chat preference overrides the global setting.
+            unreadReminderManager.setShowUnreadReminders(true, thread: thread, tx: tx)
+            XCTAssertTrue(notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx))
+
+            // Clearing it restores the global setting.
+            unreadReminderManager.setShowUnreadReminders(nil, thread: thread, tx: tx)
+            XCTAssertFalse(notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx))
+        }
+    }
+}

@@ -7,6 +7,10 @@ import SignalServiceKit
 import SignalUI
 
 class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
+    private let db = DependenciesBridge.shared.db
+    private let notificationPreferencesManager = DependenciesBridge.shared.notificationPreferencesManager
+    private let unreadReminderManager = DependenciesBridge.shared.unreadReminderManager
+
     let threadViewModel: ThreadViewModel
     init(threadViewModel: ThreadViewModel) {
         self.threadViewModel = threadViewModel
@@ -147,8 +151,6 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
         }))
 
         if BuildFlags.improvedNotifications {
-            let notificationPreferencesManager = DependenciesBridge.shared.notificationPreferencesManager
-            let db = DependenciesBridge.shared.db
             section.add(OWSTableItem(
                 customCellBlock: { [weak self] in
                     guard let self else {
@@ -158,8 +160,8 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
                     let cell = OWSTableItem.buildCell(
                         icon: .settingsNotifications,
                         itemName: NotificationSettingsWhileMutedViewController.titleString,
-                        accessoryText: db.read { tx in
-                            notificationPreferencesManager.whileMutedEnabledString(
+                        accessoryText: self.db.read { tx in
+                            self.notificationPreferencesManager.whileMutedEnabledString(
                                 thread: self.threadViewModel.threadRecord,
                                 tx: tx,
                             )
@@ -209,7 +211,39 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
 
         contents.add(section)
 
+        let thread = threadViewModel.threadRecord
+        if BuildFlags.improvedNotifications, !thread.isNoteToSelf, !thread.isReleaseNotesThread {
+            contents.add(buildUnreadRemindersSection())
+        }
+
         self.contents = contents
+    }
+
+    private func buildUnreadRemindersSection() -> OWSTableSection {
+        let thread = threadViewModel.threadRecord
+        let section = OWSTableSection()
+        section.footerTitle = OWSLocalizedString(
+            "SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_CHAT_FOOTER",
+            comment: "Explanation for the switch controlling whether reminders about unread messages are shown in this chat while it is muted.",
+        )
+        section.add(.switch(
+            withText: OWSLocalizedString(
+                "SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS",
+                comment: "Label for the switch controlling whether reminders about unread messages are shown.",
+            ),
+            image: UIImage(resource: .chatBadge).withTintColor(.Signal.label, renderingMode: .alwaysOriginal),
+            isOn: { [db, notificationPreferencesManager] in
+                db.read { tx in
+                    notificationPreferencesManager.showUnreadReminders(thread: thread, tx: tx)
+                }
+            },
+            actionBlock: { [db, unreadReminderManager] uiSwitch in
+                db.write { tx in
+                    unreadReminderManager.setShowUnreadReminders(uiSwitch.isOn, thread: thread, tx: tx)
+                }
+            },
+        ))
+        return section
     }
 
     func showSoundSettingsView() {
@@ -239,7 +273,7 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
     }
 
     private func setShouldNotifyForMentionsWhenMuted(_ value: Bool) {
-        SSKEnvironment.shared.databaseStorageRef.write { transaction in
+        db.write { transaction in
             self.threadViewModel.threadRecord.updateWithShouldNotifyForMentionsWhenMutedLegacy(value, wasLocallyInitiated: true, transaction: transaction)
         }
 

@@ -368,6 +368,7 @@ public class GRDBSchemaMigrator {
         case addAttachmentAudioWaveformSamples
         case addAciContactShareNameTable
         case addAciContactShareNamesToSearchableName
+        case addShouldNotifyForUnreadRemindersWhenMutedColumn
 
         // NOTE: Every time we add a migration id, consider
         // incrementing grdbSchemaVersionLatest.
@@ -497,7 +498,7 @@ public class GRDBSchemaMigrator {
     }
 
     public static let grdbSchemaVersionDefault: UInt = 0
-    public static let grdbSchemaVersionLatest: UInt = 161
+    public static let grdbSchemaVersionLatest: UInt = 162
 
     private class DatabaseMigratorWrapper {
         // Run with immediate (or disabled) foreign key checks so that pre-existing
@@ -5680,6 +5681,11 @@ public class GRDBSchemaMigrator {
             return .success(())
         }
 
+        migrator.registerMigration(.addShouldNotifyForUnreadRemindersWhenMutedColumn) { tx in
+            try addShouldNotifyForUnreadRemindersWhenMutedColumn(tx: tx)
+            return .success(())
+        }
+
         // MARK: - Schema Migration Insertion Point
     }
 
@@ -8564,6 +8570,12 @@ public class GRDBSchemaMigrator {
     static func addAttachmentAudioWaveformSamples(tx: DBWriteTransaction) throws {
         try tx.database.alter(table: "Attachment") {
             $0.add(column: "audioWaveformSamples", .blob)
+        }
+    }
+
+    static func addShouldNotifyForUnreadRemindersWhenMutedColumn(tx: DBWriteTransaction) throws {
+        try tx.database.alter(table: "model_TSThread") {
+            $0.add(column: "shouldNotifyForUnreadRemindersWhenMuted", .boolean)
         }
     }
 

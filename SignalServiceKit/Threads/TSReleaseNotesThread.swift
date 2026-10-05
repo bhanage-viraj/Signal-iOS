@@ -38,6 +38,7 @@ public final class TSReleaseNotesThread: TSThread {
             shouldNotifyForMentionsWhenMuted: self.shouldNotifyForMentionsWhenMuted,
             shouldNotifyForRepliesWhenMuted: self.shouldNotifyForRepliesWhenMuted,
             shouldNotifyForCallsWhenMuted: self.shouldNotifyForCallsWhenMuted,
+            shouldNotifyForUnreadRemindersWhenMuted: self.shouldNotifyForUnreadRemindersWhenMuted,
             messageDraft: self.messageDraft,
             messageDraftBodyRanges: self.messageDraftBodyRanges,
             mutedUntilTimestamp: self.mutedUntilTimestamp,

@@ -42,6 +42,7 @@ class ThreadFinderTests: XCTestCase {
             shouldNotifyForMentionsWhenMuted: nil,
             shouldNotifyForRepliesWhenMuted: nil,
             shouldNotifyForCallsWhenMuted: nil,
+            shouldNotifyForUnreadRemindersWhenMuted: nil,
             messageDraft: draft,
             messageDraftBodyRanges: nil,
             mutedUntilTimestamp: 0,

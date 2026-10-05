@@ -233,6 +233,19 @@ public struct NotificationPreferencesManager {
         kvStore.writeValue(value, forKey: Key.showUnreadReminders, tx: tx)
     }
 
+    public func showUnreadReminders(thread: TSThread, tx: DBReadTransaction) -> Bool {
+        thread.shouldNotifyForUnreadRemindersWhenMuted ?? globalShowUnreadReminders(tx: tx)
+    }
+
+    /// `nil` inherits the global preference.
+    ///
+    /// Prefer `UnreadReminderManager.setShowUnreadReminders`, which also
+    /// reschedules or cancels the chat's pending reminder.
+    func setShowUnreadReminders(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+        thread.updateWithShouldNotifyForUnreadRemindersWhenMuted(value, transaction: tx)
+        // [Notifications] TODO: Storage Service sync
+    }
+
     // MARK: -
 
     public static let whileMutedCallsTitle = OWSLocalizedString(
@@ -305,6 +318,7 @@ public struct NotificationPreferencesManager {
                 || thread.shouldNotifyForMentionsWhenMuted != nil
                 || thread.shouldNotifyForRepliesWhenMuted != nil
                 || thread.shouldNotifyForCallsWhenMuted != nil
+                || thread.shouldNotifyForUnreadRemindersWhenMuted != nil
             {
                 threads.append(thread)
             }
@@ -327,6 +341,9 @@ public struct NotificationPreferencesManager {
             }
             if thread.shouldNotifyForCallsWhenMuted != nil {
                 setNotifyForCallsWhenMuted(nil, thread: thread, tx: tx)
+            }
+            if thread.shouldNotifyForUnreadRemindersWhenMuted != nil {
+                setShowUnreadReminders(nil, thread: thread, tx: tx)
             }
         }
     }
