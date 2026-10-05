@@ -150,13 +150,19 @@ public extension TSInteraction {
                                 transaction: tx,
                             )
                             guard let latestMessage else {
-                                ToastViewHelper.presentToastOnFrontmostViewController(
+                                Logger.warn("User tried to delete a message that no longer exists")
+
+                                guard let fromViewController = CurrentAppContext().frontmostViewController() else {
+                                    owsFailDebug("frontmostViewController was unexpectedly nil")
+                                    return
+                                }
+
+                                fromViewController.presentToast(
                                     text: OWSLocalizedString(
                                         "REMOTE_DELETE_DISAPPEARED_MESSAGE_TOAST",
                                         comment: "Toast that appears when local user tried to delete a message that has disappeared",
                                     ),
                                 )
-                                Logger.warn("User tried to delete a message that no longer exists")
                                 return
                             }
                             guard let latestThread = latestMessage.thread(tx: tx) else {
