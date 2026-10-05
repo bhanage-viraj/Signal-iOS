@@ -876,6 +876,10 @@ public struct CVComponentState: Equatable {
         sticker != nil && quotedReply == nil
     }
 
+    var isReplyStickerMessage: Bool {
+        sticker != nil && quotedReply != nil
+    }
+
     var activeComponentStateKeys: Set<CVComponentKey> {
         var result = Set<CVComponentKey>()
         if senderName != nil {

@@ -1677,7 +1677,10 @@ public class CVComponentMessage: CVComponentBase, CVRootComponent {
             measurementKey: String,
             componentKeys keys: [CVComponentKey],
         ) -> CGSize {
-            let maxWidth = contentMaxWidth - stackConfig.layoutMargins.totalWidth
+            var maxWidth = contentMaxWidth - stackConfig.layoutMargins.totalWidth
+            if componentState.isReplyStickerMessage {
+                maxWidth = min(maxWidth, CVComponentSticker.stickerSize)
+            }
             var subviewSizes = [CGSize]()
             for key in keys {
                 guard let subcomponent = self.subcomponent(forKey: key) else {
