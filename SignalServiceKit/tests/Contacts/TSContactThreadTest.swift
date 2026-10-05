@@ -40,4 +40,30 @@ class TSContactThreadTest: SSKBaseTest {
     func testCanSendChatMessagesToThread() {
         XCTAssertTrue(contactThread().canSendChatMessagesToThread())
     }
+
+    // MARK: - Archiving
+
+    private func isArchivedAfterSendingMessage(shouldKeepMutedChatsArchived: Bool) -> Bool {
+        let thread = contactThread()
+        return SSKEnvironment.shared.databaseStorageRef.write { tx in
+            SSKPreferences.setShouldKeepMutedChatsArchived(shouldKeepMutedChatsArchived, transaction: tx)
+            thread.anyUpdate(transaction: tx) {
+                $0.isArchived = true
+                $0.mutedUntilTimestamp = TSThread.alwaysMutedTimestamp
+            }
+
+            let message = TSOutgoingMessageBuilder.outgoingMessageBuilder(thread: thread).build(transaction: tx)
+            message.anyInsert(transaction: tx)
+
+            return TSContactThread.fetchViaCache(uniqueId: thread.uniqueId, transaction: tx)!.isArchived
+        }
+    }
+
+    func testSendingMessageKeepsMutedChatArchivedWhenKeepingMutedChatsArchived() {
+        XCTAssertTrue(isArchivedAfterSendingMessage(shouldKeepMutedChatsArchived: true))
+    }
+
+    func testSendingMessageUnarchivesMutedChatWhenNotKeepingMutedChatsArchived() {
+        XCTAssertFalse(isArchivedAfterSendingMessage(shouldKeepMutedChatsArchived: false))
+    }
 }

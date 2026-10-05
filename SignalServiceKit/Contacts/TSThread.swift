@@ -741,13 +741,9 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
         // Shouldn't clear archived if:
         // - The thread is muted.
         // - The user has requested we keep muted chats archived.
-        // - The message was sent by someone other than the current user. (If the
-        //   current user sent the message, we should clear archived.)
-        let wasMessageSentByUs = interaction is TSOutgoingMessage
         if
             self.isMuted,
-            SSKPreferences.shouldKeepMutedChatsArchived(transaction: tx),
-            !wasMessageSentByUs
+            SSKPreferences.shouldKeepMutedChatsArchived(transaction: tx)
         {
             needsToClearArchived = false
         }
