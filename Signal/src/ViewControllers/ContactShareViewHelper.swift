@@ -37,6 +37,47 @@ class ContactShareViewHelper: NSObject, CNContactViewControllerDelegate {
         presentThread(performAction: .compose, toAci: aci, sharedName: sharedName)
     }
 
+    func addToGroup(
+        aci: Aci,
+        sharedName: OWSContactName,
+        groupThread: TSGroupThread,
+        fromViewController: UIViewController,
+        completion: (() -> Void)? = nil,
+    ) {
+        guard let groupModel = groupThread.groupModel as? TSGroupModelV2 else {
+            owsFailDebug("Can't add members to a non-v2 group.")
+            return
+        }
+
+        let messageFormat = OWSLocalizedString(
+            "CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_FORMAT",
+            comment: "Confirmation shown before adding a shared contact to the current group. Embeds {{ %1$@ contact name, %2$@ group name }}.",
+        )
+        OWSActionSheets.showConfirmationAlert(
+            message: String.nonPluralLocalizedStringWithFormat(messageFormat, sharedName.displayName, groupThread.groupNameOrDefault),
+            proceedTitle: OWSLocalizedString(
+                "CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_BUTTON",
+                comment: "Button in the confirmation shown before adding a shared contact to the current group that adds the contact.",
+            ),
+            proceedAction: { _ in
+                GroupViewUtils.updateGroupWithActivityIndicator(
+                    fromViewController: fromViewController,
+                    updateBlock: {
+                        await SSKEnvironment.shared.databaseStorageRef.awaitableWrite { tx in
+                            self.recordContactShareNameIfNecessary(sharedName, forAci: aci, tx: tx)
+                        }
+                        try await GroupManager.addOrInvite(
+                            secretParams: groupModel.secretParams(),
+                            serviceIds: [aci],
+                        )
+                    },
+                    completion: completion,
+                )
+            },
+            fromViewController: fromViewController,
+        )
+    }
+
     /// Stores the shared name so the new conversation has something to show
     /// for an account we may know nothing else about.
     func recordContactShareNameIfNecessary(_ name: OWSContactName, forAci aci: Aci, tx: DBWriteTransaction) {

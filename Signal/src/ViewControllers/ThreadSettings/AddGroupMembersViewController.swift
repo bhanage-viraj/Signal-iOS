@@ -201,16 +201,7 @@ extension AddGroupMembersViewController: GroupMemberViewDelegate {
             owsFailDebug("Invalid recipient.")
             return false
         }
-        let groupMembership = oldGroupModel.groupMembership
-        switch groupMembership.canTryToAddToGroup(serviceId: serviceId) {
-        case .alreadyInGroup:
-            return true
-        case .addableWithProfileKeyCredential:
-            let canAddMember = GroupMembership.canTryToAddWithProfileKeyCredential(serviceId: serviceId, tx: transaction)
-            return !canAddMember
-        case .addableOrInvitable:
-            return false
-        }
+        return !oldGroupModel.groupMembership.canTryToAddToGroup(serviceId: serviceId, tx: transaction)
     }
 
     func groupMemberViewDismiss() {

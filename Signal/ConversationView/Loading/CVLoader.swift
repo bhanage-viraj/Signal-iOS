@@ -90,19 +90,26 @@ public class CVLoader: NSObject {
                 var updatedInteractionIds = loadRequest.updatedInteractionIds
                 let deletedInteractionIds: Set<String>? = loadRequest.didReset ? loadRequest.deletedInteractionIds : nil
 
-                let didThreadDetailsChange: Bool = {
-                    let prevThreadViewModel = prevRenderState.threadViewModel
-                    guard let groupModel = threadViewModel.threadRecord.groupModelIfGroupThread else {
-                        return false
+                let prevThreadViewModel = prevRenderState.threadViewModel
+                let groupModels: (current: TSGroupModelV2, prev: TSGroupModelV2)? = {
+                    guard let groupModel = threadViewModel.threadRecord.groupModelIfGroupThread as? TSGroupModelV2 else {
+                        return nil
                     }
-                    guard let prevGroupModel = prevThreadViewModel.threadRecord.groupModelIfGroupThread else {
+                    guard let prevGroupModel = prevThreadViewModel.threadRecord.groupModelIfGroupThread as? TSGroupModelV2 else {
                         owsFailDebug("Missing groupModel.")
+                        return nil
+                    }
+                    return (groupModel, prevGroupModel)
+                }()
+
+                let didThreadDetailsChange: Bool = {
+                    guard let groupModels else {
                         return false
                     }
-                    let groupDescriptionDidChange = (groupModel as? TSGroupModelV2)?.descriptionText
-                        != (prevGroupModel as? TSGroupModelV2)?.descriptionText
+                    let groupModel = groupModels.current
+                    let prevGroupModel = groupModels.prev
                     return groupModel.groupName != prevGroupModel.groupName ||
-                        groupDescriptionDidChange ||
+                        groupModel.descriptionText != prevGroupModel.descriptionText ||
                         groupModel.avatarHash != prevGroupModel.avatarHash ||
                         groupModel.groupMembership.fullMembers.count != prevGroupModel.groupMembership.fullMembers.count
                 }()
@@ -115,6 +122,18 @@ public class CVLoader: NSObject {
                     prevFirstRenderItem.interactionType == .threadDetails
                 {
                     updatedInteractionIds.insert(prevFirstRenderItem.interactionUniqueId)
+                }
+
+                if let groupModels, groupModels.current.revision != groupModels.prev.revision {
+                    for renderItem in prevRenderState.items {
+                        if
+                            let contactShare = renderItem.componentState.contactShare,
+                            contactShare.state.contactShare.dbRecord.aci != nil
+                        {
+                            // The group changed, so refresh any contact shares in case that contact has been added to the group.
+                            updatedInteractionIds.insert(renderItem.interactionUniqueId)
+                        }
+                    }
                 }
 
                 var reusableInteractions = [String: TSInteraction]()

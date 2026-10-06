@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import LibSignalClient
 import SignalServiceKit
 import SignalUI
 
@@ -42,15 +43,26 @@ class GroupViewHelper {
     // Don't use this method directly;
     // Use canEditConversationAttributes or canEditConversationMembership instead.
     private func canLocalUserEditConversation(v2AccessTypeBlock: (GroupAccess) -> GroupV2Access) -> Bool {
-        if threadViewModel.hasPendingMessageRequest {
+        guard let localAci = DependenciesBridge.shared.tsAccountManager.localIdentifiersWithMaybeSneakyTransaction?.aci else {
+            owsFailDebug("Missing localAci.")
             return false
         }
-        guard isLocalUserFullMember else {
+        return canLocalUserEditConversation(localAci: localAci, v2AccessTypeBlock: v2AccessTypeBlock)
+    }
+
+    private func canLocalUserEditConversation(
+        localAci: Aci,
+        v2AccessTypeBlock: (GroupAccess) -> GroupV2Access,
+    ) -> Bool {
+        if threadViewModel.hasPendingMessageRequest {
             return false
         }
         guard let groupThread = thread as? TSGroupThread else {
             // Both users can edit contact threads.
             return true
+        }
+        guard groupThread.groupModel.groupMembership.isFullMember(localAci) else {
+            return false
         }
         guard !isGroupV1Thread else {
             return false
@@ -61,10 +73,6 @@ class GroupViewHelper {
         guard let groupModelV2 = groupThread.groupModel as? TSGroupModelV2 else {
             // All users can edit v1 groups.
             return true
-        }
-        guard let localAddress = DependenciesBridge.shared.tsAccountManager.localIdentifiersWithMaybeSneakyTransaction?.aciAddress else {
-            owsFailDebug("Missing localAddress.")
-            return false
         }
         // Use the block to pick the access type: attributes or members?
         let access = v2AccessTypeBlock(groupModelV2.access)
@@ -78,9 +86,9 @@ class GroupViewHelper {
         case .any:
             return true
         case .member:
-            return groupModelV2.groupMembership.isFullMember(localAddress)
+            return groupModelV2.groupMembership.isFullMember(localAci)
         case .administrator:
-            return groupModelV2.groupMembership.isFullMemberAndAdministrator(localAddress)
+            return groupModelV2.groupMembership.isFullMemberAndAdministrator(localAci)
         }
     }
 
@@ -109,6 +117,14 @@ class GroupViewHelper {
     // Can local user edit group membership.
     var canEditConversationMembership: Bool {
         return canLocalUserEditConversation { groupAccess in
+            return groupAccess.members
+        }
+    }
+
+    /// Like the ``canEditConversationMembership`` property, for callers that already know
+    /// the local ACI.
+    func canEditConversationMembership(localAci: Aci) -> Bool {
+        return canLocalUserEditConversation(localAci: localAci) { groupAccess in
             return groupAccess.members
         }
     }

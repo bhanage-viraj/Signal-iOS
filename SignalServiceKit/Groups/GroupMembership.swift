@@ -637,23 +637,16 @@ public class GroupMembership: NSObject, NSSecureCoding {
 
     // MARK: -
 
-    public enum AddableResult {
-        case alreadyInGroup
-        case addableWithProfileKeyCredential
-        case addableOrInvitable
-    }
-
-    public func canTryToAddToGroup(serviceId: ServiceId) -> AddableResult {
+    /// Whether `serviceId` can be added: it isn't already a full member, and
+    /// if it's an invited member, we can get its profile key credential.
+    public func canTryToAddToGroup(serviceId: ServiceId, tx: DBReadTransaction) -> Bool {
         if self.isFullMember(serviceId) {
-            return .alreadyInGroup
-        }
-        if self.isRequestingMember(serviceId) {
-            return .addableOrInvitable
+            return false
         }
         if self.isInvitedMember(serviceId) {
-            return .addableWithProfileKeyCredential
+            return Self.canTryToAddWithProfileKeyCredential(serviceId: serviceId, tx: tx)
         }
-        return .addableOrInvitable
+        return true
     }
 
     public static func canTryToAddWithProfileKeyCredential(

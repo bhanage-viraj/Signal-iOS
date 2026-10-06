@@ -685,6 +685,16 @@ extension ConversationViewController: CVComponentDelegate {
         contactShareViewHelper.sendMessage(toAci: aci, sharedName: sharedName)
     }
 
+    public func didTapAddToGroup(aci: Aci, sharedName: OWSContactName) {
+        AssertIsOnMainThread()
+
+        guard let groupThread = thread as? TSGroupThread else {
+            owsFailDebug("Not a group thread.")
+            return
+        }
+        contactShareViewHelper.addToGroup(aci: aci, sharedName: sharedName, groupThread: groupThread, fromViewController: self)
+    }
+
     public func didTapSendInvite(toContactShare contactShare: ContactShareViewModel) {
         AssertIsOnMainThread()
 

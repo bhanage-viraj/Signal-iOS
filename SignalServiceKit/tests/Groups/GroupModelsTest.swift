@@ -121,6 +121,39 @@ class GroupModelsTest: SSKBaseTest {
         XCTAssertEqual(membership4, membership5)
     }
 
+    func testGroupMembershipCanTryToAddToGroupExcludesFullMembers() {
+        var builder = GroupMembership.Builder()
+        builder.addFullMember(.aci1, role: .administrator)
+        builder.addFullMember(.aci2, role: .normal)
+        let membership = builder.build()
+
+        read { tx in
+            XCTAssertFalse(membership.canTryToAddToGroup(serviceId: Aci.aci1, tx: tx))
+            XCTAssertFalse(membership.canTryToAddToGroup(serviceId: Aci.aci2, tx: tx))
+        }
+    }
+
+    func testGroupMembershipCanTryToAddToGroupIncludesRequestingMembers() {
+        var builder = GroupMembership.Builder()
+        builder.addFullMember(.aci1, role: .administrator)
+        builder.addRequestingMember(.aci2)
+        let membership = builder.build()
+
+        read { tx in
+            XCTAssertTrue(membership.canTryToAddToGroup(serviceId: Aci.aci2, tx: tx))
+        }
+    }
+
+    func testGroupMembershipCanTryToAddToGroupIncludesNonMembers() {
+        var builder = GroupMembership.Builder()
+        builder.addFullMember(.aci1, role: .administrator)
+        let membership = builder.build()
+
+        read { tx in
+            XCTAssertTrue(membership.canTryToAddToGroup(serviceId: Aci.aci2, tx: tx))
+        }
+    }
+
     func testTSGroupModelBackwardsCompatibleDeserialization() throws {
         let groupIdLength = 16 // Taken from kGroupIdLength at the time of archiving.
         let expectedGroupId = Data(repeating: 8, count: groupIdLength)

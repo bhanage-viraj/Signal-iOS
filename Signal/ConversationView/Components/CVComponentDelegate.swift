@@ -150,6 +150,8 @@ public protocol CVComponentDelegate: AnyObject, AudioMessageViewDelegate, CVPoll
 
     func didTapSendMessage(toAci aci: Aci, sharedName: OWSContactName)
 
+    func didTapAddToGroup(aci: Aci, sharedName: OWSContactName)
+
     func didTapSendInvite(toContactShare contactShare: ContactShareViewModel)
 
     func didTapAddToContacts(contactShare: ContactShareViewModel)
@@ -313,6 +315,7 @@ struct CVMessageAction: Equatable {
         case didTapGroupCall
         case didTapSendMessage(phoneNumbers: [String])
         case didTapSendMessageToAci(aci: Aci, sharedName: OWSContactName)
+        case didTapAddToGroup(aci: Aci, sharedName: OWSContactName)
         case didTapSendInvite(contactShare: ContactShareViewModel)
         case didTapAddToContacts(contactShare: ContactShareViewModel)
         case didTapUnknownThreadWarningGroup
@@ -382,6 +385,8 @@ struct CVMessageAction: Equatable {
                 delegate.didTapSendMessage(to: phoneNumbers)
             case .didTapSendMessageToAci(let aci, let sharedName):
                 delegate.didTapSendMessage(toAci: aci, sharedName: sharedName)
+            case .didTapAddToGroup(let aci, let sharedName):
+                delegate.didTapAddToGroup(aci: aci, sharedName: sharedName)
             case .didTapSendInvite(let contactShare):
                 delegate.didTapSendInvite(toContactShare: contactShare)
             case .didTapAddToContacts(let contactShare):

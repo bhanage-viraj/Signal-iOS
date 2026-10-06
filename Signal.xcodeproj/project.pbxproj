@@ -966,6 +966,7 @@
 		5F0FCB3F9BC04E7EB4B5A9DA /* ContactSharingRowCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C97A48E040D913B54956AB /* ContactSharingRowCell.swift */; };
 		61475E7AED76A77DD11F9968 /* RegistrationSignalLoginDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE4F92E120FC707A4CBFF39 /* RegistrationSignalLoginDetailsViewController.swift */; };
 		616577F953D77424E32C7438 /* Pods_SignalUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 675486AB8F0612FF2C717BAE /* Pods_SignalUI.framework */; };
+		632BFEC030752A2E005399C0 /* GroupViewHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 632BFEBF30752A2E005399C0 /* GroupViewHelperTests.swift */; };
 		63C24D4D306AF7A100D4C167 /* ContactSharingPermissionPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C24D4C306AF7A100D4C167 /* ContactSharingPermissionPromptView.swift */; };
 		63C24D53306C50FD00D4C167 /* ContactShareAvatarFieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C24D52306C50FD00D4C167 /* ContactShareAvatarFieldTests.swift */; };
 		63C24D55306C510200D4C167 /* ContactShareAvatarPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C24D54306C510200D4C167 /* ContactShareAvatarPickerSheet.swift */; };
@@ -5369,6 +5370,7 @@
 		5AA002E52CA2455F002D1CC2 /* SessionStoreTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTest.swift; sourceTree = "<group>"; };
 		5D6C4583F668E9D733E59B9B /* Pods-SignalServiceKitTests.testable release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SignalServiceKitTests.testable release.xcconfig"; path = "Target Support Files/Pods-SignalServiceKitTests/Pods-SignalServiceKitTests.testable release.xcconfig"; sourceTree = "<group>"; };
 		5F85041386A219C9710EAB41 /* Pods-Signal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Signal.debug.xcconfig"; path = "Target Support Files/Pods-Signal/Pods-Signal.debug.xcconfig"; sourceTree = "<group>"; };
+		632BFEBF30752A2E005399C0 /* GroupViewHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupViewHelperTests.swift; sourceTree = "<group>"; };
 		63C24D4C306AF7A100D4C167 /* ContactSharingPermissionPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactSharingPermissionPromptView.swift; sourceTree = "<group>"; };
 		63C24D52306C50FD00D4C167 /* ContactShareAvatarFieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactShareAvatarFieldTests.swift; sourceTree = "<group>"; };
 		63C24D54306C510200D4C167 /* ContactShareAvatarPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactShareAvatarPickerSheet.swift; sourceTree = "<group>"; };
@@ -9730,6 +9732,7 @@
 				88D6E94125535482003142D9 /* CVTextTest.swift */,
 				F96B66B22912B8B7004FFFAA /* DonateViewControllerTest.swift */,
 				F99D2C8A2926F0DD00748CCB /* DonationPaymentDetailsViewControllerTest.swift */,
+				632BFEBF30752A2E005399C0 /* GroupViewHelperTests.swift */,
 				45C845AE291467F7005F6EA5 /* JournalingOrderedDictionaryTests.swift */,
 				4585B4A4291B39F9003A8F8E /* MediaGalleryCollectionViewUpdaterTest.swift */,
 				1700E33A28B5684C0073D949 /* MediaGallerySectionsTest.swift */,
@@ -19453,6 +19456,7 @@
 				F9952B3129F2D99500EA989E /* ExpirationNagViewTest.swift in Sources */,
 				345AE2B62317048300DB6225 /* GRDBFinderTest.swift in Sources */,
 				3499998222EF1E2100654932 /* GRDBFullTextSearcherTest.swift in Sources */,
+				632BFEC030752A2E005399C0 /* GroupViewHelperTests.swift in Sources */,
 				34BBC861220E883300857249 /* ImageEditorModelTest.swift in Sources */,
 				34BBC862220E883300857249 /* ImageEditorTest.swift in Sources */,
 				D970460A2E81D5C00034C05D /* InfoMessageGroupUpdateMigratorTest.swift in Sources */,

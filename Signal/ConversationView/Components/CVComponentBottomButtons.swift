@@ -56,19 +56,20 @@ public class CVComponentBottomButtons: CVComponentBase, CVComponent {
             componentView.buttonViews.append(buttonView)
         }
 
+        let isHorizontal = cellMeasurement.value(key: Self.measurementKey_isHorizontal) == 1
         let stackView = componentView.stackView
         stackView.reset()
         stackView.configure(
-            config: stackConfig,
+            config: Self.stackConfig(isHorizontal: isHorizontal),
             cellMeasurement: cellMeasurement,
             measurementKey: Self.measurementKey_stackView,
             subviews: subviews,
         )
     }
 
-    private var stackConfig: CVStackViewConfig {
+    private static func stackConfig(isHorizontal: Bool) -> CVStackViewConfig {
         CVStackViewConfig(
-            axis: .vertical,
+            axis: isHorizontal ? .horizontal : .vertical,
             alignment: .fill,
             spacing: Self.buttonSpacing,
             layoutMargins: .init(top: 6, leading: 12, bottom: 12, trailing: 12),
@@ -76,20 +77,29 @@ public class CVComponentBottomButtons: CVComponentBase, CVComponent {
     }
 
     fileprivate static var buttonHeight: CGFloat { CVMessageActionButton.buttonHeight }
-    fileprivate static let buttonSpacing: CGFloat = 4
+    private static let buttonSpacing: CGFloat = 8
 
     private static let measurementKey_stackView = "CVComponentBottomButtons.measurementKey_stackView"
+    private static let measurementKey_isHorizontal = "CVComponentBottomButtons.measurementKey_isHorizontal"
 
     public func measure(maxWidth: CGFloat, measurementBuilder: CVCellMeasurement.Builder) -> CGSize {
         owsAssertDebug(maxWidth > 0)
 
-        let subviewSize = CGSize(width: maxWidth - stackConfig.layoutMargins.totalWidth, height: Self.buttonHeight)
+        let contentWidth = max(0, maxWidth - Self.stackConfig(isHorizontal: true).layoutMargins.totalWidth)
+        let totalSpacing = Self.buttonSpacing * CGFloat(max(0, actions.count - 1))
+        let horizontalButtonWidth = max(0, contentWidth - totalSpacing) / CGFloat(max(1, actions.count))
+        let isHorizontal = actions.allSatisfy { action in
+            CVMessageActionButton.minimumWidth(title: action.title) <= horizontalButtonWidth
+        }
+        measurementBuilder.setValue(key: Self.measurementKey_isHorizontal, value: isHorizontal ? 1 : 0)
+
+        let subviewSize = CGSize(width: isHorizontal ? horizontalButtonWidth : contentWidth, height: Self.buttonHeight)
         var subviewInfos = [ManualStackSubviewInfo]()
         for _ in 0..<actions.count {
             subviewInfos.append(subviewSize.asManualSubviewInfo)
         }
         let stackMeasurement = ManualStackView.measure(
-            config: stackConfig,
+            config: Self.stackConfig(isHorizontal: isHorizontal),
             measurementBuilder: measurementBuilder,
             measurementKey: Self.measurementKey_stackView,
             subviewInfos: subviewInfos,
@@ -153,9 +163,16 @@ public class CVComponentBottomButtons: CVComponentBase, CVComponent {
         private static var buttonFont: UIFont { UIFont.dynamicTypeFootnoteClamped.medium() }
 
         private static let buttonVMargin: CGFloat = 5
+        private static let minimumTitleHMargin: CGFloat = 12
 
         static var buttonHeight: CGFloat {
             ceil(buttonFont.lineHeight + buttonVMargin * 2).clamp(28, 44)
+        }
+
+        static func minimumWidth(title: String) -> CGFloat {
+            let labelConfig = CVLabelConfig.unstyledText(title, font: buttonFont, textColor: .Signal.label)
+            let titleSize = CVText.measureLabel(config: labelConfig, maxWidth: .greatestFiniteMagnitude)
+            return ceil(titleSize.width) + minimumTitleHMargin * 2
         }
     }
 

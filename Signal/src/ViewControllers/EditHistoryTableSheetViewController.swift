@@ -408,6 +408,8 @@ extension EditHistoryTableSheetViewController: CVComponentDelegate {
 
     func didTapSendMessage(toAci aci: Aci, sharedName: OWSContactName) {}
 
+    func didTapAddToGroup(aci: Aci, sharedName: OWSContactName) {}
+
     func didTapSendInvite(toContactShare contactShare: ContactShareViewModel) {}
 
     func didTapAddToContacts(contactShare: ContactShareViewModel) {}

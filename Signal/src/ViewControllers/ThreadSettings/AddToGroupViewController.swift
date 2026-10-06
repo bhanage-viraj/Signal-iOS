@@ -128,15 +128,7 @@ final class AddToGroupViewController: OWSTableViewController2, UISearchResultsUp
 
                 let isAlreadyAMember: Bool
                 if let serviceId = self.address.serviceId {
-                    switch thread.groupMembership.canTryToAddToGroup(serviceId: serviceId) {
-                    case .alreadyInGroup:
-                        isAlreadyAMember = true
-                    case .addableWithProfileKeyCredential:
-                        let canAddToGroup = GroupMembership.canTryToAddWithProfileKeyCredential(serviceId: serviceId, tx: tx)
-                        isAlreadyAMember = !canAddToGroup
-                    case .addableOrInvitable:
-                        isAlreadyAMember = false
-                    }
+                    isAlreadyAMember = !thread.groupMembership.canTryToAddToGroup(serviceId: serviceId, tx: tx)
                 } else {
                     isAlreadyAMember = false
                 }
