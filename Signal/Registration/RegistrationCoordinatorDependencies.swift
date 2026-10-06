@@ -50,7 +50,6 @@ public struct RegistrationCoordinatorDependencies {
     public let timeoutProvider: RegistrationCoordinatorImpl.Shims.TimeoutProvider
     public let tsAccountManager: TSAccountManager
     public let udManager: RegistrationCoordinatorImpl.Shims.UDManager
-    public let usernameApiClient: any RegistrationCoordinatorImpl.Shims.UsernameApiClient
     public let usernameLinkManager: UsernameLinkManager
 
     public static func from(_ object: NSObject) -> RegistrationCoordinatorDependencies {
@@ -102,7 +101,6 @@ public struct RegistrationCoordinatorDependencies {
             timeoutProvider: RegistrationCoordinatorImpl.Wrappers.TimeoutProvider(),
             tsAccountManager: DependenciesBridge.shared.tsAccountManager,
             udManager: RegistrationCoordinatorImpl.Wrappers.UDManager(SSKEnvironment.shared.udManagerRef),
-            usernameApiClient: RegistrationCoordinatorImpl.Wrappers.UsernameApiClient(DependenciesBridge.shared.usernameApiClient),
             usernameLinkManager: DependenciesBridge.shared.usernameLinkManager,
         )
     }

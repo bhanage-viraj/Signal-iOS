@@ -30,6 +30,7 @@ public class RegistrationCoordinatorTest {
     private var mockMessagePipelineSupervisor: RegistrationCoordinatorImpl.TestMocks.MessagePipelineSupervisor!
     private var mockMessageProcessor: RegistrationCoordinatorImpl.TestMocks.MessageProcessor!
     private var mockURLSession: TSRequestOWSURLSessionMock!
+    private var mockUsernamesService: MockUsernamesService!
     private var networkManagerMock: MockNetworkManager!
     private var ows2FAManagerMock: RegistrationCoordinatorImpl.TestMocks.OWS2FAManager!
     private var phoneNumberDiscoverabilityManagerMock: MockPhoneNumberDiscoverabilityManager!
@@ -46,7 +47,6 @@ public class RegistrationCoordinatorTest {
     private var svrAuthCredentialManager: SVRAuthCredentialManager!
     private var timeoutProviderMock: RegistrationCoordinatorImpl.TestMocks.TimeoutProvider!
     private var tsAccountManagerMock: MockTSAccountManager!
-    private var usernameApiClientMock: RegistrationCoordinatorImpl.TestMocks.UsernameApiClient!
     private var usernameLinkManagerMock: MockUsernameLinkManager!
     private var localFileBackupManager: LocalFileBackupManager!
 
@@ -82,6 +82,7 @@ public class RegistrationCoordinatorTest {
         svrAuthCredentialManager = SVRAuthCredentialManager.mock()
         mockMessagePipelineSupervisor = RegistrationCoordinatorImpl.TestMocks.MessagePipelineSupervisor()
         mockMessageProcessor = RegistrationCoordinatorImpl.TestMocks.MessageProcessor()
+        mockUsernamesService = MockUsernamesService()
         networkManagerMock = MockNetworkManager()
         ows2FAManagerMock = RegistrationCoordinatorImpl.TestMocks.OWS2FAManager()
         phoneNumberDiscoverabilityManagerMock = MockPhoneNumberDiscoverabilityManager()
@@ -94,7 +95,6 @@ public class RegistrationCoordinatorTest {
         storageServiceManagerMock = RegistrationCoordinatorImpl.TestMocks.StorageServiceManager(run: testRun)
         timeoutProviderMock = RegistrationCoordinatorImpl.TestMocks.TimeoutProvider()
         tsAccountManagerMock = MockTSAccountManager()
-        usernameApiClientMock = RegistrationCoordinatorImpl.TestMocks.UsernameApiClient()
         usernameLinkManagerMock = MockUsernameLinkManager()
 
         let recipientDbTable = RecipientDatabaseTable()
@@ -172,7 +172,7 @@ public class RegistrationCoordinatorTest {
             registrationWebSocketManager: MockRegistrationWebSocketManager(),
             remoteConfigManager: StubbableRemoteConfigManager(),
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessMock(hasAccess: true, url: nil),
-            serviceProvider: MockServiceProvider(mockServices: []),
+            serviceProvider: MockServiceProvider(mockServices: [mockUsernamesService!]),
             sessionManager: sessionManager,
             signalService: mockSignalService,
             storageServiceManager: storageServiceManagerMock,
@@ -182,7 +182,6 @@ public class RegistrationCoordinatorTest {
             timeoutProvider: timeoutProviderMock,
             tsAccountManager: tsAccountManagerMock,
             udManager: RegistrationCoordinatorImpl.TestMocks.UDManager(),
-            usernameApiClient: usernameApiClientMock,
             usernameLinkManager: usernameLinkManagerMock,
         )
         registrationCoordinatorLoader = RegistrationCoordinatorLoaderImpl(dependencies: dependencies)
@@ -416,9 +415,9 @@ public class RegistrationCoordinatorTest {
         // our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+        mockUsernamesService.confirmUsernameMocks.set([{ _, _ in
             return mockUsernameLink.handle
-        }]
+        }])
 
         // Once we do the username reclamation,
         // then we are finished!
@@ -912,10 +911,10 @@ public class RegistrationCoordinatorTest {
         // Once we restore from storage service, we should attempt to reclaim our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+        mockUsernamesService.confirmUsernameMocks.set([{ _, _ in
             self.testRun.addObservedStep(.confirmReservedUsername)
             return mockUsernameLink.handle
-        }]
+        }])
 
         // Once we do the storage service restore,
         // then we are finished!
@@ -1239,9 +1238,9 @@ public class RegistrationCoordinatorTest {
         // our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+        mockUsernamesService.confirmUsernameMocks.set([{ _, _ in
             return mockUsernameLink.handle
-        }]
+        }])
 
         storageServiceManagerMock.addRotateManifestMock({ _, _ in return .value(()) })
 
@@ -1559,10 +1558,10 @@ public class RegistrationCoordinatorTest {
         // Once we restore from storage service, we should attempt to reclaim our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+        mockUsernamesService.confirmUsernameMocks.set([{ _, _ in
             self.testRun.addObservedStep(.confirmReservedUsername)
             return mockUsernameLink.handle
-        }]
+        }])
 
         // Once we do the storage service restore, then we are finished!
 
@@ -1820,9 +1819,9 @@ public class RegistrationCoordinatorTest {
         // no different impact on the rest of registration.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+        mockUsernamesService.confirmUsernameMocks.set([{ _, _ in
             throw OWSGenericError("Something went wrong :(")
-        }]
+        }])
 
         // And once we do the storage service restore,
         // then we are finished!

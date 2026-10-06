@@ -25,7 +25,6 @@ extension RegistrationCoordinatorImpl {
         public typealias StorageServiceManager = _RegistrationCoordinator_StorageServiceManagerMock
         public typealias TimeoutProvider = _RegistrationCoordinator_TimeoutProviderMock
         public typealias UDManager = _RegistrationCoordinator_UDManagerMock
-        public typealias UsernameApiClient = _RegistrationCoordinator_UsernameApiClientMock
     }
 }
 
@@ -351,16 +350,5 @@ public class _RegistrationCoordinator_UDManagerMock: _RegistrationCoordinator_UD
 
     public func shouldAllowUnrestrictedAccessLocal(transaction: DBReadTransaction) -> Bool {
         return shouldAllowUnrestrictedAccessLocalMock()
-    }
-}
-
-// MARK: UsernameApiClient
-
-public class _RegistrationCoordinator_UsernameApiClientMock: _RegistrationCoordinator_UsernameApiClientShim {
-    public init() {}
-
-    public var confirmUsernameMocks = [(username: LibSignalClient.Username, usernameCiphertext: Data) async throws -> UUID]()
-    public func confirmUsername(_ username: Username, usernameCiphertext: Data) async throws -> UUID {
-        return try await confirmUsernameMocks.removeFirst()(username, usernameCiphertext)
     }
 }

@@ -4434,10 +4434,12 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             existingEntropy: localUsernameLink.entropy,
         )
 
-        let linkHandle = try await deps.usernameApiClient.confirmUsername(
-            hashedLocalUsername.libSignalUsername,
-            usernameCiphertext: encryptedUsernameForLink,
-        )
+        let linkHandle = try await deps.serviceProvider.withAuthService(.usernames) {
+            return try await $0.confirmUsername(
+                hashedLocalUsername.libSignalUsername,
+                usernameCiphertext: encryptedUsernameForLink,
+            )
+        }
         guard localUsernameLink.handle == linkHandle else {
             throw OWSGenericError("confirmed username but the handle is wrong, so our username link is now corrupted")
         }

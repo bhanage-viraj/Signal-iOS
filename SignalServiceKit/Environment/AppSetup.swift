@@ -1330,31 +1330,28 @@ extension AppSetup.GlobalsContinuation {
             tsAccountManager: tsAccountManager,
         )
 
-        let usernameApiClient = UsernameApiClientImpl(
-            chatConnectionManager: chatConnectionManager,
-        )
         let usernameEducationManager = UsernameEducationManagerImpl()
         let usernameLinkManager = UsernameLinkManagerImpl(
             db: db,
-            apiClient: usernameApiClient,
         )
         let localUsernameManager = LocalUsernameManagerImpl(
             db: db,
             keyTransparencyStore: keyTransparencyStore,
             reachabilityManager: reachabilityManager,
+            serviceProvider: chatConnectionManager,
             storageServiceManager: storageServiceManager,
             syncMessageSender: LocalUsernameManagerImpl.UsernameChangeSyncMessageSenderImpl(
                 messageSenderJobQueue: messageSenderJobQueue,
                 threadStore: threadStore,
             ),
             tsAccountManager: tsAccountManager,
-            usernameApiClient: usernameApiClient,
             usernameLinkManager: usernameLinkManager,
         )
         let usernameValidationManager = UsernameValidationManagerImpl(context: .init(
             database: db,
             localUsernameManager: localUsernameManager,
             messageProcessor: Usernames.Validation.Wrappers.MessageProcessor(messageProcessor),
+            serviceProvider: chatConnectionManager,
             storageServiceManager: Usernames.Validation.Wrappers.StorageServiceManager(storageServiceManager),
             usernameLinkManager: usernameLinkManager,
             whoAmIManager: whoAmIManager,
@@ -1971,7 +1968,6 @@ extension AppSetup.GlobalsContinuation {
             threadStore: threadStore,
             tsAccountManager: tsAccountManager,
             unreadReminderManager: unreadReminderManager,
-            usernameApiClient: usernameApiClient,
             usernameEducationManager: usernameEducationManager,
             usernameLinkManager: usernameLinkManager,
             usernameLookupManager: usernameLookupManager,

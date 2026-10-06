@@ -38,22 +38,15 @@ public protocol UsernameLinkManager {
         username: String,
         existingEntropy: Data?,
     ) throws -> (entropy: Data, encryptedUsername: Data)
-
-    /// Uses the given link to fetch an encrypted username and decrypt it into a
-    /// plaintext username.
-    func decryptEncryptedLink(link: Usernames.UsernameLink) async throws -> String?
 }
 
 public final class UsernameLinkManagerImpl: UsernameLinkManager {
     private let db: any DB
-    private let apiClient: UsernameApiClient
 
     init(
         db: any DB,
-        apiClient: UsernameApiClient,
     ) {
         self.db = db
-        self.apiClient = apiClient
     }
 
     public func generateEncryptedUsername(
@@ -67,11 +60,5 @@ public final class UsernameLinkManagerImpl: UsernameLinkManager {
             entropy: entropyBytes,
             encryptedUsername: encryptedUsernameBytes,
         )
-    }
-
-    public func decryptEncryptedLink(
-        link: Usernames.UsernameLink,
-    ) async throws -> String? {
-        return try await self.apiClient.getUsernameLink(handle: link.handle, entropy: link.entropy)?.value
     }
 }

@@ -266,10 +266,10 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
     private let db: any DB
     private let keyTransparencyStore: KeyTransparencyStore
     private let reachabilityManager: SSKReachabilityManager
+    private let serviceProvider: any ServiceProvider
     private let storageServiceManager: StorageServiceManager
     private let syncMessageSender: UsernameChangeSyncMessageSender
     private let tsAccountManager: TSAccountManager
-    private let usernameApiClient: UsernameApiClient
     private let usernameLinkManager: UsernameLinkManager
 
     private let corruptionStore: CorruptionStore
@@ -283,20 +283,20 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         db: any DB,
         keyTransparencyStore: KeyTransparencyStore,
         reachabilityManager: SSKReachabilityManager,
+        serviceProvider: any ServiceProvider,
         storageServiceManager: StorageServiceManager,
         syncMessageSender: UsernameChangeSyncMessageSender,
         tsAccountManager: TSAccountManager,
-        usernameApiClient: UsernameApiClient,
         usernameLinkManager: UsernameLinkManager,
         maxNetworkRequestRetries: Int = 2,
     ) {
         self.db = db
         self.keyTransparencyStore = keyTransparencyStore
         self.reachabilityManager = reachabilityManager
+        self.serviceProvider = serviceProvider
         self.storageServiceManager = storageServiceManager
         self.syncMessageSender = syncMessageSender
         self.tsAccountManager = tsAccountManager
-        self.usernameApiClient = usernameApiClient
         self.usernameLinkManager = usernameLinkManager
 
         corruptionStore = CorruptionStore()
@@ -421,7 +421,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let reservedHash = try await makeRequestWithNetworkRetries {
-                return try await usernameApiClient.reserveUsernameHashes(usernameCandidates.hashes)
+                return try await $0.reserveUsernameHashes(usernameCandidates.hashes)
             }
             guard let reservedCandidate = usernameCandidates.candidate(matchingHash: reservedHash) else {
                 return .failure(.otherError)
@@ -473,7 +473,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let linkHandle = try await makeRequestWithNetworkRetries {
-                return try await usernameApiClient.confirmUsername(
+                return try await $0.confirmUsername(
                     reservedUsername.libSignalUsername,
                     usernameCiphertext: linkEncryptedUsername,
                 )
@@ -542,7 +542,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             try await makeRequestWithNetworkRetries {
-                try await usernameApiClient.deleteCurrentUsername()
+                try await $0.deleteUsernameHash()
             }
             await self.db.awaitableWrite { tx in
                 self.clearLocalUsername(tx: tx)
@@ -636,7 +636,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let newHandle = try await makeRequestWithNetworkRetries {
-                try await usernameApiClient.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: false)
+                try await $0.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: false)
             }
 
             guard
@@ -729,7 +729,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 /// rotate the username link handle. That's key to keeping the
                 /// existing link unaffected while updating the case of the
                 /// visible username the link points to.
-                return try await usernameApiClient.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: true)
+                return try await $0.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: true)
             }
             guard currentUsernameLink.handle == newHandle else {
                 UsernameLogger.shared.error("Handle received while changing username case did not match existing! Is this a server bug?")
@@ -772,11 +772,11 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
     /// Because a failed username mutation request leaves us in a corrupted
     /// state, add retries for network errors to avoid unnecessary corruption
     /// where possible.
-    private func makeRequestWithNetworkRetries<T>(requestBlock: () async throws -> T) async throws -> T {
+    private func makeRequestWithNetworkRetries<Output>(requestBlock: (any AuthUsernamesService) async throws -> Output) async throws -> Output {
         return try await Retry.performWithBackoff(
             maxAttempts: self.maxNetworkRequestRetries + 1,
             isRetryable: { $0.isNetworkFailureOrTimeout },
-            block: requestBlock,
+            block: { try await serviceProvider.withAuthService(.usernames, do: requestBlock) },
         )
     }
 

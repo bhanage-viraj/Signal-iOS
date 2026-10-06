@@ -3,49 +3,49 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import Foundation
 import LibSignalClient
 
 #if TESTABLE_BUILD
 
-class MockUsernameApiClient: UsernameApiClient {
+final class MockUsernamesService: AuthUsernamesService, UnauthUsernamesService {
 
-    // MARK: Confirm
+    let setUsernameLinkMocks = AtomicValue<[(_ usernameCiphertext: Data, _ keepLinkHandle: Bool) async throws -> UUID]>([], lock: UnfairLock())
 
-    var confirmUsernameMocks = [(
-        username: LibSignalClient.Username,
-        usernameCiphertext: Data,
-    ) async throws -> UUID]()
+    func setUsernameLink(usernameCiphertext: Data, keepLinkHandle: Bool) async throws -> UUID {
+        return try await setUsernameLinkMocks.update(block: { $0.removeFirst() })(usernameCiphertext, keepLinkHandle)
+    }
+
+    func reserveUsernameHashes(_ usernameHashes: [UsernameHash]) async throws -> UsernameHash { owsFail("Not implemented!") }
+
+    let confirmUsernameMocks = AtomicValue<[(_ username: LibSignalClient.Username, _ usernameCiphertext: Data) async throws -> UUID]>([], lock: UnfairLock())
 
     func confirmUsername(
         _ username: LibSignalClient.Username,
         usernameCiphertext: Data,
     ) async throws -> UUID {
-        return try await confirmUsernameMocks.removeFirst()(username, usernameCiphertext)
+        return try await confirmUsernameMocks.update(block: { $0.removeFirst() })(username, usernameCiphertext)
     }
 
-    // MARK: Delete
+    let deleteUsernameHashMocks = AtomicValue<[() async throws -> Void]>([], lock: UnfairLock())
 
-    var deleteCurrentUsernameMocks = [() async throws -> Void]()
-    func deleteCurrentUsername() async throws {
-        try await deleteCurrentUsernameMocks.removeFirst()()
+    func deleteUsernameHash() async throws {
+        try await deleteUsernameHashMocks.update(block: { $0.removeFirst() })()
     }
 
-    // MARK: Set link
-
-    var setUsernameLinkMocks = [(
-        usernameCiphertext: Data,
-        keepLinkHandle: Bool,
-    ) async throws -> UUID]()
-
-    func setUsernameLink(usernameCiphertext: Data, keepLinkHandle: Bool) async throws -> UUID {
-        return try await setUsernameLinkMocks.removeFirst()(usernameCiphertext, keepLinkHandle)
+    func deleteUsernameLink() async throws {
+        owsFail("Not implemented!")
     }
 
-    // MARK: Unimplemented
+    func lookUpUsernameHash(_ hash: UsernameHash) async throws -> Aci? {
+        owsFail("Not implemented!")
+    }
 
-    func reserveUsernameHashes(_ usernameHashes: [UsernameHash]) async throws -> UsernameHash { owsFail("Not implemented!") }
-    func lookupAci(forHashedUsername hashedUsername: Usernames.HashedUsername) async throws -> Aci? { owsFail("Not implemented!") }
-    func getUsernameLink(handle: UUID, entropy: Data) async throws -> LibSignalClient.Username? { owsFail("Not implemented!") }
+    let lookUpUsernameLinkMocks = AtomicValue<[(_ uuid: UUID, _ entropy: Data) async throws -> LibSignalClient.Username?]>([], lock: UnfairLock())
+
+    func lookUpUsernameLink(_ uuid: UUID, entropy: Data) async throws -> LibSignalClient.Username? {
+        return try await lookUpUsernameLinkMocks.update(block: { $0.removeFirst() })(uuid, entropy)
+    }
 }
 
 #endif

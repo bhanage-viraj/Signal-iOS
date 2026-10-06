@@ -10,13 +10,12 @@ public struct UsernameQuerier {
     private let contactsManager: any ContactManager
     private let db: DB
     private let localUsernameManager: LocalUsernameManager
-    private let networkManager: NetworkManager
     private let profileManager: ProfileManager
     private let recipientManager: any SignalRecipientManager
     private let recipientFetcher: RecipientFetcher
+    private let serviceProvider: any ServiceProvider
     private let storageServiceManager: StorageServiceManager
     private let tsAccountManager: TSAccountManager
-    private let usernameApiClient: UsernameApiClient
     private let usernameLinkManager: UsernameLinkManager
     private let usernameLookupManager: UsernameLookupManager
 
@@ -25,13 +24,12 @@ public struct UsernameQuerier {
             contactsManager: SSKEnvironment.shared.contactManagerRef,
             db: DependenciesBridge.shared.db,
             localUsernameManager: DependenciesBridge.shared.localUsernameManager,
-            networkManager: SSKEnvironment.shared.networkManagerRef,
             profileManager: SSKEnvironment.shared.profileManagerRef,
             recipientManager: DependenciesBridge.shared.recipientManager,
             recipientFetcher: DependenciesBridge.shared.recipientFetcher,
+            serviceProvider: DependenciesBridge.shared.chatConnectionManager,
             storageServiceManager: SSKEnvironment.shared.storageServiceManagerRef,
             tsAccountManager: DependenciesBridge.shared.tsAccountManager,
-            usernameApiClient: DependenciesBridge.shared.usernameApiClient,
             usernameLinkManager: DependenciesBridge.shared.usernameLinkManager,
             usernameLookupManager: DependenciesBridge.shared.usernameLookupManager,
         )
@@ -41,26 +39,24 @@ public struct UsernameQuerier {
         contactsManager: any ContactManager,
         db: DB,
         localUsernameManager: LocalUsernameManager,
-        networkManager: NetworkManager,
         profileManager: ProfileManager,
         recipientManager: any SignalRecipientManager,
         recipientFetcher: RecipientFetcher,
+        serviceProvider: any ServiceProvider,
         storageServiceManager: StorageServiceManager,
         tsAccountManager: TSAccountManager,
-        usernameApiClient: UsernameApiClient,
         usernameLinkManager: UsernameLinkManager,
         usernameLookupManager: UsernameLookupManager,
     ) {
         self.contactsManager = contactsManager
         self.db = db
         self.localUsernameManager = localUsernameManager
-        self.networkManager = networkManager
         self.profileManager = profileManager
         self.recipientManager = recipientManager
         self.recipientFetcher = recipientFetcher
+        self.serviceProvider = serviceProvider
         self.storageServiceManager = storageServiceManager
         self.tsAccountManager = tsAccountManager
-        self.usernameApiClient = usernameApiClient
         self.usernameLinkManager = usernameLinkManager
         self.usernameLookupManager = usernameLookupManager
     }
@@ -115,9 +111,11 @@ public struct UsernameQuerier {
             title: CommonStrings.searchingModal,
             canCancel: true,
         ) { () throws(SheetDisplayableError) -> (username: String, Aci) in
-            let username: String?
+            let username: LibSignalClient.Username?
             do {
-                username = try await usernameLinkManager.decryptEncryptedLink(link: link)
+                username = try await serviceProvider.withUnauthService(.usernames) {
+                    return try await $0.lookUpUsernameLink(link.handle, entropy: link.entropy)
+                }
             } catch is CancellationError {
                 throw .userCancelled
             } catch where error.isNetworkFailureOrTimeout {
@@ -131,21 +129,13 @@ public struct UsernameQuerier {
                 throw .usernameLinkNoLongerValidError()
             }
 
-            guard
-                let hashedUsername = try? Usernames.HashedUsername(
-                    forUsername: username,
-                )
-            else {
-                throw .usernameInvalidError(username)
-            }
-
             do {
-                let usernameAci = try await queryServiceForUsername(hashedUsername: hashedUsername)
-                return (username, usernameAci)
+                let usernameAci = try await queryServiceForUsername(username)
+                return (username.value, usernameAci)
             } catch is CancellationError {
                 throw .userCancelled
             } catch is UsernameNotFoundError {
-                throw .usernameNotFoundError(username)
+                throw .usernameNotFoundError(username.value)
             } catch where error.isNetworkFailureOrTimeout {
                 throw .networkError
             } catch {
@@ -197,20 +187,16 @@ public struct UsernameQuerier {
             title: CommonStrings.searchingModal,
             canCancel: true,
         ) { () throws(SheetDisplayableError) -> Aci in
-            guard
-                let hashedUsername = try? Usernames.HashedUsername(
-                    forUsername: username,
-                )
-            else {
+            guard let username = try? LibSignalClient.Username(username) else {
                 throw .usernameInvalidError(username)
             }
 
             do {
-                return try await queryServiceForUsername(hashedUsername: hashedUsername)
+                return try await queryServiceForUsername(username)
             } catch is CancellationError {
                 throw .userCancelled
             } catch is UsernameNotFoundError {
-                throw .usernameNotFoundError(username)
+                throw .usernameNotFoundError(username.value)
             } catch where error.isNetworkFailureOrTimeout {
                 throw .networkError
             } catch {
@@ -225,8 +211,10 @@ public struct UsernameQuerier {
     private struct UsernameNotFoundError: Error {}
 
     /// Query the service for the ACI of the given username.
-    private func queryServiceForUsername(hashedUsername: Usernames.HashedUsername) async throws -> Aci {
-        let aci = try await self.usernameApiClient.lookupAci(forHashedUsername: hashedUsername)
+    private func queryServiceForUsername(_ username: LibSignalClient.Username) async throws -> Aci {
+        let aci = try await serviceProvider.withUnauthService(.usernames) {
+            return try await $0.lookUpUsernameHash(username.hash)
+        }
         guard let aci else {
             throw UsernameNotFoundError()
         }
@@ -234,7 +222,7 @@ public struct UsernameQuerier {
         await db.awaitableWrite { tx in
             handleUsernameLookupCompleted(
                 aci: aci,
-                username: hashedUsername.usernameString,
+                username: username.value,
                 tx: tx,
             )
         }

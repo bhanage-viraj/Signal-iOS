@@ -25,11 +25,6 @@ public class MockUsernameLinkManager: UsernameLinkManager {
             throw error
         }
     }
-
-    var decryptEncryptedLinkMocks = [(Usernames.UsernameLink) async throws -> String?]()
-    public func decryptEncryptedLink(link: Usernames.UsernameLink) async throws -> String? {
-        return try await decryptEncryptedLinkMocks.removeFirst()(link)
-    }
 }
 
 #endif

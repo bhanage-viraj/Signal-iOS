@@ -30,6 +30,7 @@ public class UsernameValidationManagerImpl: UsernameValidationManager {
         let database: any DB
         let localUsernameManager: LocalUsernameManager
         let messageProcessor: Usernames.Validation.Shims.MessageProcessor
+        let serviceProvider: any ServiceProvider
         let storageServiceManager: Usernames.Validation.Shims.StorageServiceManager
         let usernameLinkManager: UsernameLinkManager
         let whoAmIManager: WhoAmIManager
@@ -166,13 +167,13 @@ public class UsernameValidationManagerImpl: UsernameValidationManager {
     ) async throws -> Bool {
         let validationSucceeded: Bool
         do {
-            let usernameForLocalLink = try await self.context.usernameLinkManager.decryptEncryptedLink(
-                link: localUsernameLink,
-            )
+            let usernameForLocalLink = try await self.context.serviceProvider.withUnauthService(.usernames) {
+                return try await $0.lookUpUsernameLink(localUsernameLink.handle, entropy: localUsernameLink.entropy)
+            }
             if usernameForLocalLink == nil {
                 self.logger.warn("Couldn't find our own username link")
             }
-            validationSucceeded = (usernameForLocalLink == localUsername)
+            validationSucceeded = (usernameForLocalLink?.value == localUsername)
         } catch
         LibSignalClient.SignalError.usernameLinkInvalidEntropyDataLength,
             LibSignalClient.SignalError.usernameLinkInvalid

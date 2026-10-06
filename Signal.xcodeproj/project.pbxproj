@@ -2841,7 +2841,6 @@
 		D93830802A705D64006CDCDE /* UsernameLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = D938307F2A705D64006CDCDE /* UsernameLogger.swift */; };
 		D93830812A7065C7006CDCDE /* UsernameValidationManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C182BEF529ACFCB200E8E1E2 /* UsernameValidationManagerTests.swift */; };
 		D93830832A708E95006CDCDE /* UsernameChangeDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830822A708E95006CDCDE /* UsernameChangeDelegate.swift */; };
-		D93830852A784210006CDCDE /* UsernameApiClientImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830842A784210006CDCDE /* UsernameApiClientImpl.swift */; };
 		D9388C912DA475230048D4F9 /* BackupSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9388C902DA4751F0048D4F9 /* BackupSettingsStore.swift */; };
 		D9392DE02D88AA5800728C01 /* ZoomableMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9392DDF2D88AA5000728C01 /* ZoomableMediaView.swift */; };
 		D93964B62E038C7B00094117 /* BackupAttachmentUploadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93964B52E038C7B00094117 /* BackupAttachmentUploadTracker.swift */; };
@@ -7258,7 +7257,6 @@
 		D938307D2A70441D006CDCDE /* QRCodeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeColor.swift; sourceTree = "<group>"; };
 		D938307F2A705D64006CDCDE /* UsernameLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UsernameLogger.swift; sourceTree = "<group>"; };
 		D93830822A708E95006CDCDE /* UsernameChangeDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameChangeDelegate.swift; sourceTree = "<group>"; };
-		D93830842A784210006CDCDE /* UsernameApiClientImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameApiClientImpl.swift; sourceTree = "<group>"; };
 		D9388C902DA4751F0048D4F9 /* BackupSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupSettingsStore.swift; sourceTree = "<group>"; };
 		D938CD5F29283402006FB16A /* Paypal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paypal.swift; sourceTree = "<group>"; };
 		D9392DDF2D88AA5000728C01 /* ZoomableMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableMediaView.swift; sourceTree = "<group>"; };
@@ -13806,7 +13804,6 @@
 			children = (
 				D93830732A703968006CDCDE /* LocalUsernameManager.swift */,
 				D93830712A703727006CDCDE /* UsernameApiClient.swift */,
-				D93830842A784210006CDCDE /* UsernameApiClientImpl.swift */,
 				D9697C172FD8C4A300119F72 /* UsernameChangeSyncMessage.swift */,
 				D9C2D77D299D750200D79715 /* UsernameEducationManager.swift */,
 				D93830792A704123006CDCDE /* UsernameLinkManager.swift */,
@@ -20714,7 +20711,6 @@
 				C1DF3F452B0283C5004B6986 /* UploadV2.swift in Sources */,
 				F9D5BFCF2979AFF4001737E5 /* URLPathComponents.swift in Sources */,
 				D93830722A703728006CDCDE /* UsernameApiClient.swift in Sources */,
-				D93830852A784210006CDCDE /* UsernameApiClientImpl.swift in Sources */,
 				D9697C182FD8C4A700119F72 /* UsernameChangeSyncMessage.swift in Sources */,
 				D9C2D77E299D750200D79715 /* UsernameEducationManager.swift in Sources */,
 				D938307A2A704123006CDCDE /* UsernameLinkManager.swift in Sources */,
