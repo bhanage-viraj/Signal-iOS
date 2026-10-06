@@ -25,7 +25,7 @@ public class DecryptingStreamTransform: StreamTransform, FinalizableStreamTransf
         self.encryptionKey = encryptionKey
     }
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: StreamTransform.Options) throws -> Data {
         var inputBuffer = data
         if !hasInitialized {
             guard inputBuffer.count > Constants.HeaderSize else { throw Error.initialBufferTooSmall }

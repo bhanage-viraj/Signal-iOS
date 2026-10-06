@@ -15,7 +15,7 @@ public class NonceHeaderOutputStreamTransform: StreamTransform {
 
     private var hasWrittenHeader = false
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         if hasWrittenHeader { return data }
         defer { hasWrittenHeader = true }
 

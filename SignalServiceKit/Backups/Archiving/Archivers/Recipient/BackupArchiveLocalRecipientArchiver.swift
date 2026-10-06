@@ -54,6 +54,7 @@ public class BackupArchiveLocalRecipientArchiver: BackupArchiveProtoStreamWriter
 
             let error: BackupArchive.ArchiveFrameError? = Self.writeFrameToStream(
                 stream,
+                flush: .afterWrite,
                 frameBencher: frameBencher,
             ) {
                 var selfRecipient = BackupProto_Self()

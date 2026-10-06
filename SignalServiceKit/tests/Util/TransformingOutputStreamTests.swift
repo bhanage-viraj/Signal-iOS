@@ -18,10 +18,10 @@ final class TransformingOutputStreamTests: XCTestCase {
             ],
             outputStream: outputStream,
         )
-        try transformingStream.write(data: "w".data(using: .utf8)!)
-        try transformingStream.write(data: "xx".data(using: .utf8)!)
-        try transformingStream.write(data: "yyy".data(using: .utf8)!)
-        try transformingStream.write(data: "zzzz".data(using: .utf8)!)
+        try transformingStream.write(data: "w".data(using: .utf8)!, options: [:])
+        try transformingStream.write(data: "xx".data(using: .utf8)!, options: [:])
+        try transformingStream.write(data: "yyy".data(using: .utf8)!, options: [:])
+        try transformingStream.write(data: "zzzz".data(using: .utf8)!, options: [:])
         try transformingStream.close()
 
         let expected = "H0[H1{H2|w|}][{|xx|}][{|yyy|}][{|zzzz|}][{F2}][F1]F0"
@@ -39,7 +39,7 @@ final class TransformingOutputStreamTests: XCTestCase {
             return returnData
         }
 
-        func transform(data: Data) throws -> Data {
+        func transform(data: Data, options: Options) throws -> Data {
             var returnData = Data()
             if !initialized {
                 initialized = true
@@ -68,7 +68,7 @@ final class TransformingOutputStreamTests: XCTestCase {
             return returnData
         }
 
-        func transform(data: Data) throws -> Data {
+        func transform(data: Data, options: Options) throws -> Data {
             var returnData = Data()
             if !initialized {
                 initialized = true
@@ -97,7 +97,7 @@ final class TransformingOutputStreamTests: XCTestCase {
             return returnData
         }
 
-        func transform(data: Data) throws -> Data {
+        func transform(data: Data, options: Options) throws -> Data {
             var returnData = Data()
             if !initialized {
                 initialized = true
@@ -120,7 +120,7 @@ class TextBackedOutputStream: OutputStreamable {
 
     var accumulation = Data()
 
-    func write(data: Data) throws {
+    func write(data: Data, options: StreamTransform.Options) throws {
         accumulation.append(data)
     }
 

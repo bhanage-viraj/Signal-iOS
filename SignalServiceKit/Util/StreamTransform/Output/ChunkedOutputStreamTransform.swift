@@ -7,7 +7,7 @@ import Foundation
 
 public class ChunkedOutputStreamTransform: StreamTransform {
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         let byteLength = UInt32(data.count)
         var result = Data()
         result.append(Self.writeVariableLengthUInt32(byteLength))

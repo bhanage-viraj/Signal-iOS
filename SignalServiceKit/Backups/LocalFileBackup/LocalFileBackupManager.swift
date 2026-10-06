@@ -382,7 +382,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
 
                     var fileProto = LocalBackupProto_FilesFrame()
                     fileProto.item = .mediaName(localFileBackupMediaName)
-                    try manifestStream.write(data: fileProto.serializedData())
+                    try manifestStream.write(data: fileProto.serializedData(), options: [:])
                     source?.incrementCompletedUnitCount(by: attachmentByteCount)
                     continue
                 }
@@ -418,7 +418,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
 
                     var fileProto = LocalBackupProto_FilesFrame()
                     fileProto.item = .mediaName(localFileBackupMediaName)
-                    try manifestStream.write(data: fileProto.serializedData())
+                    try manifestStream.write(data: fileProto.serializedData(), options: [:])
 
                     source?.incrementCompletedUnitCount(by: attachmentByteCount)
                 }

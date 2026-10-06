@@ -59,14 +59,14 @@ final class ContactOutputStream {
 
         let contactData: Data
         do {
-            contactData = try chunkedOutputTransform.transform(data: contactBuilder.buildSerializedData())
+            contactData = try chunkedOutputTransform.transform(data: contactBuilder.buildSerializedData(), options: [:])
         } catch {
             owsFailDebug("Couldn't serialize protobuf: \(error)")
             return // Eat the error and silently drop this entry.
         }
-        try outputStream.write(data: contactData)
+        try outputStream.write(data: contactData, options: [:])
         if let avatarJpegData {
-            try outputStream.write(data: avatarJpegData)
+            try outputStream.write(data: avatarJpegData, options: [:])
         }
     }
 }

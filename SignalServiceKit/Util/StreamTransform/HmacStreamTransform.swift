@@ -61,7 +61,7 @@ public class HmacStreamTransform: StreamTransform, FinalizableStreamTransform, B
         return remainingData
     }
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         inputBuffer.append(data)
         let targetData = try readBufferedData()
         if targetData.count > 0 {

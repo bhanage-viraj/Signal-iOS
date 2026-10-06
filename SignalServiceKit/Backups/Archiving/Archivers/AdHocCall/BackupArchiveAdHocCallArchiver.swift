@@ -105,6 +105,7 @@ public class BackupArchiveAdHocCallArchiver: BackupArchiveProtoStreamWriter {
 
                 let error: ArchiveFrameError? = Self.writeFrameToStream(
                     stream,
+                    flush: .none,
                     frameBencher: frameBencher,
                 ) {
                     var frame = BackupProto_Frame()

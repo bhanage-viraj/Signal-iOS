@@ -72,7 +72,7 @@ public final class TransformingInputStream {
             }
 
             // Transform the data.
-            returnData = try transforms.reduce(getData()) { try $1.transform(data: $0) }
+            returnData = try transforms.reduce(getData()) { try $1.transform(data: $0, options: [:]) }
         }
 
         if returnData.count > 0 {

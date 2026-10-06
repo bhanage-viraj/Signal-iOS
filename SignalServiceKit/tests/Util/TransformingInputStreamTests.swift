@@ -22,9 +22,9 @@ final class TransformingInputStreamTests: XCTestCase {
             outputStream: outputStream,
         )
 
-        try transformingOutputStream.write(data: "w".data(using: .utf8)!)
-        try transformingOutputStream.write(data: "xx".data(using: .utf8)!)
-        try transformingOutputStream.write(data: "yyy".data(using: .utf8)!)
+        try transformingOutputStream.write(data: "w".data(using: .utf8)!, options: [:])
+        try transformingOutputStream.write(data: "xx".data(using: .utf8)!, options: [:])
+        try transformingOutputStream.write(data: "yyy".data(using: .utf8)!, options: [:])
 
         try transformingOutputStream.close()
 

@@ -34,7 +34,7 @@ public class NonceHeaderInputStreamTransform: StreamTransform, BufferedStreamTra
         }
     }
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         if hasFinishedReadingHeader {
             return data
         }

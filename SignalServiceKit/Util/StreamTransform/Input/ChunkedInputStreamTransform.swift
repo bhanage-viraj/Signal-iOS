@@ -19,7 +19,7 @@ public class ChunkedInputStreamTransform: StreamTransform, BufferedStreamTransfo
         self.initialBufferSize = initialBufferSize
     }
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         // ChunkedInputStreamTransform, by its nature, will usually take in a large
         // buffer of data and then return smaller chunks of data as it reads
         // through the stream. To avoid unecessary copying of buffers, the class

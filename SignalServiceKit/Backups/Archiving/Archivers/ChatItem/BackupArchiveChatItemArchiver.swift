@@ -315,6 +315,7 @@ public class BackupArchiveChatItemArchiver: BackupArchiveProtoStreamWriter {
 
         let error: ArchiveFrameError? = Self.writeFrameToStream(
             stream,
+            flush: .afterInterval,
             frameBencher: frameBencher,
         ) {
             let chatItem = buildChatItem(

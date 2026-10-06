@@ -25,7 +25,7 @@ public class MetadataStreamTransform: StreamTransform, FinalizableStreamTransfor
 
     public private(set) var count: Int = 0
 
-    public func transform(data: Data) -> Data {
+    public func transform(data: Data, options: Options) -> Data {
         hasher.update(data: data)
         count += data.count
         return data
@@ -34,6 +34,22 @@ public class MetadataStreamTransform: StreamTransform, FinalizableStreamTransfor
     public func finalize() -> Data {
         owsPrecondition(result == nil)
         result = hasher.finalize()
+        return Data()
+    }
+}
+
+public class ByteCountStreamTransform: StreamTransform, FinalizableStreamTransform {
+    public var hasFinalized = false
+
+    public private(set) var count: Int = 0
+
+    public func transform(data: Data, options: Options) -> Data {
+        count += data.count
+        return data
+    }
+
+    public func finalize() -> Data {
+        hasFinalized = true
         return Data()
     }
 }

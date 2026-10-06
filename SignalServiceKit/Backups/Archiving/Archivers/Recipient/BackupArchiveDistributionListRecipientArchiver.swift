@@ -151,6 +151,7 @@ public class BackupArchiveDistributionListRecipientArchiver: BackupArchiveProtoS
 
         let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
             stream,
+            flush: .afterWrite,
             frameBencher: frameBencher,
         ) {
             var recipient = BackupProto_Recipient()
@@ -207,6 +208,7 @@ public class BackupArchiveDistributionListRecipientArchiver: BackupArchiveProtoS
 
         let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
             stream,
+            flush: .afterWrite,
             frameBencher: frameBencher,
         ) {
             var recipient = BackupProto_Recipient()

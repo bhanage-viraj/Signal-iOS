@@ -24,7 +24,7 @@ public class EncryptingStreamTransform: StreamTransform, FinalizableStreamTransf
         )
     }
 
-    public func transform(data: Data) throws -> Data {
+    public func transform(data: Data, options: Options) throws -> Data {
         var ciphertextBlock = Data()
         if !hasWrittenHeader {
             ciphertextBlock.append(iv)

@@ -14,6 +14,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
     public enum Constants {
         fileprivate static let keyValueStoreCollectionName = "MessageBackupManager"
         fileprivate static let keyValueStoreRestoreStateKey = "keyValueStoreRestoreStateKey"
+        fileprivate static let keyValueStoreEstimatedSizeKey = "keyValueStoreEstimatedSizeKey"
         fileprivate static let keyValueStoreNeedForwardSecrecyTokenFetchKey = "keyValueStoreNeedForwardSecrecyTokenFetchKey"
 
         public static let supportedBackupVersion: UInt64 = 1
@@ -308,6 +309,13 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
             nonceStore: backupNonceMetadataStore,
         )
 
+        let estimatedUncompressedSize = db.read {
+            kvStore.getUInt64(
+                Constants.keyValueStoreEstimatedSizeKey,
+                transaction: $0,
+            )
+        }
+
         let metadata = try await _exportBackup(
             localIdentifiers: localIdentifiers,
             backupPurpose: backupPurpose.libsignalPurpose,
@@ -326,6 +334,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                     encryptionMetadata: encryptionMetadata,
                     exportProgress: exportProgress,
                     attachmentByteCounter: attachmentByteCounter,
+                    estimatedUncompressedSize: estimatedUncompressedSize,
                     tx: tx,
                 )
 
@@ -335,6 +344,14 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 )
             },
         )
+
+        await db.awaitableWrite { tx in
+            kvStore.setUInt64(
+                UInt64(safeCast: metadata.uncompressedDataLength),
+                key: Constants.keyValueStoreEstimatedSizeKey,
+                transaction: tx,
+            )
+        }
 
         try await self.validateEncryptedBackup(
             fileUrl: metadata.fileUrl,
@@ -677,20 +694,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 throw BackupError()
             }
 
-            let chatItemArchiveResult = try chatItemArchiver.archiveInteractions(
-                stream: stream,
-                context: chatArchivingContext,
-            )
-            switch chatItemArchiveResult {
-            case .success:
-                break
-            case .partialSuccess(let partialFailures):
-                errors.append(contentsOf: partialFailures)
-            case .completeFailure(let error):
-                errors.append(error)
-                throw BackupError()
-            }
-
             let archivingContext = BackupArchive.ArchivingContext(
                 localIdentifiers: localIdentifiers,
                 startDate: startDate,
@@ -721,6 +724,20 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 context: chatArchivingContext,
             )
             switch adHocCallArchiveResult {
+            case .success:
+                break
+            case .partialSuccess(let partialFailures):
+                errors.append(contentsOf: partialFailures)
+            case .completeFailure(let error):
+                errors.append(error)
+                throw BackupError()
+            }
+
+            let chatItemArchiveResult = try chatItemArchiver.archiveInteractions(
+                stream: stream,
+                context: chatArchivingContext,
+            )
+            switch chatItemArchiveResult {
             case .success:
                 break
             case .partialSuccess(let partialFailures):

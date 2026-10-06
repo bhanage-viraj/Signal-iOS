@@ -68,6 +68,7 @@ public class BackupArchiveStickerPackArchiver: BackupArchiveProtoStreamWriter {
 
                 let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
                     stream,
+                    flush: .none,
                     frameBencher: frameBencher,
                 ) {
                     var stickerPack = BackupProto_StickerPack()
@@ -103,6 +104,7 @@ public class BackupArchiveStickerPackArchiver: BackupArchiveProtoStreamWriter {
 
                 let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
                     stream,
+                    flush: .none,
                     frameBencher: frameBencher,
                 ) {
                     var stickerPack = BackupProto_StickerPack()

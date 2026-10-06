@@ -276,6 +276,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
 
         let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
             stream,
+            flush: .afterWrite,
             frameBencher: frameBencher,
             frameBuilder: {
                 var recipient = BackupProto_Recipient()

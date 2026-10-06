@@ -10,13 +10,14 @@ import Foundation
 /// StreamTransforms should support chaining to and from other transforms.
 /// (e.g. encrypt and compress a stream)
 public protocol StreamTransform {
+    typealias Options = [String: any OptionSet]
 
     /// Transform the passed in data. It is worth noting that the length of the
     /// data is not guaranteed to match the input data, and it shouldn't be
     /// assumed that passing data into the transform will result in any data
     /// being returned. (In these cases, the returned Data object will be
     /// empty.)
-    func transform(data: Data) throws -> Data
+    func transform(data: Data, options: Options) throws -> Data
 
     /// Returns `true` if the transform has pending bytes buffered.
     var hasPendingBytes: Bool { get }
@@ -80,7 +81,7 @@ public extension Array where Element == any StreamTransform {
                     owsFailDebug("Can't pass data to a finalized transform")
                 }
                 // Still data coming through the pipeline, process it and return.
-                return try transform.transform(data: pendingResult)
+                return try transform.transform(data: pendingResult, options: [:])
             }
             // There are still bytes on the current transform, so return those
             // This could be before or after the transform has finalized.

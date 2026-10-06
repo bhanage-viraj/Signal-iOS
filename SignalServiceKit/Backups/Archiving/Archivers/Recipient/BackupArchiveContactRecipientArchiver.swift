@@ -89,6 +89,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         ) {
             let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
                 stream,
+                flush: .afterWrite,
                 frameBencher: frameBencher,
                 frameBuilder: {
                     let recipientAddress = contactAddress.asArchivingAddress()
@@ -451,6 +452,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         let maybeError: BackupArchive.ArchiveFrameError?
         maybeError = Self.writeFrameToStream(
             stream,
+            flush: .afterWrite,
             frameBencher: frameBencher,
             frameBuilder: {
                 var recipient = BackupProto_Recipient()

@@ -173,6 +173,7 @@ public class BackupArchiveAccountDataArchiver: BackupArchiveProtoStreamWriter {
 
             let error: BackupArchive.ArchiveFrameError? = Self.writeFrameToStream(
                 stream,
+                flush: .afterWrite,
                 frameBencher: frameBencher,
             ) {
                 var frame = BackupProto_Frame()

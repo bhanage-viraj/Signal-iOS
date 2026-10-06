@@ -21,10 +21,10 @@ public final class TransformingOutputStream: OutputStreamable {
         self.outputStream = outputStream
     }
 
-    public func write(data: Data) throws {
-        let data = try transforms.reduce(data) { try $1.transform(data: $0) }
+    public func write(data: Data, options: StreamTransform.Options) throws {
+        let data = try transforms.reduce(data) { try $1.transform(data: $0, options: options) }
         if data.count > 0 {
-            try outputStream.write(data: data)
+            try outputStream.write(data: data, options: options)
         }
     }
 
@@ -34,7 +34,7 @@ public final class TransformingOutputStream: OutputStreamable {
         while hasPendingBytes {
             let footerData = try transforms.readNextRemainingBytes()
             if footerData.count > 0 {
-                try outputStream.write(data: footerData)
+                try outputStream.write(data: footerData, options: [:])
             }
         }
     }

@@ -70,6 +70,7 @@ extension BackupArchiveProtoStreamWriter {
      */
     static func writeFrameToStream(
         _ stream: BackupArchiveOutputStream,
+        flush: BackupArchiveFlushBehavior,
         frameBencher: BackupArchive.Bencher.FrameBencher,
         frameBuilder: () -> BackupProto_Frame,
     ) -> BackupArchive.ArchiveFrameError? {
@@ -77,7 +78,7 @@ extension BackupArchiveProtoStreamWriter {
         frameBencher.didProcessFrame(frame)
 
         do {
-            try stream.writeFrame(frame)
+            try stream.writeFrame(frame, flush: flush)
             return nil
         } catch {
             return .archiveFrameError(.fileIOError(error))

@@ -96,6 +96,7 @@ public class BackupArchiveCallLinkRecipientArchiver: BackupArchiveProtoStreamWri
                 let recipientId = context.assignRecipientId(to: callLinkAppId)
                 let maybeError: ArchiveFrameError? = Self.writeFrameToStream(
                     stream,
+                    flush: .afterWrite,
                     frameBencher: frameBencher,
                 ) {
                     var recipient = BackupProto_Recipient()

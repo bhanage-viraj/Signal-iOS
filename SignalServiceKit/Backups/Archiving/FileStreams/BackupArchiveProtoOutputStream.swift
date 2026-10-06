@@ -32,16 +32,22 @@ class BackupArchiveProtoOutputStream: BackupArchiveOutputStream {
             try header.serializedData()
         }
 
-        try outputStream.write(data: bytes)
+        let options = [GzipStreamTransform.optionsKey: GzipStreamTransform.Options.forceFlush]
+        try outputStream.write(data: bytes, options: options)
         exportProgress?.didExportFrame()
     }
 
-    func writeFrame(_ frame: BackupProto_Frame) throws {
+    func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior) throws {
         let bytes = failIfThrows {
             try frame.serializedData()
         }
 
-        try outputStream.write(data: bytes)
+        let options: StreamTransform.Options = switch flush {
+        case .none: [:]
+        case .afterWrite: [GzipStreamTransform.optionsKey: GzipStreamTransform.Options.forceFlush]
+        case .afterInterval: [GzipStreamTransform.optionsKey: GzipStreamTransform.Options.intervalFlush]
+        }
+        try outputStream.write(data: bytes, options: options)
         exportProgress?.didExportFrame()
     }
 

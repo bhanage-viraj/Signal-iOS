@@ -29,6 +29,7 @@ public class BackupArchiveReleaseNotesRecipientArchiver: BackupArchiveProtoStrea
 
             let maybeError: BackupArchive.ArchiveFrameError? = Self.writeFrameToStream(
                 stream,
+                flush: .afterWrite,
                 frameBencher: frameBencher,
                 frameBuilder: {
                     var recipient = BackupProto_Recipient()

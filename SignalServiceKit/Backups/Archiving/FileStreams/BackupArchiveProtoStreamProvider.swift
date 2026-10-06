@@ -84,6 +84,7 @@ public class BackupArchiveEncryptedProtoStreamProvider {
         encryptionMetadata: BackupExportPurpose.EncryptionMetadata,
         exportProgress: BackupArchiveExportProgress?,
         attachmentByteCounter: BackupArchiveAttachmentByteCounter,
+        estimatedUncompressedSize: UInt64?,
         tx: DBReadTransaction,
     ) throws -> (
         protoOutputStream: BackupArchiveProtoOutputStream,
@@ -92,9 +93,11 @@ public class BackupArchiveEncryptedProtoStreamProvider {
         let backupEncryptionKey = encryptionMetadata.encryptionKey
         do {
             let outputTrackingTransform = MetadataStreamTransform()
+            let gzipInputCountTracker = ByteCountStreamTransform()
 
             let transforms: [any StreamTransform] = [
-                try GzipStreamTransform(.compress),
+                gzipInputCountTracker,
+                try GzipStreamTransform(.compress, estimatedTotalUncompressedLength: estimatedUncompressedSize),
                 try EncryptingStreamTransform(
                     iv: Randomness.generateRandomBytes(UInt(Cryptography.Constants.aescbcIVLength)),
                     encryptionKey: backupEncryptionKey.aesKey,
@@ -122,6 +125,7 @@ public class BackupArchiveEncryptedProtoStreamProvider {
                         fileUrl: fileUrl,
                         digest: try outputTrackingTransform.digest(),
                         encryptedDataLength: UInt32(clamping: outputTrackingTransform.count),
+                        uncompressedDataLength: UInt32(clamping: gzipInputCountTracker.count),
                         remoteAttachmentByteSize: attachmentByteCounter.remoteAttachmentByteSize(),
                         localAttachmentByteSize: attachmentByteCounter.localAttachmentByteSize(),
                         nonceMetadata: encryptionMetadata.nonceMetadata,
@@ -302,7 +306,7 @@ private class InputProgressStreamTransform: StreamTransform {
         self.frameRestoreProgress = frameRestoreProgress
     }
 
-    func transform(data: Data) throws -> Data {
+    func transform(data: Data, options: Options) throws -> Data {
         frameRestoreProgress.didReadBytes(count: data.count)
         return data
     }
