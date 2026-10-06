@@ -1020,10 +1020,21 @@ extension CVComponentThreadDetails {
             arguments = firstThreeMembers + [otherMembersString]
         }
 
-        let membersString = String.nonPluralLocalizedStringWithFormat(
+        var membersString = String.nonPluralLocalizedStringWithFormat(
             formatString,
             arguments: arguments,
         )
+
+        let invitedMembersCount = groupMembership.invitedMembers.count
+        if invitedMembersCount > 0 {
+            let membersAndInvitedFormat = OWSLocalizedString(
+                "THREAD_DETAILS_MEMBERS_AND_INVITED_%ld",
+                tableName: "PluralAware",
+                comment: "Label for a group with invited members who have not yet joined. Embeds {{ number of invited members }} and {{ list of group members, e.g. THREAD_DETAILS_TWO_MEMBERS }}.",
+            )
+            membersString = String.localizedStringWithFormat(membersAndInvitedFormat, invitedMembersCount, membersString)
+        }
+
         let membersAttributedString: NSAttributedString
         if let underlinedPortion {
             let underlinedRange = NSString(string: membersString).range(of: underlinedPortion)

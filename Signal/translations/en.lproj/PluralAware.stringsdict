@@ -1676,6 +1676,22 @@ Try again in %d hours.</string>
 			<string>&lt;bold&gt;%d&lt;/bold&gt; views</string>
 		</dict>
 	</dict>
+	<key>THREAD_DETAILS_MEMBERS_AND_INVITED_%ld</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ (+%1$ld invited)</string>
+			<key>other</key>
+			<string>%2$@ (+%1$ld invited)</string>
+		</dict>
+	</dict>
 	<key>THREAD_DETAILS_MORE_MUTUAL_GROUP_%3$ld</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

@@ -111,7 +111,8 @@ public class CVLoader: NSObject {
                     return groupModel.groupName != prevGroupModel.groupName ||
                         groupModel.descriptionText != prevGroupModel.descriptionText ||
                         groupModel.avatarHash != prevGroupModel.avatarHash ||
-                        groupModel.groupMembership.fullMembers.count != prevGroupModel.groupMembership.fullMembers.count
+                        groupModel.groupMembership.fullMembers.count != prevGroupModel.groupMembership.fullMembers.count ||
+                        groupModel.groupMembership.invitedMembers.count != prevGroupModel.groupMembership.invitedMembers.count
                 }()
 
                 // If the thread details did change, reload the thread details
