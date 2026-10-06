@@ -25,21 +25,6 @@ class DonationReceiptViewController: OWSTableViewController2 {
         },
     )
 
-    private lazy var shareReceiptButtonContainer: UIView = {
-        let stackView = UIStackView.verticalButtonStack(buttons: [shareReceiptButton])
-        let containerView = UIView()
-        containerView.preservesSuperviewLayoutMargins = true
-        containerView.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: containerView.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: containerView.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-        ])
-        return containerView
-    }()
-
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -55,7 +40,6 @@ class DonationReceiptViewController: OWSTableViewController2 {
         super.viewDidLoad()
 
         title = OWSLocalizedString("DONATION_RECEIPT_DETAILS", comment: "Title on the view where you can see a single receipt")
-        view.backgroundColor = .Signal.groupedBackground
 
         updateTableContents()
         updateSignalLogoImage()
@@ -126,7 +110,9 @@ class DonationReceiptViewController: OWSTableViewController2 {
 
     // MARK: - Share button
 
-    override open func bottomFooter() -> UIView? { shareReceiptButtonContainer }
+    override open func bottomFooter() -> UIView? {
+        OWSTableViewController2.buildHeaderFooterView(for: UIStackView.verticalButtonStack(buttons: [shareReceiptButton]))
+    }
 
     private func showShareReceiptActivity() {
         ShareActivityUtil.present(
@@ -312,3 +298,19 @@ class DonationReceiptViewController: OWSTableViewController2 {
         }
     }
 }
+
+#if DEBUG
+@available(iOS 17, *)
+#Preview {
+    NavigationPreviewController(
+        viewController: DonationReceiptViewController(
+            model: DonationReceipt(
+                receiptType: .gift,
+                timestamp: .now - .hour,
+                amount: FiatMoney(currencyCode: "USD", value: 10),
+            ),
+        ),
+    )
+}
+
+#endif

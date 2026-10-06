@@ -6,7 +6,7 @@
 import SignalServiceKit
 import SignalUI
 
-class BadgeGiftingConfirmationViewController: OWSTableViewController2 {
+class BadgeGiftingConfirmationViewController: OWSTableViewController2, DatabaseChangeDelegate, TextViewWithPlaceholderDelegate {
     typealias PaymentMethodsConfiguration = DonationSubscriptionConfiguration.PaymentMethodsConfiguration
 
     // MARK: - View state
@@ -47,7 +47,6 @@ class BadgeGiftingConfirmationViewController: OWSTableViewController2 {
             "DONATION_ON_BEHALF_OF_A_FRIEND_CONFIRMATION_SCREEN_TITLE",
             comment: "Users can donate on a friend's behalf. This is the title on the screen where users confirm the donation, and can write a message for the friend.",
         )
-        view.backgroundColor = .Signal.groupedBackground
 
         shouldAvoidKeyboard = true
         updateTableContents()
@@ -267,9 +266,7 @@ class BadgeGiftingConfirmationViewController: OWSTableViewController2 {
 
     // MARK: - Footer
 
-    override func bottomFooter() -> UIView? { bottomFooterContainer }
-
-    private lazy var bottomFooterContainer: UIView = {
+    override func bottomFooter() -> UIView? {
         let amountView: UIStackView = {
             let descriptionLabel = UILabel()
             descriptionLabel.text = OWSLocalizedString(
@@ -289,6 +286,9 @@ class BadgeGiftingConfirmationViewController: OWSTableViewController2 {
             let view = UIStackView(arrangedSubviews: [descriptionLabel, priceLabel])
             view.axis = .horizontal
             view.distribution = .equalSpacing
+            view.isLayoutMarginsRelativeArrangement = true
+            view.directionalLayoutMargins.leading = OWSTableViewController2.cellHInnerMargin
+            view.directionalLayoutMargins.trailing = OWSTableViewController2.cellHInnerMargin
             view.autoSetDimension(.height, toSize: 48)
 
             return view
@@ -309,24 +309,11 @@ class BadgeGiftingConfirmationViewController: OWSTableViewController2 {
         stackView.alignment = .fill
         stackView.spacing = 16
 
-        let view = UIView()
-        view.preservesSuperviewLayoutMargins = true
-        view.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
+        return OWSTableViewController2.buildHeaderFooterView(for: stackView)
+    }
 
-        return view
-    }()
-}
+    // MARK: - DatabaseChangeDelegate
 
-// MARK: - Database observer delegate
-
-extension BadgeGiftingConfirmationViewController: DatabaseChangeDelegate {
     private func updateDisappearingMessagesTimerWithSneakyTransaction() {
         let dmConfigurationStore = DependenciesBridge.shared.disappearingMessagesConfigurationStore
         let dmSeconds = SSKEnvironment.shared.databaseStorageRef.read { tx in
@@ -350,11 +337,9 @@ extension BadgeGiftingConfirmationViewController: DatabaseChangeDelegate {
     func databaseChangesDidReset() {
         updateDisappearingMessagesTimerWithSneakyTransaction()
     }
-}
 
-// MARK: - Text view delegate
+    // MARK: - TextViewWithPlaceholderDelegate
 
-extension BadgeGiftingConfirmationViewController: TextViewWithPlaceholderDelegate {
     func textView(
         _ textView: TextViewWithPlaceholder,
         uiTextView: UITextView,

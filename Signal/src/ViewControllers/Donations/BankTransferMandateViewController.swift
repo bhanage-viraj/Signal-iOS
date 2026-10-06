@@ -7,7 +7,7 @@ import SignalServiceKit
 import SignalUI
 
 @MainActor
-class BankTransferMandateViewController: OWSTableViewController2 {
+class BankTransferMandateViewController: OWSTableViewController2, UITextViewDelegate {
     override var preferredNavigationBarStyle: OWSNavigationBarStyle { .solid }
     override var navbarBackgroundColorOverride: UIColor? { self.tableBackgroundColor }
 
@@ -43,7 +43,6 @@ class BankTransferMandateViewController: OWSTableViewController2 {
         super.viewDidLoad()
 
         navigationItem.leftBarButtonItem = .cancelButton(dismissingFrom: self)
-        view.backgroundColor = .Signal.groupedBackground
 
         updateTableContents()
         updateBottomFooter()
@@ -185,7 +184,9 @@ class BankTransferMandateViewController: OWSTableViewController2 {
         isScrolledCloseToBottom = tableView.contentOffset.y >= tableViewBottom - 56
     }
 
-    override func bottomFooter() -> UIView? { bottomFooterContainer }
+    override func bottomFooter() -> UIView? {
+        OWSTableViewController2.buildHeaderFooterView(for: UIStackView.verticalButtonStack(buttons: [bottomFooterButton]))
+    }
 
     private lazy var bottomFooterButton = UIButton(
         configuration: .largePrimary(title: ""),
@@ -193,21 +194,6 @@ class BankTransferMandateViewController: OWSTableViewController2 {
             self?.didTapBottomFooterButton()
         },
     )
-
-    private lazy var bottomFooterContainer: UIView = {
-        let stackView = UIStackView.verticalButtonStack(buttons: [bottomFooterButton])
-        let view = UIView()
-        view.preservesSuperviewLayoutMargins = true
-        view.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
-        return view
-    }()
 
     private func updateBottomFooter() {
         switch state {
@@ -275,11 +261,9 @@ class BankTransferMandateViewController: OWSTableViewController2 {
         super.scrollViewDidScroll(scrollView)
         checkScrollPosition()
     }
-}
 
-// MARK: - UITextViewDelegate
+    // MARK: - UITextViewDelegate
 
-extension BankTransferMandateViewController: UITextViewDelegate {
     func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
         present(DonationPaymentDetailsReadMoreSheetViewController(), animated: true)
         return false
@@ -296,3 +280,27 @@ extension Stripe.PaymentMethod.Mandate {
         ))
     }
 }
+
+#if DEBUG
+
+@available(iOS 17, *)
+#Preview("SEPA") {
+    NavigationPreviewController(
+        viewController: BankTransferMandateViewController(
+            bankTransferType: .sepa,
+            didAgree: { _ in },
+        ),
+    )
+}
+
+@available(iOS 17, *)
+#Preview("iDEAL") {
+    NavigationPreviewController(
+        viewController: BankTransferMandateViewController(
+            bankTransferType: .ideal,
+            didAgree: { _ in },
+        ),
+    )
+}
+
+#endif

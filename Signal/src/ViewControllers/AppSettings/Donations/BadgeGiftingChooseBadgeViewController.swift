@@ -131,8 +131,6 @@ public class BadgeGiftingChooseBadgeViewController: OWSTableViewController2 {
     override public func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .Signal.groupedBackground
-
         let isPresentedStandalone = navigationController?.viewControllers.first == self
         if isPresentedStandalone {
             navigationItem.leftBarButtonItem = .cancelButton(dismissingFrom: self)
@@ -316,7 +314,10 @@ public class BadgeGiftingChooseBadgeViewController: OWSTableViewController2 {
 
     // MARK: - Footer contents
 
-    override public func bottomFooter() -> UIView? { bottomFooterContainer }
+    override public func bottomFooter() -> UIView? {
+        let buttonContainer = nextButton.enclosedInVerticalStackView(isFullWidthButton: true)
+        return OWSTableViewController2.buildHeaderFooterView(for: buttonContainer)
+    }
 
     private lazy var nextButton = UIButton(
         configuration: .largePrimary(title: CommonStrings.nextButton),
@@ -324,21 +325,6 @@ public class BadgeGiftingChooseBadgeViewController: OWSTableViewController2 {
             self?.didTapNext()
         },
     )
-
-    private lazy var bottomFooterContainer: UIView = {
-        let stackView = UIStackView.verticalButtonStack(buttons: [nextButton])
-        let containerView = UIView()
-        containerView.preservesSuperviewLayoutMargins = true
-        containerView.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: containerView.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: containerView.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-        ])
-        return containerView
-    }()
 
     private func updateBottomFooter() {
         nextButton.isEnabled = state.canContinue

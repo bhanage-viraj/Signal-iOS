@@ -78,8 +78,6 @@ class PaymentsHistoryViewController: OWSTableViewController2, PaymentsHistoryDat
             comment: "Label for the 'all payment records' section of the app settings.",
         )
 
-        view.backgroundColor = .Signal.groupedBackground
-
         dataSource.delegate = self
 
         updateTableContents()
@@ -94,7 +92,7 @@ class PaymentsHistoryViewController: OWSTableViewController2, PaymentsHistoryDat
     }
 
     override func topHeader() -> UIView? {
-        OWSTableViewController2.buildTopHeader(forView: modeControl, vMargin: 10)
+        OWSTableViewController2.buildHeaderFooterView(for: modeControl, vMargin: 10)
     }
 
     private func updateTableContents() {

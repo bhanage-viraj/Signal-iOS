@@ -117,8 +117,6 @@ class CustomColorViewController: OWSTableViewController2 {
             self?.didTapSet()
         }
 
-        view.backgroundColor = .Signal.groupedBackground
-
         createSubviews()
 
         updateNavigation()
@@ -129,7 +127,7 @@ class CustomColorViewController: OWSTableViewController2 {
     }
 
     override func topHeader() -> UIView? {
-        OWSTableViewController2.buildTopHeader(forView: modeControl, vMargin: 10)
+        OWSTableViewController2.buildHeaderFooterView(for: modeControl, vMargin: 10)
     }
 
     private func createSubviews() {

@@ -93,8 +93,6 @@ class AvatarSettingsViewController: OWSTableViewController2, UIImagePickerContro
             self?.didTapDone()
         }
 
-        view.backgroundColor = .Signal.groupedBackground
-
         updateTableContents()
         updateNavigation()
         updateHeaderView()
@@ -128,20 +126,7 @@ class AvatarSettingsViewController: OWSTableViewController2, UIImagePickerContro
     }
 
     override func topHeader() -> UIView? {
-        if avatarImageViewSizeConstraint == nil {
-            avatarImageView.translatesAutoresizingMaskIntoConstraints = false
-            let avatarImageViewSizeConstraint = avatarImageView.widthAnchor.constraint(
-                equalToConstant: avatarImageViewSize,
-            )
-            NSLayoutConstraint.activate([
-                avatarImageViewSizeConstraint,
-                avatarImageView.widthAnchor.constraint(equalTo: avatarImageView.heightAnchor),
-            ])
-            self.avatarImageViewSizeConstraint = avatarImageViewSizeConstraint
-
-            topHeaderStack.layoutMargins = .init(top: 24, left: 0, bottom: 13, right: 0)
-        }
-        return topHeaderStack
+        OWSTableViewController2.buildHeaderFooterView(for: topHeaderStack, topMargin: 24, bottomMargin: 13)
     }
 
     private let avatarImageView = AvatarImageView()
@@ -154,17 +139,25 @@ class AvatarSettingsViewController: OWSTableViewController2, UIImagePickerContro
 
     private lazy var topHeaderStack: UIView = {
         let topHeaderStack = UIStackView(arrangedSubviews: [avatarImageView, headerButtonStack])
-        topHeaderStack.isLayoutMarginsRelativeArrangement = true
         topHeaderStack.axis = .vertical
         topHeaderStack.alignment = .center
         topHeaderStack.spacing = 24
         topHeaderStack.addSubview(clearButton)
 
+        avatarImageView.translatesAutoresizingMaskIntoConstraints = false
         clearButton.translatesAutoresizingMaskIntoConstraints = false
+        let avatarImageViewSizeConstraint = avatarImageView.widthAnchor.constraint(
+            equalToConstant: avatarImageViewSize,
+        )
         NSLayoutConstraint.activate([
+            avatarImageViewSizeConstraint,
+            avatarImageView.widthAnchor.constraint(equalTo: avatarImageView.heightAnchor),
+
             clearButton.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: -8),
             clearButton.topAnchor.constraint(equalTo: avatarImageView.topAnchor, constant: 8),
         ])
+
+        self.avatarImageViewSizeConstraint = avatarImageViewSizeConstraint
 
         return topHeaderStack
     }()

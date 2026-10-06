@@ -7,7 +7,9 @@ import AuthenticationServices
 import SignalServiceKit
 import SignalUI
 
-class DonationPaymentDetailsViewController: OWSTableViewController2 {
+class DonationPaymentDetailsViewController: OWSTableViewController2, UITextViewDelegate,
+    CreditOrDebitCardDonationFormViewDelegate
+{
     enum IDEALPaymentType {
         case oneTime
         case recurring(mandate: Stripe.PaymentMethod.Mandate)
@@ -719,27 +721,12 @@ class DonationPaymentDetailsViewController: OWSTableViewController2 {
         )
     }()
 
-    private lazy var bottomFooterContainer: UIView = {
-        let stackView = UIStackView.verticalButtonStack(buttons: [submitButton])
-        let view = UIView()
-        view.preservesSuperviewLayoutMargins = true
-        view.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: view.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
-        return view
-    }()
+    override func bottomFooter() -> UIView? {
+        OWSTableViewController2.buildHeaderFooterView(for: UIStackView.verticalButtonStack(buttons: [submitButton]))
+    }
 
-    override func bottomFooter() -> UIView? { bottomFooterContainer }
-}
+    // MARK: - UITextViewDelegate
 
-// MARK: - UITextViewDelegate
-
-extension DonationPaymentDetailsViewController: UITextViewDelegate {
     func textView(
         _ textView: UITextView,
         shouldInteractWith URL: URL,
@@ -749,11 +736,9 @@ extension DonationPaymentDetailsViewController: UITextViewDelegate {
         present(DonationPaymentDetailsReadMoreSheetViewController(), animated: true)
         return false
     }
-}
 
-// MARK: - CreditOrDebitCardDonationFormViewDelegate
+    // MARK: - CreditOrDebitCardDonationFormViewDelegate
 
-extension DonationPaymentDetailsViewController: CreditOrDebitCardDonationFormViewDelegate {
     func didSomethingChange() { render() }
 }
 

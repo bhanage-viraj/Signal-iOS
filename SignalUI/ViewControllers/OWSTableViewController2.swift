@@ -42,20 +42,22 @@ open class OWSTableViewController2: OWSViewController, OWSNavigationChildControl
         return tableView
     }()
 
-    // This is an alternative to/replacement for UITableView.tableHeaderView.
-    //
-    // * It should usually be used with buildTopHeader(forView:).
-    // * The top header view appears above the table and _does not_
-    //   scroll with its content.
-    // * The top header view's edge align with the edges of the cells.
     private lazy var topHeaderView = topHeader()
 
+    /// View to be displayed above scrollable content, fixed in place.
+    /// View will be pinned to the top, leading and trailing edges of the view controller's root view.
+    /// Callers should use view's layout margins to constrain its contents.
+    /// Alternatively, callers could wrap content using `OWSTableViewController2.buildHeaderFooterView(for:...)`
     open func topHeader() -> UIView? { nil }
 
     private lazy var bottomFooterView = bottomFooter()
 
     public final var bottomFooterHeight: CGFloat { bottomFooterView?.height ?? 0 }
 
+    /// View to be displayed below scrollable content, fixed in place.
+    /// View will be pinned to the bottom, leading and trailing edges of the view controller's root view.
+    /// Callers should use view's layout margins to constrain its contents.
+    /// Alternatively, callers could wrap content using `OWSTableViewController2.buildHeaderFooterView(for:...)`
     open func bottomFooter() -> UIView? { nil }
 
     public var forceDarkMode = false {
@@ -112,32 +114,57 @@ open class OWSTableViewController2: OWSViewController, OWSNavigationChildControl
         tableView.dataSource = self
         tableView.tableFooterView = UIView()
         tableView.estimatedRowHeight = defaultCellHeight
-
+        tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
         // Pin top edge of tableView.
         if let topHeaderView {
+            // Set root view's background color to match table view's
+            // because table view isn't going to extend to the top of the view.
+            // We don't set background color by default because that'll interfere
+            // with glass background of OWSTableSheetViewController.
+            view.backgroundColor = .Signal.groupedBackground
+
+            topHeaderView.preservesSuperviewLayoutMargins = true
+            topHeaderView.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(topHeaderView)
-            topHeaderView.autoPin(toTopLayoutGuideOf: self, withInset: 0)
-            topHeaderView.autoPinEdge(toSuperviewSafeArea: .leading)
-            topHeaderView.autoPinEdge(toSuperviewSafeArea: .trailing)
+            NSLayoutConstraint.activate([
+                topHeaderView.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+                topHeaderView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                topHeaderView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
-            tableView.autoPinEdge(.top, to: .bottom, of: topHeaderView)
+                tableView.topAnchor.constraint(equalTo: topHeaderView.bottomAnchor),
+            ])
 
-            topHeaderView.setContentHuggingVerticalHigh()
-            topHeaderView.setCompressionResistanceVerticalHigh()
+            if #available(iOS 26, *) {
+                let interaction = UIScrollEdgeElementContainerInteraction()
+                interaction.edge = .top
+                interaction.scrollView = tableView
+                topHeaderView.addInteraction(interaction)
+            }
         } else {
-            tableView.autoPinEdge(toSuperviewEdge: .top)
+            NSLayoutConstraint.activate([
+                tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            ])
         }
 
         // Pin leading & trailing edges of tableView.
-        tableView.autoPinEdge(toSuperviewEdge: .leading)
-        tableView.autoPinEdge(toSuperviewEdge: .trailing)
+        NSLayoutConstraint.activate([
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
         tableView.setContentHuggingVerticalLow()
         tableView.setCompressionResistanceVerticalLow()
 
         // Pin bottom edge of tableView.
         if let bottomFooterView {
+            // Set root view's background color to match table view's
+            // because table view isn't going to extend to the bottom of the view.
+            // We don't set background color by default because that'll interfere
+            // with glass background of OWSTableSheetViewController.
+            view.backgroundColor = .Signal.groupedBackground
+
+            bottomFooterView.preservesSuperviewLayoutMargins = true
             bottomFooterView.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(bottomFooterView)
             NSLayoutConstraint.activate([
@@ -315,11 +342,6 @@ open class OWSTableViewController2: OWSViewController, OWSNavigationChildControl
         hasViewAppeared = true
     }
 
-    override open func viewIsAppearing(_ animated: Bool) {
-        super.viewIsAppearing(animated)
-        self.updateTableMargins()
-    }
-
     private func section(for index: Int) -> OWSTableSection? {
         AssertIsOnMainThread()
 
@@ -376,30 +398,37 @@ open class OWSTableViewController2: OWSViewController, OWSNavigationChildControl
         }
     }
 
-    public static func buildTopHeader(
-        forView wrappedView: UIView,
+    public static func buildHeaderFooterView(
+        for wrappedView: UIView,
         vMargin: CGFloat = 0,
     ) -> UIView {
-        buildTopHeader(
-            forView: wrappedView,
+        buildHeaderFooterView(
+            for: wrappedView,
             topMargin: vMargin,
             bottomMargin: vMargin,
         )
     }
 
-    public static func buildTopHeader(
-        forView wrappedView: UIView,
+    public static func buildHeaderFooterView(
+        for wrappedView: UIView,
         topMargin: CGFloat = 0,
         bottomMargin: CGFloat = 0,
     ) -> UIView {
-        let wrapperStack = UIStackView()
-        wrapperStack.addArrangedSubview(wrappedView)
-        wrapperStack.axis = .vertical
-        wrapperStack.alignment = .fill
-        wrapperStack.isLayoutMarginsRelativeArrangement = true
-        let layoutMargins = cellOuterInsets(in: wrappedView)
-        wrapperStack.layoutMargins = layoutMargins
-        return wrapperStack
+        let wrapperView = UIView()
+
+        // `leading` and `trailing` will be inherited from the superview (VC's root view).
+        wrapperView.directionalLayoutMargins.top = topMargin
+        wrapperView.directionalLayoutMargins.bottom = bottomMargin
+
+        wrappedView.translatesAutoresizingMaskIntoConstraints = false
+        wrapperView.addSubview(wrappedView)
+        NSLayoutConstraint.activate([
+            wrappedView.topAnchor.constraint(equalTo: wrapperView.layoutMarginsGuide.topAnchor),
+            wrappedView.leadingAnchor.constraint(equalTo: wrapperView.layoutMarginsGuide.leadingAnchor),
+            wrappedView.trailingAnchor.constraint(equalTo: wrapperView.layoutMarginsGuide.trailingAnchor),
+            wrappedView.bottomAnchor.constraint(equalTo: wrapperView.layoutMarginsGuide.bottomAnchor),
+        ])
+        return wrapperView
     }
 
     // MARK: - UITableViewDataSource, UITableViewDelegate

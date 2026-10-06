@@ -41,7 +41,11 @@ class PaymentsSettingsViewController: OWSTableViewController2, PaymentsHistoryDa
         return result
     }()
 
-    override func topHeader() -> UIView? { topHeaderStackView }
+    override func topHeader() -> UIView? {
+        // Do not enclose this stack view into a container view
+        // because ReminderView would have its content already aligned.
+        topHeaderStackView
+    }
 
     private var outdatedClientReminderView: ReminderView?
 
@@ -284,8 +288,6 @@ class PaymentsSettingsViewController: OWSTableViewController2, PaymentsHistoryDa
             "SETTINGS_PAYMENTS_VIEW_TITLE",
             comment: "Title for the 'payments settings' view in the app settings.",
         )
-
-        view.backgroundColor = .Signal.groupedBackground
 
         if mode == .standalone {
             navigationItem.leftBarButtonItem = .doneButton { [weak self] in
