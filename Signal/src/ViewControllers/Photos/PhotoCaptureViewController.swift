@@ -1691,7 +1691,7 @@ class PhotoCaptureViewController: OWSViewController, OWSNavigationChildControlle
 
         if
             let url = URL(string: qrCodeString),
-            let usernameLink = Usernames.UsernameLink(usernameLinkUrl: url)
+            let usernameLink = try? Usernames.UsernameLink(usernameLinkUrl: url)
         {
             qrCodeScanned = true
 

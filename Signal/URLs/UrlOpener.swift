@@ -63,7 +63,7 @@ class UrlOpener {
         if SignalDotMePhoneNumberLink.isPossibleUrl(url) {
             return .phoneNumberLink(url)
         }
-        if let usernameLink = Usernames.UsernameLink(usernameLinkUrl: url) {
+        if let usernameLink = try? Usernames.UsernameLink(usernameLinkUrl: url) {
             return .usernameLink(usernameLink)
         }
         if StickerPackInfo.isStickerPackShare(url), let stickerPackInfo = StickerPackInfo.parseStickerPackShare(url) {

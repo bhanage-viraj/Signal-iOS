@@ -223,10 +223,10 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
             if
                 let linkHandleData = kvStore.getData(Constants.usernameLinkHandleKey, transaction: tx),
                 let linkHandle = UUID(data: linkHandleData),
-                let linkEntropy = kvStore.getData(Constants.usernameLinkEntropyKey, transaction: tx),
-                let link = Usernames.UsernameLink(handle: linkHandle, entropy: linkEntropy)
+                let linkEntropyData = kvStore.getData(Constants.usernameLinkEntropyKey, transaction: tx),
+                let linkEntropy = try? UsernameLink.Entropy(rawValue: linkEntropyData)
             {
-                return link
+                return UsernameLink(handle: linkHandle, entropy: linkEntropy)
             }
 
             return nil
@@ -245,7 +245,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         func setUsernameLink(usernameLink: Usernames.UsernameLink?, tx: DBWriteTransaction) {
             kvStore.setData(usernameLink?.handle.data, key: Constants.usernameLinkHandleKey, transaction: tx)
-            kvStore.setData(usernameLink?.entropy, key: Constants.usernameLinkEntropyKey, transaction: tx)
+            kvStore.setData(usernameLink?.entropy.rawValue, key: Constants.usernameLinkEntropyKey, transaction: tx)
         }
 
         func setUsernameLinkColor(color: QRCodeColor, tx: DBWriteTransaction) {
@@ -270,7 +270,6 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
     private let storageServiceManager: StorageServiceManager
     private let syncMessageSender: UsernameChangeSyncMessageSender
     private let tsAccountManager: TSAccountManager
-    private let usernameLinkManager: UsernameLinkManager
 
     private let corruptionStore: CorruptionStore
     private let usernameStore: UsernameStore
@@ -287,7 +286,6 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         storageServiceManager: StorageServiceManager,
         syncMessageSender: UsernameChangeSyncMessageSender,
         tsAccountManager: TSAccountManager,
-        usernameLinkManager: UsernameLinkManager,
         maxNetworkRequestRetries: Int = 2,
     ) {
         self.db = db
@@ -297,7 +295,6 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         self.storageServiceManager = storageServiceManager
         self.syncMessageSender = syncMessageSender
         self.tsAccountManager = tsAccountManager
-        self.usernameLinkManager = usernameLinkManager
 
         corruptionStore = CorruptionStore()
         usernameStore = UsernameStore()
@@ -447,20 +444,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
             return .failure(.networkError)
         }
 
-        let linkEntropy: Data
-        let linkEncryptedUsername: Data
-        do {
-            (
-                linkEntropy,
-                linkEncryptedUsername,
-            ) = try self.usernameLinkManager.generateEncryptedUsername(
-                username: reservedUsername.usernameString,
-                existingEntropy: nil,
-            )
-        } catch let error {
-            UsernameLogger.shared.error("Failed to generate encrypted username! \(error)")
-            return .failure(.otherError)
-        }
+        let (linkEntropy, usernameCiphertext) = UsernameLink.encryptUsername(reservedUsername.libSignalUsername)
 
         // Mark as corrupted in case we encounter an unexpected error while
         // confirming. If that happens we can't be sure if our new username was
@@ -475,18 +459,11 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
             let linkHandle = try await makeRequestWithNetworkRetries {
                 return try await $0.confirmUsername(
                     reservedUsername.libSignalUsername,
-                    usernameCiphertext: linkEncryptedUsername,
+                    usernameCiphertext: usernameCiphertext,
                 )
             }
             await self.db.awaitableWrite { tx in
-                guard
-                    let usernameLink = Usernames.UsernameLink(
-                        handle: linkHandle,
-                        entropy: linkEntropy,
-                    )
-                else {
-                    owsFail("This link should always be valid - we just generated the entropy ourselves!")
-                }
+                let usernameLink = UsernameLink(handle: linkHandle, entropy: linkEntropy)
 
                 let username = reservedUsername.usernameString
 
@@ -601,26 +578,21 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         }
 
         guard
-            let (currentUsername, newEntropy, newEncryptedUsername) = await db.awaitableWrite(block: { tx -> (String, Data, Data)? in
+            let (currentUsername, newEntropy, newUsernameCiphertext) = await db.awaitableWrite(block: { tx -> (LibSignalClient.Username, UsernameLink.Entropy, Data)? in
                 guard let currentUsername = usernameState(tx: tx).username else {
                     owsFailDebug("Tried to rotate link, but missing current username!")
                     return nil
                 }
 
-                let newEntropy: Data
-                let newEncryptedUsername: Data
+                let currentUsernameObj: LibSignalClient.Username
                 do {
-                    (
-                        newEntropy,
-                        newEncryptedUsername,
-                    ) = try self.usernameLinkManager.generateEncryptedUsername(
-                        username: currentUsername,
-                        existingEntropy: nil,
-                    )
+                    currentUsernameObj = try LibSignalClient.Username(currentUsername)
                 } catch let error {
-                    UsernameLogger.shared.error("Failed to generate encrypted username! \(error)")
+                    UsernameLogger.shared.warn("Failed to parse existing username! \(error)")
                     return nil
                 }
+
+                let (newEntropy, newUsernameCiphertext) = UsernameLink.encryptUsername(currentUsernameObj)
 
                 // Mark as corrupted in case we encounter an unexpected error while
                 // rotating. If that happens we can't be sure if our username link was
@@ -628,7 +600,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 // If, however, we get a response, we remove the corrupted flag.
                 markUsernameLinkCorrupted(true, tx: tx)
 
-                return (currentUsername, newEntropy, newEncryptedUsername)
+                return (currentUsernameObj, newEntropy, newUsernameCiphertext)
             })
         else {
             return .failure(.otherError)
@@ -636,21 +608,14 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let newHandle = try await makeRequestWithNetworkRetries {
-                try await $0.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: false)
+                try await $0.setUsernameLink(usernameCiphertext: newUsernameCiphertext, keepLinkHandle: false)
             }
 
-            guard
-                let newUsernameLink = Usernames.UsernameLink(
-                    handle: newHandle,
-                    entropy: newEntropy,
-                )
-            else {
-                owsFail("This link should always be valid - we just generated the entropy ourselves!")
-            }
+            let newUsernameLink = UsernameLink(handle: newHandle, entropy: newEntropy)
 
             await self.db.awaitableWrite { tx in
                 self.setLocalUsername(
-                    username: currentUsername,
+                    username: currentUsername.value,
                     usernameLink: newUsernameLink,
                     tx: tx,
                 )
@@ -681,7 +646,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         }
 
         guard
-            let (newEncryptedUsername, currentUsernameLink) = await db.awaitableWrite(block: { tx -> (Data, Usernames.UsernameLink)? in
+            let (newUsernameCiphertext, currentUsernameLink) = await db.awaitableWrite(block: { tx -> (Data, Usernames.UsernameLink)? in
                 let currentUsernameState = usernameState(tx: tx)
 
                 guard
@@ -693,16 +658,18 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                     return nil
                 }
 
-                let newEncryptedUsername: Data
+                let newUsernameObj: LibSignalClient.Username
                 do {
-                    (_, newEncryptedUsername) = try usernameLinkManager.generateEncryptedUsername(
-                        username: newUsername,
-                        existingEntropy: currentUsernameLink.entropy,
-                    )
-                } catch let error {
-                    UsernameLogger.shared.error("Failed to generate encrypted username! \(error)")
+                    newUsernameObj = try LibSignalClient.Username(newUsername)
+                } catch {
+                    owsFailDebug("Failed to parse existing username! \(error)")
                     return nil
                 }
+
+                let newUsernameCiphertext = UsernameLink.encryptUsername(
+                    newUsernameObj,
+                    existingEntropy: currentUsernameLink.entropy,
+                )
 
                 // Mark as corrupted in case we encounter an unexpected error while
                 // setting the new encrypted username. If that happens we can't be sure
@@ -711,7 +678,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 // remove the corrupted flag.
                 markUsernameLinkCorrupted(true, tx: tx)
 
-                return (newEncryptedUsername, currentUsernameLink)
+                return (newUsernameCiphertext, currentUsernameLink)
             })
         else {
             return .failure(.otherError)
@@ -729,7 +696,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 /// rotate the username link handle. That's key to keeping the
                 /// existing link unaffected while updating the case of the
                 /// visible username the link points to.
-                return try await $0.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: true)
+                return try await $0.setUsernameLink(usernameCiphertext: newUsernameCiphertext, keepLinkHandle: true)
             }
             guard currentUsernameLink.handle == newHandle else {
                 UsernameLogger.shared.error("Handle received while changing username case did not match existing! Is this a server bug?")

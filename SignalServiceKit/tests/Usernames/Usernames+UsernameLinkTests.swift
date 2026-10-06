@@ -35,7 +35,7 @@ class UsernameLinkTests: XCTestCase {
 
         for (i, testCase) in testCases.enumerated() {
             let (url, shouldParse) = testCase
-            let actual = Usernames.UsernameLink(usernameLinkUrl: url)
+            let actual = try? UsernameLink(usernameLinkUrl: url)
 
             XCTAssertEqual(
                 actual != nil,
@@ -50,7 +50,7 @@ class UsernameLinkTests: XCTestCase {
     /// Uses strings that are technically invalid usernames, but produce the
     /// 63rd and 64th base64 characters, which need to be translated for
     /// base64url.
-    func testBase64Url() {
+    func testBase64Url() throws {
         let knownHandle = UUID(uuidString: "EF0228A2-9EAC-46C2-ACF4-67DF5B06BE57")!
 
         let testCases: [(String, String)] = [
@@ -61,12 +61,12 @@ class UsernameLinkTests: XCTestCase {
         for testCase in testCases {
             let (dangerString, expected) = testCase
 
-            let entropy = dangerString.data(using: .utf8)! + Data(repeating: 3, count: 29)
+            let entropy = try UsernameLink.Entropy(rawValue: Data(dangerString.utf8) + Data(repeating: 3, count: 29))
 
             let actual = Usernames.UsernameLink(
                 handle: knownHandle,
                 entropy: entropy,
-            )!.url.absoluteString
+            ).url.absoluteString
 
             XCTAssertEqual(actual, expected)
         }

@@ -1351,7 +1351,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
             if let usernameLink = localUsernameState.usernameLink {
                 var usernameLinkProtoBuilder = StorageServiceProtoAccountRecordUsernameLink.builder()
 
-                usernameLinkProtoBuilder.setEntropy(usernameLink.entropy)
+                usernameLinkProtoBuilder.setEntropy(usernameLink.entropy.rawValue)
                 usernameLinkProtoBuilder.setServerID(usernameLink.handle.data)
                 usernameLinkProtoBuilder.setColor(
                     localUsernameManager.usernameLinkQRCodeColor(
@@ -1607,12 +1607,13 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
                 let remoteUsernameLinkProto = record.usernameLink,
                 let remoteUsernameLinkProtoHandleData = remoteUsernameLinkProto.serverID,
                 let remoteUsernameLinkProtoHandle = UUID(data: remoteUsernameLinkProtoHandleData),
-                let remoteUsernameLinkProtoEntropy = remoteUsernameLinkProto.entropy,
-                let remoteUsernameLink = Usernames.UsernameLink(
+                let remoteUsernameLinkProtoEntropyData = remoteUsernameLinkProto.entropy,
+                let remoteUsernameLinkProtoEntropy = try? UsernameLink.Entropy(rawValue: remoteUsernameLinkProtoEntropyData)
+            {
+                let remoteUsernameLink = UsernameLink(
                     handle: remoteUsernameLinkProtoHandle,
                     entropy: remoteUsernameLinkProtoEntropy,
                 )
-            {
                 localUsernameManager.setLocalUsername(
                     username: remoteUsername,
                     usernameLink: remoteUsernameLink,

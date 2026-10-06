@@ -1331,9 +1331,6 @@ extension AppSetup.GlobalsContinuation {
         )
 
         let usernameEducationManager = UsernameEducationManagerImpl()
-        let usernameLinkManager = UsernameLinkManagerImpl(
-            db: db,
-        )
         let localUsernameManager = LocalUsernameManagerImpl(
             db: db,
             keyTransparencyStore: keyTransparencyStore,
@@ -1345,7 +1342,6 @@ extension AppSetup.GlobalsContinuation {
                 threadStore: threadStore,
             ),
             tsAccountManager: tsAccountManager,
-            usernameLinkManager: usernameLinkManager,
         )
         let usernameValidationManager = UsernameValidationManagerImpl(context: .init(
             database: db,
@@ -1353,7 +1349,6 @@ extension AppSetup.GlobalsContinuation {
             messageProcessor: Usernames.Validation.Wrappers.MessageProcessor(messageProcessor),
             serviceProvider: chatConnectionManager,
             storageServiceManager: Usernames.Validation.Wrappers.StorageServiceManager(storageServiceManager),
-            usernameLinkManager: usernameLinkManager,
             whoAmIManager: whoAmIManager,
         ))
 
@@ -1969,7 +1964,6 @@ extension AppSetup.GlobalsContinuation {
             tsAccountManager: tsAccountManager,
             unreadReminderManager: unreadReminderManager,
             usernameEducationManager: usernameEducationManager,
-            usernameLinkManager: usernameLinkManager,
             usernameLookupManager: usernameLookupManager,
             usernameValidationManager: usernameValidationManager,
             wallpaperImageStore: wallpaperImageStore,

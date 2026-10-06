@@ -24,7 +24,6 @@ public class ViewControllerContext {
     public let accountKeyStore: AccountKeyStore
 
     public let usernameEducationManager: UsernameEducationManager
-    public let usernameLinkManager: UsernameLinkManager
     public let usernameLookupManager: UsernameLookupManager
     public let localUsernameManager: LocalUsernameManager
 
@@ -36,7 +35,6 @@ public class ViewControllerContext {
         accountKeyStore: AccountKeyStore,
         svr: SecureValueRecovery,
         usernameEducationManager: UsernameEducationManager,
-        usernameLinkManager: UsernameLinkManager,
         usernameLookupManager: UsernameLookupManager,
         localUsernameManager: LocalUsernameManager,
         provisioningManager: ProvisioningManager,
@@ -46,7 +44,6 @@ public class ViewControllerContext {
         self.accountKeyStore = accountKeyStore
         self.svr = svr
         self.usernameEducationManager = usernameEducationManager
-        self.usernameLinkManager = usernameLinkManager
         self.usernameLookupManager = usernameLookupManager
         self.localUsernameManager = localUsernameManager
         self.provisioningManager = provisioningManager
@@ -67,7 +64,6 @@ public class ViewControllerContext {
             accountKeyStore: bridge.accountKeyStore,
             svr: bridge.svr,
             usernameEducationManager: bridge.usernameEducationManager,
-            usernameLinkManager: bridge.usernameLinkManager,
             usernameLookupManager: bridge.usernameLookupManager,
             localUsernameManager: bridge.localUsernameManager,
             provisioningManager: AppEnvironment.shared.provisioningManager,

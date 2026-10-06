@@ -2836,7 +2836,6 @@
 		D932C0EB2E13AD3F00FEF9C3 /* BackupAttachmentDownloadTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D932C0EA2E13AD3600FEF9C3 /* BackupAttachmentDownloadTracker.swift */; };
 		D93830722A703728006CDCDE /* UsernameApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830712A703727006CDCDE /* UsernameApiClient.swift */; };
 		D93830742A703969006CDCDE /* LocalUsernameManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830732A703968006CDCDE /* LocalUsernameManager.swift */; };
-		D938307A2A704123006CDCDE /* UsernameLinkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830792A704123006CDCDE /* UsernameLinkManager.swift */; };
 		D938307C2A704338006CDCDE /* LocalUsernameManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830752A70396E006CDCDE /* LocalUsernameManagerTests.swift */; };
 		D938307E2A70441D006CDCDE /* QRCodeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D938307D2A70441D006CDCDE /* QRCodeColor.swift */; };
 		D93830802A705D64006CDCDE /* UsernameLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = D938307F2A705D64006CDCDE /* UsernameLogger.swift */; };
@@ -3256,7 +3255,6 @@
 		D990CAC72B4CCB34000A99A2 /* MockUsernameApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D990CABD2B4CC8FD000A99A2 /* MockUsernameApiClient.swift */; };
 		D990CAC82B4CCB8F000A99A2 /* MockUsernameLookupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D925F566298DC33E00158EE4 /* MockUsernameLookupManager.swift */; };
 		D990CAC92B4CCB97000A99A2 /* MockLocalUsernameManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D990CABF2B4CC930000A99A2 /* MockLocalUsernameManager.swift */; };
-		D990CACA2B4CCB9D000A99A2 /* MockUsernameLinkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D990CAC12B4CC9CE000A99A2 /* MockUsernameLinkManager.swift */; };
 		D990CACD2B4DCD83000A99A2 /* ConsumableMockPromise.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93830772A70399C006CDCDE /* ConsumableMockPromise.swift */; };
 		D994C7D12C45D24F009ECEDA /* BackupArchiveProfileChangeChatUpdateArchiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D994C7D02C45D24F009ECEDA /* BackupArchiveProfileChangeChatUpdateArchiver.swift */; };
 		D994C7D92C486E54009ECEDA /* ContextMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D994C7D82C486E54009ECEDA /* ContextMenuButton.swift */; };
@@ -7255,7 +7253,6 @@
 		D93830732A703968006CDCDE /* LocalUsernameManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalUsernameManager.swift; sourceTree = "<group>"; };
 		D93830752A70396E006CDCDE /* LocalUsernameManagerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalUsernameManagerTests.swift; sourceTree = "<group>"; };
 		D93830772A70399C006CDCDE /* ConsumableMockPromise.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConsumableMockPromise.swift; sourceTree = "<group>"; };
-		D93830792A704123006CDCDE /* UsernameLinkManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UsernameLinkManager.swift; sourceTree = "<group>"; };
 		D938307D2A70441D006CDCDE /* QRCodeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeColor.swift; sourceTree = "<group>"; };
 		D938307F2A705D64006CDCDE /* UsernameLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UsernameLogger.swift; sourceTree = "<group>"; };
 		D93830822A708E95006CDCDE /* UsernameChangeDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameChangeDelegate.swift; sourceTree = "<group>"; };
@@ -7683,7 +7680,6 @@
 		D9905D872EB2B9D200BF22EC /* ReceiptCredentialRequestError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptCredentialRequestError.swift; sourceTree = "<group>"; };
 		D990CABD2B4CC8FD000A99A2 /* MockUsernameApiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUsernameApiClient.swift; sourceTree = "<group>"; };
 		D990CABF2B4CC930000A99A2 /* MockLocalUsernameManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLocalUsernameManager.swift; sourceTree = "<group>"; };
-		D990CAC12B4CC9CE000A99A2 /* MockUsernameLinkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUsernameLinkManager.swift; sourceTree = "<group>"; };
 		D994C7D02C45D24F009ECEDA /* BackupArchiveProfileChangeChatUpdateArchiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupArchiveProfileChangeChatUpdateArchiver.swift; sourceTree = "<group>"; };
 		D994C7D82C486E54009ECEDA /* ContextMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextMenuButton.swift; sourceTree = "<group>"; };
 		D99554692AF4873E0001E15C /* ProfileBadgesSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileBadgesSnapshot.swift; sourceTree = "<group>"; };
@@ -13809,7 +13805,6 @@
 				D93830712A703727006CDCDE /* UsernameApiClient.swift */,
 				D9697C172FD8C4A300119F72 /* UsernameChangeSyncMessage.swift */,
 				D9C2D77D299D750200D79715 /* UsernameEducationManager.swift */,
-				D93830792A704123006CDCDE /* UsernameLinkManager.swift */,
 				D938307F2A705D64006CDCDE /* UsernameLogger.swift */,
 				D925F55E298C743E00158EE4 /* UsernameLookupManager.swift */,
 				D925F557298B39D800158EE4 /* UsernameLookupRecord.swift */,
@@ -14237,7 +14232,6 @@
 			children = (
 				D990CABF2B4CC930000A99A2 /* MockLocalUsernameManager.swift */,
 				D990CABD2B4CC8FD000A99A2 /* MockUsernameApiClient.swift */,
-				D990CAC12B4CC9CE000A99A2 /* MockUsernameLinkManager.swift */,
 				D925F566298DC33E00158EE4 /* MockUsernameLookupManager.swift */,
 			);
 			path = Usernames;
@@ -20110,7 +20104,6 @@
 				F9C57FAD28E5F1E2001D3596 /* MockSSKEnvironment.swift in Sources */,
 				661170C62ABA4E9C00A1B16D /* MockTSAccountManager.swift in Sources */,
 				D990CAC72B4CCB34000A99A2 /* MockUsernameApiClient.swift in Sources */,
-				D990CACA2B4CCB9D000A99A2 /* MockUsernameLinkManager.swift in Sources */,
 				D990CAC82B4CCB8F000A99A2 /* MockUsernameLookupManager.swift in Sources */,
 				66144B382BF8155F00E2C9CD /* MockWallpaperImageStore.swift in Sources */,
 				F9C5CE29289453B400548EEE /* ModelReadCache.swift in Sources */,
@@ -20717,7 +20710,6 @@
 				D93830722A703728006CDCDE /* UsernameApiClient.swift in Sources */,
 				D9697C182FD8C4A700119F72 /* UsernameChangeSyncMessage.swift in Sources */,
 				D9C2D77E299D750200D79715 /* UsernameEducationManager.swift in Sources */,
-				D938307A2A704123006CDCDE /* UsernameLinkManager.swift in Sources */,
 				D93830802A705D64006CDCDE /* UsernameLogger.swift in Sources */,
 				D925F55F298C743E00158EE4 /* UsernameLookupManager.swift in Sources */,
 				D925F55D298C6A7D00158EE4 /* UsernameLookupRecord.swift in Sources */,

@@ -16,7 +16,6 @@ public struct UsernameQuerier {
     private let serviceProvider: any ServiceProvider
     private let storageServiceManager: StorageServiceManager
     private let tsAccountManager: TSAccountManager
-    private let usernameLinkManager: UsernameLinkManager
     private let usernameLookupManager: UsernameLookupManager
 
     public init() {
@@ -30,7 +29,6 @@ public struct UsernameQuerier {
             serviceProvider: DependenciesBridge.shared.chatConnectionManager,
             storageServiceManager: SSKEnvironment.shared.storageServiceManagerRef,
             tsAccountManager: DependenciesBridge.shared.tsAccountManager,
-            usernameLinkManager: DependenciesBridge.shared.usernameLinkManager,
             usernameLookupManager: DependenciesBridge.shared.usernameLookupManager,
         )
     }
@@ -45,7 +43,6 @@ public struct UsernameQuerier {
         serviceProvider: any ServiceProvider,
         storageServiceManager: StorageServiceManager,
         tsAccountManager: TSAccountManager,
-        usernameLinkManager: UsernameLinkManager,
         usernameLookupManager: UsernameLookupManager,
     ) {
         self.contactsManager = contactsManager
@@ -57,7 +54,6 @@ public struct UsernameQuerier {
         self.serviceProvider = serviceProvider
         self.storageServiceManager = storageServiceManager
         self.tsAccountManager = tsAccountManager
-        self.usernameLinkManager = usernameLinkManager
         self.usernameLookupManager = usernameLookupManager
     }
 
@@ -114,7 +110,7 @@ public struct UsernameQuerier {
             let username: LibSignalClient.Username?
             do {
                 username = try await serviceProvider.withUnauthService(.usernames) {
-                    return try await $0.lookUpUsernameLink(link.handle, entropy: link.entropy)
+                    return try await $0.lookUpUsernameLink(link.handle, entropy: link.entropy.rawValue)
                 }
             } catch is CancellationError {
                 throw .userCancelled

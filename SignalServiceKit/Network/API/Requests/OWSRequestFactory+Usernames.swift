@@ -88,8 +88,7 @@ public extension OWSRequestFactory {
     /// username link. Optionally requests that the service not rotate the
     /// handle for this username link.
     ///
-    /// - SeeAlso
-    /// ``Usernames.UsernameLink`` and ``UsernameLinkManager``.
+    /// - SeeAlso: ``Usernames.UsernameLink``
     static func setUsernameLinkRequest(
         encryptedUsername: Data,
         keepLinkHandle: Bool,

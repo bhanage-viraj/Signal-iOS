@@ -653,7 +653,7 @@ extension ConversationViewController: CVComponentDelegate {
             return
         }
 
-        if let usernameLink = Usernames.UsernameLink(usernameLinkUrl: url) {
+        if let usernameLink = try? Usernames.UsernameLink(usernameLinkUrl: url) {
             didTapUsernameLink(usernameLink: usernameLink)
             return
         }

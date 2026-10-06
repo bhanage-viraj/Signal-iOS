@@ -47,7 +47,6 @@ public class RegistrationCoordinatorTest {
     private var svrAuthCredentialManager: SVRAuthCredentialManager!
     private var timeoutProviderMock: RegistrationCoordinatorImpl.TestMocks.TimeoutProvider!
     private var tsAccountManagerMock: MockTSAccountManager!
-    private var usernameLinkManagerMock: MockUsernameLinkManager!
     private var localFileBackupManager: LocalFileBackupManager!
 
     class RegistrationTestRun {
@@ -95,7 +94,6 @@ public class RegistrationCoordinatorTest {
         storageServiceManagerMock = RegistrationCoordinatorImpl.TestMocks.StorageServiceManager(run: testRun)
         timeoutProviderMock = RegistrationCoordinatorImpl.TestMocks.TimeoutProvider()
         tsAccountManagerMock = MockTSAccountManager()
-        usernameLinkManagerMock = MockUsernameLinkManager()
 
         let recipientDbTable = RecipientDatabaseTable()
         let recipientFetcher = RecipientFetcher(
@@ -182,7 +180,6 @@ public class RegistrationCoordinatorTest {
             timeoutProvider: timeoutProviderMock,
             tsAccountManager: tsAccountManagerMock,
             udManager: RegistrationCoordinatorImpl.TestMocks.UDManager(),
-            usernameLinkManager: usernameLinkManagerMock,
         )
         registrationCoordinatorLoader = RegistrationCoordinatorLoaderImpl(dependencies: dependencies)
     }
@@ -3613,10 +3610,10 @@ extension AccountIdentityResponse: @retroactive Encodable {
 
 private extension Usernames.UsernameLink {
     static var mocked: Usernames.UsernameLink {
-        return Usernames.UsernameLink(
+        return UsernameLink(
             handle: UUID(),
-            entropy: Data(repeating: 8, count: 32),
-        )!
+            entropy: try! UsernameLink.Entropy(rawValue: Data(repeating: 8, count: 32)),
+        )
     }
 }
 

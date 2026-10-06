@@ -32,7 +32,6 @@ public class UsernameValidationManagerImpl: UsernameValidationManager {
         let messageProcessor: Usernames.Validation.Shims.MessageProcessor
         let serviceProvider: any ServiceProvider
         let storageServiceManager: Usernames.Validation.Shims.StorageServiceManager
-        let usernameLinkManager: UsernameLinkManager
         let whoAmIManager: WhoAmIManager
     }
 
@@ -168,7 +167,7 @@ public class UsernameValidationManagerImpl: UsernameValidationManager {
         let validationSucceeded: Bool
         do {
             let usernameForLocalLink = try await self.context.serviceProvider.withUnauthService(.usernames) {
-                return try await $0.lookUpUsernameLink(localUsernameLink.handle, entropy: localUsernameLink.entropy)
+                return try await $0.lookUpUsernameLink(localUsernameLink.handle, entropy: localUsernameLink.entropy.rawValue)
             }
             if usernameForLocalLink == nil {
                 self.logger.warn("Couldn't find our own username link")

@@ -17,7 +17,6 @@ final class UsernameValidationManagerTest: XCTestCase {
     private var mockLocalUsernameManager: MockLocalUsernameManager!
     private var mockMessageProcessor: MockMessageProcessor!
     private var mockStorageServiceManager: MockStorageServiceManager!
-    private var mockUsernameLinkManager: MockUsernameLinkManager!
     private var mockUsernamesService: MockUsernamesService!
     private var mockWhoAmIManager: MockWhoAmIManager!
 
@@ -28,7 +27,6 @@ final class UsernameValidationManagerTest: XCTestCase {
         mockLocalUsernameManager = MockLocalUsernameManager()
         mockMessageProcessor = MockMessageProcessor()
         mockStorageServiceManager = MockStorageServiceManager()
-        mockUsernameLinkManager = MockUsernameLinkManager()
         mockUsernamesService = MockUsernamesService()
         mockWhoAmIManager = MockWhoAmIManager()
 
@@ -38,7 +36,6 @@ final class UsernameValidationManagerTest: XCTestCase {
             messageProcessor: mockMessageProcessor,
             serviceProvider: MockServiceProvider(mockServices: [mockUsernamesService!]),
             storageServiceManager: mockStorageServiceManager,
-            usernameLinkManager: mockUsernameLinkManager,
             whoAmIManager: mockWhoAmIManager,
         ))
     }
@@ -274,11 +271,11 @@ private extension AccountIdentityResponse {
 }
 
 private extension Usernames.UsernameLink {
-    static var mocked: Usernames.UsernameLink {
-        return Usernames.UsernameLink(
+    static var mocked: UsernameLink {
+        return UsernameLink(
             handle: UUID(),
-            entropy: Data(repeating: 5, count: 32),
-        )!
+            entropy: try! UsernameLink.Entropy(rawValue: Data(repeating: 5, count: 32)),
+        )
     }
 }
 

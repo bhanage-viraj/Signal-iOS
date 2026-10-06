@@ -197,7 +197,7 @@ public class BackupArchiveAccountDataArchiver: BackupArchiveProtoStreamWriter {
             return nil
         case .available(let username, let usernameLink):
             var usernameLinkProto = BackupProto_AccountData.UsernameLink()
-            usernameLinkProto.entropy = usernameLink.entropy
+            usernameLinkProto.entropy = usernameLink.entropy.rawValue
             usernameLinkProto.serverID = usernameLink.handle.data
             usernameLinkProto.color = localUsernameManager.usernameLinkQRCodeColor(tx: context.tx).backupProtoColor
 
@@ -633,8 +633,9 @@ public class BackupArchiveAccountDataArchiver: BackupArchiveProtoStreamWriter {
 
             if
                 let handle = UUID(data: usernameLink.serverID),
-                let linkData = Usernames.UsernameLink(handle: handle, entropy: usernameLink.entropy)
+                let entropy = try? UsernameLink.Entropy(rawValue: usernameLink.entropy)
             {
+                let linkData = UsernameLink(handle: handle, entropy: entropy)
                 localUsernameManager.setLocalUsername(username: username, usernameLink: linkData, tx: context.tx)
             } else {
                 return .failure([.restoreFrameError(.invalidProtoData(.invalidLocalUsernameLink))])

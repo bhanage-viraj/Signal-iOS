@@ -15,7 +15,6 @@ class LocalUsernameManagerTests: XCTestCase {
     private var mockStorageServiceManager: MockStorageServiceManager!
     private var mockSyncMessageSender: MockUsernameChangeSyncMessageSender!
     private var mockTSAccountManager: MockTSAccountManager!
-    private var mockUsernameLinkManager: MockUsernameLinkManager!
     private var mockUsernamesService: MockUsernamesService!
 
     private var localUsernameManager: LocalUsernameManager!
@@ -27,7 +26,6 @@ class LocalUsernameManagerTests: XCTestCase {
         mockStorageServiceManager = MockStorageServiceManager()
         mockSyncMessageSender = MockUsernameChangeSyncMessageSender()
         mockTSAccountManager = MockTSAccountManager()
-        mockUsernameLinkManager = MockUsernameLinkManager()
         mockUsernamesService = MockUsernamesService()
 
         setLocalUsernameManager(maxNetworkRequestRetries: 0)
@@ -42,7 +40,6 @@ class LocalUsernameManagerTests: XCTestCase {
             storageServiceManager: mockStorageServiceManager,
             syncMessageSender: mockSyncMessageSender,
             tsAccountManager: mockTSAccountManager,
-            usernameLinkManager: mockUsernameLinkManager,
             maxNetworkRequestRetries: maxNetworkRequestRetries,
         )
     }
@@ -51,7 +48,6 @@ class LocalUsernameManagerTests: XCTestCase {
         owsPrecondition(mockUsernamesService.confirmUsernameMocks.get().isEmpty)
         owsPrecondition(mockUsernamesService.deleteUsernameHashMocks.get().isEmpty)
         owsPrecondition(mockUsernamesService.setUsernameLinkMocks.get().isEmpty)
-        XCTAssertNil(mockUsernameLinkManager.entropyToGenerate)
     }
 
     // MARK: Local state changes
@@ -115,21 +111,15 @@ class LocalUsernameManagerTests: XCTestCase {
         let linkHandle = UUID()
         let username = "boba_fett.42"
 
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in linkHandle }])
 
         XCTAssertEqual(usernameState(), .unset)
 
         let value = await localUsernameManager.confirmUsername(reservedUsername: .mock(username))
 
-        XCTAssertEqual(
-            value,
-            .success(.success),
-        )
-        XCTAssertEqual(
-            usernameState(),
-            .available(username: username, usernameLink: .mock(handle: linkHandle)),
-        )
+        XCTAssertEqual(value, .success(.success))
+        XCTAssertEqual(usernameState().username, username)
+        XCTAssertEqual(usernameState().usernameLink?.handle, linkHandle)
         XCTAssertTrue(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 1)
     }
@@ -147,21 +137,7 @@ class LocalUsernameManagerTests: XCTestCase {
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 0)
     }
 
-    func testNoCorruptionIfFailToGenerateLink() async {
-        mockUsernameLinkManager.entropyToGenerate = .failure(OWSGenericError("A Sarlacc"))
-
-        let stateBeforeConfirm = setUsername(username: "boba_fett.42")
-
-        let value = await localUsernameManager.confirmUsername(reservedUsername: .mock("boba_fett.43"))
-
-        XCTAssertEqual(value, .failure(.otherError))
-        XCTAssertEqual(usernameState(), stateBeforeConfirm)
-        XCTAssertFalse(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
-        XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 0)
-    }
-
     func testCorruptionIfNetworkErrorWhileConfirming() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in throw OWSHTTPError.mockNetworkFailure }])
 
         XCTAssertEqual(usernameState(), .unset)
@@ -175,7 +151,6 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testCorruptionIfErrorWhileConfirming() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in throw OWSGenericError("") }])
 
         XCTAssertEqual(usernameState(), .unset)
@@ -189,7 +164,6 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testNoCorruptionIfRejectedWhileConfirming() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in throw SignalError.usernameReservationNotFound("") }])
 
         let stateBeforeConfirm = setUsername(username: "boba_fett.42")
@@ -203,7 +177,6 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testNoCorruptionIfRateLimitedWhileConfirming() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in throw SignalError.rateLimitedError(retryAfter: 60, message: "") }])
 
         let stateBeforeConfirm = setUsername(username: "boba_fett.42")
@@ -219,7 +192,6 @@ class LocalUsernameManagerTests: XCTestCase {
     func testSuccessfulConfirmationClearsLinkCorruption() async {
         let newHandle = UUID()
 
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in newHandle }])
 
         mockDB.write { tx in
@@ -233,16 +205,9 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let value = await localUsernameManager.confirmUsername(reservedUsername: try! Usernames.HashedUsername(forUsername: "boba_fett.43"))
 
-        let expectedNewLink = Usernames.UsernameLink(handle: newHandle, entropy: .mockEntropy)!
-
-        XCTAssertEqual(
-            value,
-            .success(.success),
-        )
-        XCTAssertEqual(
-            usernameState(),
-            .available(username: "boba_fett.43", usernameLink: expectedNewLink),
-        )
+        XCTAssertEqual(value, .success(.success))
+        XCTAssertEqual(usernameState().username, "boba_fett.43")
+        XCTAssertEqual(usernameState().usernameLink?.handle, newHandle)
         XCTAssertTrue(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 1)
     }
@@ -250,7 +215,6 @@ class LocalUsernameManagerTests: XCTestCase {
     func testSuccessfulConfirmationClearsUsernameCorruption() async {
         let newHandle = UUID()
 
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.confirmUsernameMocks.set([{ _, _ in newHandle }])
 
         mockDB.write { tx in
@@ -261,16 +225,9 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let value = await localUsernameManager.confirmUsername(reservedUsername: try! Usernames.HashedUsername(forUsername: "boba_fett.43"))
 
-        let expectedNewLink = Usernames.UsernameLink(handle: newHandle, entropy: .mockEntropy)!
-
-        XCTAssertEqual(
-            value,
-            .success(.success),
-        )
-        XCTAssertEqual(
-            usernameState(),
-            .available(username: "boba_fett.43", usernameLink: expectedNewLink),
-        )
+        XCTAssertEqual(value, .success(.success))
+        XCTAssertEqual(usernameState().username, "boba_fett.43")
+        XCTAssertEqual(usernameState().usernameLink?.handle, newHandle)
         XCTAssertTrue(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 1)
     }
@@ -371,20 +328,15 @@ class LocalUsernameManagerTests: XCTestCase {
     func testRotationHappyPath() async {
         let newHandle = UUID()
 
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.setUsernameLinkMocks.set([{ _, _ in newHandle }])
 
         _ = setUsername(username: "boba_fett.42")
 
         let value = await localUsernameManager.rotateUsernameLink()
 
-        let expectedNewLink = Usernames.UsernameLink(handle: newHandle, entropy: .mockEntropy)!
-
-        XCTAssertEqual(value, .success(expectedNewLink))
-        XCTAssertEqual(
-            usernameState(),
-            .available(username: "boba_fett.42", usernameLink: expectedNewLink),
-        )
+        XCTAssertEqual((try? value.get())?.handle, newHandle)
+        XCTAssertEqual(usernameState().username, "boba_fett.42")
+        XCTAssertEqual(usernameState().usernameLink?.handle, newHandle)
         XCTAssertTrue(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 0)
     }
@@ -403,9 +355,7 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testNoCorruptionIfFailToGenerateNewLink() async {
-        mockUsernameLinkManager.entropyToGenerate = .failure(OWSGenericError("Jabba's Sudden But Inevitable Betrayal"))
-
-        let stateBeforeRotate = setUsername(username: "boba_fett.42")
+        let stateBeforeRotate = setUsername(username: "boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett_boba_fett.42")
 
         let value = await localUsernameManager.rotateUsernameLink()
 
@@ -416,7 +366,6 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testCorruptionIfNetworkErrorWhileRotatingLink() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.setUsernameLinkMocks.set([{ _, _ in throw OWSHTTPError.mockNetworkFailure }])
 
         _ = setUsername(username: "boba_fett.42")
@@ -430,7 +379,6 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     func testCorruptionIfErrorWhileRotatingLink() async {
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.setUsernameLinkMocks.set([{ _, _ in throw OWSGenericError("") }])
 
         _ = setUsername(username: "boba_fett.42")
@@ -446,7 +394,6 @@ class LocalUsernameManagerTests: XCTestCase {
     func testSuccessfulRotationClearsCorruption() async {
         let newHandle = UUID()
 
-        mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
         mockUsernamesService.setUsernameLinkMocks.set([{ _, _ in newHandle }])
 
         mockDB.write { tx in
@@ -460,13 +407,9 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let value = await localUsernameManager.rotateUsernameLink()
 
-        let expectedNewLink = Usernames.UsernameLink(handle: newHandle, entropy: .mockEntropy)!
-
-        XCTAssertEqual(value, .success(expectedNewLink))
-        XCTAssertEqual(
-            usernameState(),
-            .available(username: "boba_fett.42", usernameLink: expectedNewLink),
-        )
+        XCTAssertEqual((try? value.get())?.handle, newHandle)
+        XCTAssertEqual(usernameState().username, "boba_fett.42")
+        XCTAssertEqual(usernameState().usernameLink?.handle, newHandle)
         XCTAssertTrue(mockStorageServiceManager.didRecordPendingLocalAccountUpdates)
         XCTAssertEqual(mockSyncMessageSender.usernameChangeSyncMessageCount, 0)
     }
@@ -640,12 +583,16 @@ private extension Usernames.HashedUsername {
 }
 
 private extension Usernames.UsernameLink {
-    static func mock(handle: UUID) -> Usernames.UsernameLink {
-        Usernames.UsernameLink(
+    static func mock(handle: UUID) -> UsernameLink {
+        return UsernameLink(
             handle: handle,
             entropy: .mockEntropy,
-        )!
+        )
     }
+}
+
+private extension UsernameLink.Entropy {
+    static let mockEntropy = try! Self(rawValue: .mockEntropy)
 }
 
 private extension Data {

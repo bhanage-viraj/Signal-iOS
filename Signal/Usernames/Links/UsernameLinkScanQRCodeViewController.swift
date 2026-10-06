@@ -124,7 +124,7 @@ extension UsernameLinkScanQRCodeViewController: QRCodeScanDelegate {
 
         guard
             let scannedUrl = URL(string: qrCodeString),
-            let scannedUsernameLink = Usernames.UsernameLink(usernameLinkUrl: scannedUrl)
+            let scannedUsernameLink = try? Usernames.UsernameLink(usernameLinkUrl: scannedUrl)
         else {
             UsernameLogger.shared.error(
                 "Failed to create username link from scanned QR code!",

@@ -195,7 +195,6 @@ public class DependenciesBridge {
     public let tsAccountManager: TSAccountManager
     public let unreadReminderManager: UnreadReminderManager
     public let usernameEducationManager: UsernameEducationManager
-    public let usernameLinkManager: UsernameLinkManager
     public let usernameLookupManager: UsernameLookupManager
     public let usernameValidationManager: UsernameValidationManager
     public let wallpaperImageStore: WallpaperImageStore
@@ -349,7 +348,6 @@ public class DependenciesBridge {
         tsAccountManager: TSAccountManager,
         unreadReminderManager: UnreadReminderManager,
         usernameEducationManager: UsernameEducationManager,
-        usernameLinkManager: UsernameLinkManager,
         usernameLookupManager: UsernameLookupManager,
         usernameValidationManager: UsernameValidationManager,
         wallpaperImageStore: WallpaperImageStore,
@@ -503,7 +501,6 @@ public class DependenciesBridge {
         self.tsAccountManager = tsAccountManager
         self.unreadReminderManager = unreadReminderManager
         self.usernameEducationManager = usernameEducationManager
-        self.usernameLinkManager = usernameLinkManager
         self.usernameLookupManager = usernameLookupManager
         self.usernameValidationManager = usernameValidationManager
         self.wallpaperImageStore = wallpaperImageStore

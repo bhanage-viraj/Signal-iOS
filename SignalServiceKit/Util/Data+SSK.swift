@@ -98,7 +98,7 @@ public extension Data {
     // URL- and filename-safe variant of base64.
     //
     // See: https://tools.ietf.org/html/rfc4648#section-5
-    static func data(fromBase64Url base64Url: String) throws -> Data {
+    static func data(fromBase64Url base64Url: some StringProtocol) throws -> Data {
         let base64 = Self.base64UrlToBase64(base64Url: base64Url)
         guard let data = Data(base64Encoded: base64) else {
             let message = "Couldn't parse base64Url."
@@ -113,7 +113,7 @@ public extension Data {
         return Self.base64ToBase64Url(base64: base64)
     }
 
-    private static func base64UrlToBase64(base64Url: String) -> String {
+    private static func base64UrlToBase64(base64Url: some StringProtocol) -> String {
         var base64 = base64Url
             .replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
