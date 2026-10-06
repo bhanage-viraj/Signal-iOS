@@ -15,7 +15,7 @@ public class DeviceProvisioningURL {
     public enum Capability: String {
         case linknsync = "backup5"
         case wifiaware = "wifiaware"
-        case nopni
+        case nopni = "nopni2"
     }
 
     public let linkType: LinkType
