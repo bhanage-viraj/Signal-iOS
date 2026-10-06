@@ -11,7 +11,7 @@ public class ContactCellView: ManualStackView {
         fileprivate enum CellDataSource {
             case address(SignalServiceAddress)
             case groupThread(TSGroupThread)
-            case `static`(name: String, avatar: UIImage)
+            case `static`(name: String, avatar: UIImage?)
         }
 
         fileprivate let dataSource: CellDataSource
@@ -54,7 +54,7 @@ public class ContactCellView: ManualStackView {
             self.localUserDisplayMode = localUserDisplayMode
         }
 
-        public init(name: String, avatar: UIImage) {
+        public init(name: String, avatar: UIImage?) {
             self.dataSource = .static(name: name, avatar: avatar)
             self.localUserDisplayMode = .asUser
         }

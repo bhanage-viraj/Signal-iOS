@@ -123,15 +123,15 @@ class BlockListViewController: OWSTableViewController2 {
 
         let recipientSectionItems = blockedRecipients.map { blockedRecipient in
             OWSTableItem(
-                dequeueCellBlock: { [weak self] tableView in
-                    let cell = tableView.dequeueReusableCell(withIdentifier: ContactTableViewCell.reuseIdentifier) as! ContactTableViewCell
-                    let config = ContactCellView.Configuration(address: blockedRecipient.address, localUserDisplayMode: .asUser)
-                    if self != nil {
-                        SSKEnvironment.shared.databaseStorageRef.read { transaction in
-                            cell.configure(configuration: config, transaction: transaction)
-                        }
+                dequeueCellBlock: { tableView in
+                    let cell = tableView.dequeueReusableCell(ContactTableViewCell.self).owsFailUnwrap("must exist")
+                    let config = ContactCellView.Configuration(
+                        address: blockedRecipient.address,
+                        localUserDisplayMode: .asUser,
+                    )
+                    databaseStorage.read { tx in
+                        cell.configure(configuration: config, transaction: tx)
                     }
-                    cell.accessibilityIdentifier = "BlockListViewController.user"
                     return cell
                 },
                 actionBlock: { [weak self] in
@@ -157,9 +157,15 @@ class BlockListViewController: OWSTableViewController2 {
 
         let groupSectionItems = blockedGroups.map { blockedGroup in
             return OWSTableItem(
-                customCellBlock: {
-                    let cell = AvatarTableViewCell()
-                    cell.configure(image: blockedGroup.groupAvatar, text: blockedGroup.groupName)
+                dequeueCellBlock: { tableView in
+                    let cell = tableView.dequeueReusableCell(ContactTableViewCell.self).owsFailUnwrap("must exist")
+                    let config = ContactCellView.Configuration(
+                        name: blockedGroup.groupName,
+                        avatar: blockedGroup.groupAvatar,
+                    )
+                    databaseStorage.read { tx in
+                        cell.configure(configuration: config, transaction: tx)
+                    }
                     return cell
                 },
                 actionBlock: { [weak self] in
