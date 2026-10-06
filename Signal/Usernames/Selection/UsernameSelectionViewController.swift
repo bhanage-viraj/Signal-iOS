@@ -942,12 +942,12 @@ private extension UsernameSelectionViewController {
             switch reservationResult {
             case .notAttempted:
                 return
-            case let .success(.successful(username, hashedUsername)):
+            case .success(.successful(let username)):
                 logger.info("Successfully reserved nickname!")
 
                 self.currentUsernameState = .reservationSuccessful(
-                    username: username,
-                    hashedUsername: hashedUsername,
+                    username: ParsedUsername(rawUsername: username.usernameString).owsFailUnwrap("must be valid"),
+                    hashedUsername: username,
                 )
             case .success(.rejected):
                 logger.warn("Reservation rejected.")

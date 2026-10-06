@@ -4,15 +4,15 @@
 //
 
 import Foundation
-import LibSignalClient
+public import LibSignalClient
 
 extension Usernames {
     public class HashedUsername {
-        private typealias LibSignalUsername = LibSignalClient.Username
+        public typealias LibSignalUsername = LibSignalClient.Username
 
         // MARK: Init
 
-        private let libSignalUsername: LibSignalUsername
+        public let libSignalUsername: LibSignalUsername
 
         public convenience init(forUsername username: String) throws {
             self.init(libSignalUsername: try .init(username))
@@ -56,13 +56,13 @@ public extension Usernames.HashedUsername {
             self.candidates = candidates
         }
 
-        var candidateHashes: [String] {
-            candidates.map { $0.hashString }
+        var hashes: [UsernameHash] {
+            return candidates.map { $0.rawHash }
         }
 
-        func candidate(matchingHash hashString: String) -> Usernames.HashedUsername? {
-            candidates.first(where: { candidate in
-                candidate.hashString == hashString
+        func candidate(matchingHash hash: UsernameHash) -> Usernames.HashedUsername? {
+            return candidates.first(where: { candidate in
+                return candidate.rawHash == hash
             })
         }
     }

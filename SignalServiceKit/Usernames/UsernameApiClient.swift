@@ -10,26 +10,20 @@ public protocol UsernameApiClient {
 
     // MARK: Selection
 
-    /// Reserves one of the given username candidates.
+    /// Reserves one of the given username hashes.
     ///
-    /// - Parameter usernameCandidates
-    /// Candidate usernames to reserve.
-    /// - Parameter attemptId
-    /// An ID for this attempt, to later disambiguate between multiple
-    /// potentially-overlapping attempts.
-    func reserveUsernameCandidates(
-        usernameCandidates: Usernames.HashedUsername.GeneratedCandidates,
-    ) async throws -> Usernames.ApiClientReservationResult
+    /// - Returns: The username hash that was reserved.
+    func reserveUsernameHashes(
+        _ usernameHashes: [UsernameHash],
+    ) async throws -> UsernameHash
 
     /// Confirms the given username, which must have previously been reserved.
     ///
-    /// - Parameter encryptedUsernameForLink
-    /// An encrypted form of this username for use in a username link.
-    func confirmReservedUsername(
-        reservedUsername: Usernames.HashedUsername,
-        encryptedUsernameForLink: Data,
-        chatServiceAuth: ChatServiceAuth,
-    ) async throws -> Usernames.ApiClientConfirmationResult
+    /// - Parameter usernameCiphertext: An encrypted form of this username for use in a username link.
+    func confirmUsername(
+        _ username: Username,
+        usernameCiphertext: Data,
+    ) async throws -> UUID
 
     // MARK: Deletion
 
@@ -50,7 +44,7 @@ public protocol UsernameApiClient {
     /// - SeeAlso
     /// ``Usernames.UsernameLink`` and ``UsernameLinkManager``.
     ///
-    /// - Parameter encryptedUsername
+    /// - Parameter usernameCiphertext
     /// The new encrypted username for the username link.
     /// - Parameter keepLinkHandle
     /// Whether we should ask the service to keep the existing link handle the
@@ -59,7 +53,7 @@ public protocol UsernameApiClient {
     /// - Returns
     /// The handle for the local user's encrypted username.
     func setUsernameLink(
-        encryptedUsername: Data,
+        usernameCiphertext: Data,
         keepLinkHandle: Bool,
     ) async throws -> UUID
 
@@ -72,10 +66,7 @@ public protocol UsernameApiClient {
 
 public extension Usernames {
     enum ApiClientReservationResult {
-        case successful(
-            username: Usernames.ParsedUsername,
-            hashedUsername: Usernames.HashedUsername,
-        )
+        case successful(Usernames.HashedUsername)
         case rejected
         case rateLimited
     }

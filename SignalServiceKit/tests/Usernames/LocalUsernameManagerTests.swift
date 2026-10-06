@@ -48,7 +48,7 @@ class LocalUsernameManagerTests: XCTestCase {
     }
 
     override func tearDown() {
-        owsPrecondition(mockUsernameApiClient.confirmReservedUsernameMocks.isEmpty)
+        owsPrecondition(mockUsernameApiClient.confirmUsernameMocks.isEmpty)
         owsPrecondition(mockUsernameApiClient.deleteCurrentUsernameMocks.isEmpty)
         owsPrecondition(mockUsernameApiClient.setUsernameLinkMocks.isEmpty)
         XCTAssertNil(mockUsernameLinkManager.entropyToGenerate)
@@ -116,7 +116,7 @@ class LocalUsernameManagerTests: XCTestCase {
         let username = "boba_fett.42"
 
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in .success(usernameLinkHandle: linkHandle) }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in linkHandle }]
 
         XCTAssertEqual(usernameState(), .unset)
 
@@ -124,7 +124,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         XCTAssertEqual(
             value,
-            .success(.success(username: username, usernameLink: .mock(handle: linkHandle))),
+            .success(.success),
         )
         XCTAssertEqual(
             usernameState(),
@@ -162,7 +162,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
     func testCorruptionIfNetworkErrorWhileConfirming() async {
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in throw OWSHTTPError.mockNetworkFailure }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in throw OWSHTTPError.mockNetworkFailure }]
 
         XCTAssertEqual(usernameState(), .unset)
 
@@ -176,7 +176,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
     func testCorruptionIfErrorWhileConfirming() async {
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in throw OWSGenericError("") }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in throw OWSGenericError("") }]
 
         XCTAssertEqual(usernameState(), .unset)
 
@@ -190,7 +190,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
     func testNoCorruptionIfRejectedWhileConfirming() async {
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in .rejected }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in throw SignalError.usernameReservationNotFound("") }]
 
         let stateBeforeConfirm = setUsername(username: "boba_fett.42")
 
@@ -204,7 +204,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
     func testNoCorruptionIfRateLimitedWhileConfirming() async {
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in .rateLimited }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in throw SignalError.rateLimitedError(retryAfter: 60, message: "") }]
 
         let stateBeforeConfirm = setUsername(username: "boba_fett.42")
 
@@ -220,7 +220,7 @@ class LocalUsernameManagerTests: XCTestCase {
         let newHandle = UUID()
 
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in .success(usernameLinkHandle: newHandle) }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in newHandle }]
 
         mockDB.write { tx in
             localUsernameManager.setLocalUsernameWithCorruptedLink(
@@ -237,7 +237,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         XCTAssertEqual(
             value,
-            .success(.success(username: "boba_fett.43", usernameLink: expectedNewLink)),
+            .success(.success),
         )
         XCTAssertEqual(
             usernameState(),
@@ -251,7 +251,7 @@ class LocalUsernameManagerTests: XCTestCase {
         let newHandle = UUID()
 
         mockUsernameLinkManager.entropyToGenerate = .success(.mockEntropy)
-        mockUsernameApiClient.confirmReservedUsernameMocks = [{ _, _, _ in .success(usernameLinkHandle: newHandle) }]
+        mockUsernameApiClient.confirmUsernameMocks = [{ _, _ in newHandle }]
 
         mockDB.write { tx in
             localUsernameManager.setLocalUsernameCorrupted(tx: tx)
@@ -265,7 +265,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         XCTAssertEqual(
             value,
-            .success(.success(username: "boba_fett.43", usernameLink: expectedNewLink)),
+            .success(.success),
         )
         XCTAssertEqual(
             usernameState(),

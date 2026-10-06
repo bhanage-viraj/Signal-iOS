@@ -359,8 +359,8 @@ public class _RegistrationCoordinator_UDManagerMock: _RegistrationCoordinator_UD
 public class _RegistrationCoordinator_UsernameApiClientMock: _RegistrationCoordinator_UsernameApiClientShim {
     public init() {}
 
-    public var confirmReservedUsernameMocks = [(reservedUsername: Usernames.HashedUsername, encryptedUsernameForLink: Data, chatServiceAuth: ChatServiceAuth) async throws -> Usernames.ApiClientConfirmationResult]()
-    public func confirmReservedUsername(reservedUsername: Usernames.HashedUsername, encryptedUsernameForLink: Data, chatServiceAuth: ChatServiceAuth) async throws -> Usernames.ApiClientConfirmationResult {
-        return try await confirmReservedUsernameMocks.removeFirst()(reservedUsername, encryptedUsernameForLink, chatServiceAuth)
+    public var confirmUsernameMocks = [(username: LibSignalClient.Username, usernameCiphertext: Data) async throws -> UUID]()
+    public func confirmUsername(_ username: Username, usernameCiphertext: Data) async throws -> UUID {
+        return try await confirmUsernameMocks.removeFirst()(username, usernameCiphertext)
     }
 }

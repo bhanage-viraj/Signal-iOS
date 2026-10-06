@@ -11,18 +11,16 @@ class MockUsernameApiClient: UsernameApiClient {
 
     // MARK: Confirm
 
-    var confirmReservedUsernameMocks = [(
-        reservedUsername: Usernames.HashedUsername,
-        encryptedUsernameForLink: Data,
-        chatServiceAuth: ChatServiceAuth,
-    ) async throws -> Usernames.ApiClientConfirmationResult]()
+    var confirmUsernameMocks = [(
+        username: LibSignalClient.Username,
+        usernameCiphertext: Data,
+    ) async throws -> UUID]()
 
-    func confirmReservedUsername(
-        reservedUsername: Usernames.HashedUsername,
-        encryptedUsernameForLink: Data,
-        chatServiceAuth: ChatServiceAuth,
-    ) async throws -> Usernames.ApiClientConfirmationResult {
-        return try await confirmReservedUsernameMocks.removeFirst()(reservedUsername, encryptedUsernameForLink, chatServiceAuth)
+    func confirmUsername(
+        _ username: LibSignalClient.Username,
+        usernameCiphertext: Data,
+    ) async throws -> UUID {
+        return try await confirmUsernameMocks.removeFirst()(username, usernameCiphertext)
     }
 
     // MARK: Delete
@@ -35,17 +33,17 @@ class MockUsernameApiClient: UsernameApiClient {
     // MARK: Set link
 
     var setUsernameLinkMocks = [(
-        encryptedUsername: Data,
+        usernameCiphertext: Data,
         keepLinkHandle: Bool,
     ) async throws -> UUID]()
 
-    func setUsernameLink(encryptedUsername: Data, keepLinkHandle: Bool) async throws -> UUID {
-        return try await setUsernameLinkMocks.removeFirst()(encryptedUsername, keepLinkHandle)
+    func setUsernameLink(usernameCiphertext: Data, keepLinkHandle: Bool) async throws -> UUID {
+        return try await setUsernameLinkMocks.removeFirst()(usernameCiphertext, keepLinkHandle)
     }
 
     // MARK: Unimplemented
 
-    func reserveUsernameCandidates(usernameCandidates: Usernames.HashedUsername.GeneratedCandidates) async throws -> Usernames.ApiClientReservationResult { owsFail("Not implemented!") }
+    func reserveUsernameHashes(_ usernameHashes: [UsernameHash]) async throws -> UsernameHash { owsFail("Not implemented!") }
     func lookupAci(forHashedUsername hashedUsername: Usernames.HashedUsername) async throws -> Aci? { owsFail("Not implemented!") }
     func getUsernameLink(handle: UUID, entropy: Data) async throws -> LibSignalClient.Username? { owsFail("Not implemented!") }
 }

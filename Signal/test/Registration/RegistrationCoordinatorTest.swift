@@ -416,13 +416,8 @@ public class RegistrationCoordinatorTest {
         // our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmReservedUsernameMocks = [{ _, _, chatServiceAuth in
-            #expect(chatServiceAuth == .explicit(
-                aci: identityResponse.localIdentifiers.aci,
-                deviceId: .primary,
-                password: authPassword,
-            ))
-            return .success(usernameLinkHandle: mockUsernameLink.handle)
+        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+            return mockUsernameLink.handle
         }]
 
         // Once we do the username reclamation,
@@ -917,14 +912,9 @@ public class RegistrationCoordinatorTest {
         // Once we restore from storage service, we should attempt to reclaim our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmReservedUsernameMocks = [{ _, _, chatServiceAuth in
+        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
             self.testRun.addObservedStep(.confirmReservedUsername)
-            #expect(chatServiceAuth == .explicit(
-                aci: identityResponse.localIdentifiers.aci,
-                deviceId: .primary,
-                password: authPassword,
-            ))
-            return .success(usernameLinkHandle: mockUsernameLink.handle)
+            return mockUsernameLink.handle
         }]
 
         // Once we do the storage service restore,
@@ -1249,13 +1239,8 @@ public class RegistrationCoordinatorTest {
         // our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmReservedUsernameMocks = [{ _, _, chatServiceAuth in
-            #expect(chatServiceAuth == .explicit(
-                aci: accountIdentityResponse.localIdentifiers.aci,
-                deviceId: .primary,
-                password: authPassword,
-            ))
-            return .success(usernameLinkHandle: mockUsernameLink.handle)
+        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
+            return mockUsernameLink.handle
         }]
 
         storageServiceManagerMock.addRotateManifestMock({ _, _ in return .value(()) })
@@ -1574,14 +1559,9 @@ public class RegistrationCoordinatorTest {
         // Once we restore from storage service, we should attempt to reclaim our username.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmReservedUsernameMocks = [{ _, _, chatServiceAuth in
+        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
             self.testRun.addObservedStep(.confirmReservedUsername)
-            #expect(chatServiceAuth == .explicit(
-                aci: accountIdentityResponse.localIdentifiers.aci,
-                deviceId: .primary,
-                password: authPassword,
-            ))
-            return .success(usernameLinkHandle: mockUsernameLink.handle)
+            return mockUsernameLink.handle
         }]
 
         // Once we do the storage service restore, then we are finished!
@@ -1840,12 +1820,7 @@ public class RegistrationCoordinatorTest {
         // no different impact on the rest of registration.
         let mockUsernameLink: Usernames.UsernameLink = .mocked
         localUsernameManagerMock.startingUsernameState = .available(username: "boba.42", usernameLink: mockUsernameLink)
-        usernameApiClientMock.confirmReservedUsernameMocks = [{ _, _, chatServiceAuth in
-            #expect(chatServiceAuth == .explicit(
-                aci: accountIdentityResponse.localIdentifiers.aci,
-                deviceId: .primary,
-                password: authPassword,
-            ))
+        usernameApiClientMock.confirmUsernameMocks = [{ _, _ in
             throw OWSGenericError("Something went wrong :(")
         }]
 

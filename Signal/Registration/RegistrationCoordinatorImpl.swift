@@ -4396,10 +4396,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 maxAttempts: 3,
                 isRetryable: { $0.isNetworkFailureOrTimeout },
                 block: {
-                    try await reclaimUsernameAttempt(
-                        accountIdentity: accountIdentity,
-                        localUsernameState: localUsernameState,
-                    )
+                    try await reclaimUsernameAttempt(localUsernameState: localUsernameState)
                 },
             )
         } catch {
@@ -4410,9 +4407,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         return await nextStep()
     }
 
-    @MainActor
     private func reclaimUsernameAttempt(
-        accountIdentity: AccountIdentity,
         localUsernameState: Usernames.LocalUsernameState,
     ) async throws {
         let logger = PrefixedLogger(prefix: "UsernameReclamation")
@@ -4434,21 +4429,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             existingEntropy: localUsernameLink.entropy,
         )
 
-        let confirmationResult = try await deps.usernameApiClient.confirmReservedUsername(
-            reservedUsername: hashedLocalUsername,
-            encryptedUsernameForLink: encryptedUsernameForLink,
-            chatServiceAuth: accountIdentity.chatServiceAuth,
+        let linkHandle = try await deps.usernameApiClient.confirmUsername(
+            hashedLocalUsername.libSignalUsername,
+            usernameCiphertext: encryptedUsernameForLink,
         )
-        switch confirmationResult {
-        case .success(let usernameLinkHandle):
-            if localUsernameLink.handle != usernameLinkHandle {
-                logger.error("Username link handle rotated during reclamation! Our local username link is now broken.")
-            } else {
-                logger.info("Successfully reclaimed username during registration.")
-            }
-        case .rejected, .rateLimited:
-            logger.warn("Unexpectedly failed to confirm .username! \(confirmationResult)")
+        guard localUsernameLink.handle == linkHandle else {
+            throw OWSGenericError("confirmed username but the handle is wrong, so our username link is now corrupted")
         }
+        logger.info("confirmed username")
     }
 
     @MainActor

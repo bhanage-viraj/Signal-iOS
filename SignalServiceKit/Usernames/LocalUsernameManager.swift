@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import Foundation
+import LibSignalClient
+
 /// Manages the local username and username link.
 public protocol LocalUsernameManager {
 
@@ -157,11 +160,8 @@ public extension Usernames {
 
     typealias ReservationResult = ApiClientReservationResult
 
-    enum ConfirmationResult: Equatable {
-        case success(
-            username: String,
-            usernameLink: UsernameLink,
-        )
+    enum ConfirmationResult {
+        case success
         case rejected
         case rateLimited
     }
@@ -420,15 +420,20 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         }
 
         do {
-            let reservationResult = try await makeRequestWithNetworkRetries {
-                return try await usernameApiClient.reserveUsernameCandidates(usernameCandidates: usernameCandidates)
+            let reservedHash = try await makeRequestWithNetworkRetries {
+                return try await usernameApiClient.reserveUsernameHashes(usernameCandidates.hashes)
             }
-            return .success(reservationResult)
+            guard let reservedCandidate = usernameCandidates.candidate(matchingHash: reservedHash) else {
+                return .failure(.otherError)
+            }
+            return .success(.successful(reservedCandidate))
+        } catch SignalError.usernameNotAvailable {
+            return .success(.rejected)
+        } catch SignalError.rateLimitedError(retryAfter: _, message: _) {
+            return .success(.rateLimited)
+        } catch where error.isNetworkFailureOrTimeout {
+            return .failure(.networkError)
         } catch {
-            if error.isNetworkFailureOrTimeout {
-                return .failure(.networkError)
-            }
-
             return .failure(.otherError)
         }
     }
@@ -467,55 +472,49 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         }
 
         do {
-            let apiClientConfirmationResult = try await makeRequestWithNetworkRetries {
-                return try await usernameApiClient.confirmReservedUsername(
-                    reservedUsername: reservedUsername,
-                    encryptedUsernameForLink: linkEncryptedUsername,
-                    chatServiceAuth: .implicit(),
+            let linkHandle = try await makeRequestWithNetworkRetries {
+                return try await usernameApiClient.confirmUsername(
+                    reservedUsername.libSignalUsername,
+                    usernameCiphertext: linkEncryptedUsername,
                 )
             }
-            let confirmationResult = await self.db.awaitableWrite { tx -> Usernames.ConfirmationResult in
-                switch apiClientConfirmationResult {
-                case let .success(linkHandle):
-                    guard
-                        let usernameLink = Usernames.UsernameLink(
-                            handle: linkHandle,
-                            entropy: linkEntropy,
-                        )
-                    else {
-                        owsFail("This link should always be valid - we just generated the entropy ourselves!")
-                    }
-
-                    let username = reservedUsername.usernameString
-
-                    self.setLocalUsername(
-                        username: username,
-                        usernameLink: usernameLink,
-                        tx: tx,
+            await self.db.awaitableWrite { tx in
+                guard
+                    let usernameLink = Usernames.UsernameLink(
+                        handle: linkHandle,
+                        entropy: linkEntropy,
                     )
-
-                    // This device changed our username hash, which we need to
-                    // communicate out.
-                    self.usernameHashDidChangeLocally(tx: tx)
-
-                    // We back up the username and link in StorageService, so
-                    // trigger a backup now.
-                    self.storageServiceManager.recordPendingLocalAccountUpdates()
-
-                    return .success(
-                        username: username,
-                        usernameLink: usernameLink,
-                    )
-                case .rejected:
-                    self.markUsernameCorrupted(false, tx: tx)
-                    return .rejected
-                case .rateLimited:
-                    self.markUsernameCorrupted(false, tx: tx)
-                    return .rateLimited
+                else {
+                    owsFail("This link should always be valid - we just generated the entropy ourselves!")
                 }
-            }
 
-            return .success(confirmationResult)
+                let username = reservedUsername.usernameString
+
+                self.setLocalUsername(
+                    username: username,
+                    usernameLink: usernameLink,
+                    tx: tx,
+                )
+
+                // This device changed our username hash, which we need to
+                // communicate out.
+                self.usernameHashDidChangeLocally(tx: tx)
+
+                // We back up the username and link in StorageService, so
+                // trigger a backup now.
+                self.storageServiceManager.recordPendingLocalAccountUpdates()
+            }
+            return .success(.success)
+        } catch SignalError.usernameReservationNotFound, SignalError.usernameNotAvailable {
+            await self.db.awaitableWrite { tx in
+                self.markUsernameCorrupted(false, tx: tx)
+            }
+            return .success(.rejected)
+        } catch SignalError.rateLimitedError(retryAfter: _, message: _) {
+            await self.db.awaitableWrite { tx in
+                self.markUsernameCorrupted(false, tx: tx)
+            }
+            return .success(.rateLimited)
         } catch {
             if error.isNetworkFailureOrTimeout {
                 UsernameLogger.shared.error("Network error while confirming username. Username now assumed corrupted!")
@@ -637,7 +636,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let newHandle = try await makeRequestWithNetworkRetries {
-                try await usernameApiClient.setUsernameLink(encryptedUsername: newEncryptedUsername, keepLinkHandle: false)
+                try await usernameApiClient.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: false)
             }
 
             guard
@@ -730,7 +729,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 /// rotate the username link handle. That's key to keeping the
                 /// existing link unaffected while updating the case of the
                 /// visible username the link points to.
-                return try await usernameApiClient.setUsernameLink(encryptedUsername: newEncryptedUsername, keepLinkHandle: true)
+                return try await usernameApiClient.setUsernameLink(usernameCiphertext: newEncryptedUsername, keepLinkHandle: true)
             }
             guard currentUsernameLink.handle == newHandle else {
                 UsernameLogger.shared.error("Handle received while changing username case did not match existing! Is this a server bug?")
