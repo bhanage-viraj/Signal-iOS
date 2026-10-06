@@ -265,7 +265,7 @@ private extension AccountIdentityResponse {
     static func withRemoteUsername(_ remoteUsername: String) -> AccountIdentityResponse {
         return AccountIdentityResponse(
             localIdentifiers: .forUnitTests,
-            usernameHash: try! Usernames.HashedUsername(forUsername: remoteUsername).hashString,
+            usernameHash: try! LibSignalClient.Username(remoteUsername).hash,
         )
     }
 }

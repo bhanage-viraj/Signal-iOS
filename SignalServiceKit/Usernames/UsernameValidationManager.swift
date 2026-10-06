@@ -134,15 +134,11 @@ public class UsernameValidationManagerImpl: UsernameValidationManager {
             case let (.some(localUsername), .some(remoteUsernameHash)):
                 // Both present -> check the values
 
-                guard
-                    let hashedLocalUsername = try? Usernames.HashedUsername(
-                        forUsername: localUsername,
-                    )
-                else {
+                guard let localUsername = try? LibSignalClient.Username(localUsername) else {
                     return false
                 }
 
-                return hashedLocalUsername.hashString == remoteUsernameHash
+                return localUsername.hash == remoteUsernameHash
             }
         }()
 

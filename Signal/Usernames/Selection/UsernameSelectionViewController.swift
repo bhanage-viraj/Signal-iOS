@@ -4,6 +4,7 @@
 //
 
 import BonMot
+import LibSignalClient
 import SignalServiceKit
 import SignalUI
 
@@ -63,7 +64,7 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
         /// The username has been successfully reserved.
         case reservationSuccessful(
             username: ParsedUsername,
-            hashedUsername: Usernames.HashedUsername,
+            hashedUsername: LibSignalClient.Username,
         )
         /// The username was rejected by the server during reservation.
         case reservationRejected
@@ -675,7 +676,7 @@ private extension UsernameSelectionViewController {
         }
     }
 
-    private func confirmNewUsername(reservedUsername: Usernames.HashedUsername) {
+    private func confirmNewUsername(reservedUsername: LibSignalClient.Username) {
         if existingUsername == nil, !isAttemptingRecovery {
             self.confirmReservationBehindModalActivityIndicator(
                 reservedUsername: reservedUsername,
@@ -699,7 +700,7 @@ private extension UsernameSelectionViewController {
     /// Confirm the given reservation, with an activity indicator blocking the
     /// UI.
     private func confirmReservationBehindModalActivityIndicator(
-        reservedUsername: Usernames.HashedUsername,
+        reservedUsername: LibSignalClient.Username,
     ) {
         ModalActivityIndicatorViewController.present(
             fromViewController: self,
@@ -725,7 +726,7 @@ private extension UsernameSelectionViewController {
 
                     modal.dismiss {
                         self.dismiss(animated: true) {
-                            self.usernameSelectionDelegate?.usernameSelectionDidDismissAfterConfirmation(username: reservedUsername.usernameString)
+                            self.usernameSelectionDelegate?.usernameSelectionDidDismissAfterConfirmation(username: reservedUsername.value)
                         }
                     }
                 case .success(.rejected):
@@ -831,10 +832,10 @@ private extension UsernameSelectionViewController {
                 }
             }
 
-            typealias CandidateError = Usernames.HashedUsername.CandidateGenerationError
+            typealias CandidateError = Usernames.CandidateGenerationError
 
             do {
-                let usernameCandidates = try Usernames.HashedUsername.generateCandidates(
+                let usernameCandidates = try Usernames.generateCandidates(
                     forNickname: desiredNickname,
                     minNicknameLength: Constants.minNicknameCodepointLength,
                     maxNicknameLength: Constants.maxNicknameCodepointLength,
@@ -888,7 +889,7 @@ private extension UsernameSelectionViewController {
     /// not match the ID with which the reservation was initiated, we discard
     /// the result (as we have moved on to another desired nickname).
     private func attemptReservationAndUpdateValidationState(
-        forUsernameCandidates usernameCandidates: Usernames.HashedUsername.GeneratedCandidates,
+        forUsernameCandidates usernameCandidates: [LibSignalClient.Username],
     ) {
         AssertIsOnMainThread()
 
@@ -946,7 +947,7 @@ private extension UsernameSelectionViewController {
                 logger.info("Successfully reserved nickname!")
 
                 self.currentUsernameState = .reservationSuccessful(
-                    username: ParsedUsername(rawUsername: username.usernameString).owsFailUnwrap("must be valid"),
+                    username: ParsedUsername(rawUsername: username.value).owsFailUnwrap("must be valid"),
                     hashedUsername: username,
                 )
             case .success(.rejected):

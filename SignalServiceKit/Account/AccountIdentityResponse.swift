@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import LibSignalClient
+public import LibSignalClient
 
 public struct AccountIdentityResponse: Decodable {
     public struct Entitlements: Decodable {
@@ -45,7 +45,7 @@ public struct AccountIdentityResponse: Decodable {
     }
 
     public let localIdentifiers: LocalIdentifiers
-    public let usernameHash: String?
+    public let usernameHash: UsernameHash?
     public let usernameLinkHandle: UUID?
     /// Whether the account has any data in SVR.
     public let storageCapable: Bool
@@ -53,7 +53,7 @@ public struct AccountIdentityResponse: Decodable {
 
     public init(
         localIdentifiers: LocalIdentifiers,
-        usernameHash: String? = nil,
+        usernameHash: UsernameHash? = nil,
         usernameLinkHandle: UUID? = nil,
         storageCapable: Bool = false,
         entitlements: Entitlements = Entitlements(),
@@ -88,7 +88,7 @@ public struct AccountIdentityResponse: Decodable {
             accountType = .phoneNumberless(authCredentialSalt)
         }
         self.localIdentifiers = LocalIdentifiers(aci: aci, accountType: accountType)
-        self.usernameHash = try container.decodeIfPresent(String.self, forKey: .usernameHash)
+        self.usernameHash = try container.decodeIfPresent(DataBase64Url.self, forKey: .usernameHash)?.wrappedValue
         self.usernameLinkHandle = try container.decodeIfPresent(UUID.self, forKey: .usernameLinkHandle)
         self.storageCapable = try container.decode(Bool.self, forKey: .storageCapable)
         self.entitlements = try container.decode(Entitlements.self, forKey: .entitlements)

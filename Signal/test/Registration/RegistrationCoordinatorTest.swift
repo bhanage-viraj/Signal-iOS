@@ -3596,8 +3596,8 @@ extension AccountIdentityResponse: @retroactive Encodable {
         case .phoneNumberless(let authCredentialSalt):
             try container.encode(authCredentialSalt, forKey: .authCredentialSalt)
         }
-        try container.encode(self.usernameHash, forKey: .usernameHash)
-        try container.encode(self.usernameLinkHandle, forKey: .usernameLinkHandle)
+        try container.encodeIfPresent(self.usernameHash.map({ DataBase64Url($0) }), forKey: .usernameHash)
+        try container.encodeIfPresent(self.usernameLinkHandle, forKey: .usernameLinkHandle)
         try container.encode(self.storageCapable, forKey: .storageCapable)
         // Omit entitlements because they're not needed here.
         struct FakeEntitlements: Encodable {

@@ -4438,15 +4438,15 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             localUsernameLink = usernameLink
         }
 
-        let hashedLocalUsername = try Usernames.HashedUsername(forUsername: localUsername)
+        let localUsernameObj = try LibSignalClient.Username(localUsername)
         let usernameCiphertext = UsernameLink.encryptUsername(
-            hashedLocalUsername.libSignalUsername,
+            localUsernameObj,
             existingEntropy: localUsernameLink.entropy,
         )
 
         let linkHandle = try await deps.serviceProvider.withAuthService(.usernames) {
             return try await $0.confirmUsername(
-                hashedLocalUsername.libSignalUsername,
+                localUsernameObj,
                 usernameCiphertext: usernameCiphertext,
             )
         }

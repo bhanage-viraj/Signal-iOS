@@ -4,10 +4,11 @@
 //
 
 import Foundation
+public import LibSignalClient
 
 extension Usernames {
     public enum ApiClientReservationResult {
-        case successful(Usernames.HashedUsername)
+        case successful(LibSignalClient.Username)
         case rejected
         case rateLimited
     }

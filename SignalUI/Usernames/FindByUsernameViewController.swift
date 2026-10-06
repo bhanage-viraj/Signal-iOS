@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import LibSignalClient
 import SignalServiceKit
 
 protocol FindByUsernameDelegate: AnyObject {
@@ -135,7 +136,7 @@ public class FindByUsernameViewController: OWSTableViewController2 {
     @objc
     private func textFieldDidChange() {
         do {
-            _ = try Usernames.HashedUsername(forUsername: self.usernameValue)
+            _ = try LibSignalClient.Username(self.usernameValue)
             navigationItem.rightBarButtonItem?.isEnabled = true
         } catch {
             navigationItem.rightBarButtonItem?.isEnabled = false

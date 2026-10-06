@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import LibSignalClient
+public import LibSignalClient
 
 /// Manages the local username and username link.
 public protocol LocalUsernameManager {
@@ -60,14 +60,14 @@ public protocol LocalUsernameManager {
 
     /// Reserve a username from the given set of candidates.
     func reserveUsername(
-        usernameCandidates: Usernames.HashedUsername.GeneratedCandidates,
+        usernameCandidates: [LibSignalClient.Username],
     ) async -> Usernames.RemoteMutationResult<Usernames.ReservationResult>
 
     /// Set the local user's username to the given reserved username, on the
     /// service and locally. Note that setting a new username also sets a
     /// corresponding username link.
     func confirmUsername(
-        reservedUsername: Usernames.HashedUsername,
+        reservedUsername: LibSignalClient.Username,
     ) async -> Usernames.RemoteMutationResult<Usernames.ConfirmationResult>
 
     /// Delete the local user's username and username link.
@@ -409,7 +409,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
     // MARK: Usernames and the service
 
     func reserveUsername(
-        usernameCandidates: Usernames.HashedUsername.GeneratedCandidates,
+        usernameCandidates: [LibSignalClient.Username],
     ) async -> Usernames.RemoteMutationResult<Usernames.ReservationResult> {
         guard reachabilityManager.isReachable else {
             logger.warn("Not attempting to reserve username – Reachability indicates we will fail.")
@@ -418,9 +418,9 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
         do {
             let reservedHash = try await makeRequestWithNetworkRetries {
-                return try await $0.reserveUsernameHashes(usernameCandidates.hashes)
+                return try await $0.reserveUsernameHashes(usernameCandidates.map(\.hash))
             }
-            guard let reservedCandidate = usernameCandidates.candidate(matchingHash: reservedHash) else {
+            guard let reservedCandidate = usernameCandidates.first(where: { $0.hash == reservedHash }) else {
                 return .failure(.otherError)
             }
             return .success(.successful(reservedCandidate))
@@ -437,14 +437,14 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
     /// Confirm the given reserved username, setting it as our username.
     func confirmUsername(
-        reservedUsername: Usernames.HashedUsername,
+        reservedUsername: LibSignalClient.Username,
     ) async -> Usernames.RemoteMutationResult<Usernames.ConfirmationResult> {
         guard reachabilityManager.isReachable else {
             logger.warn("Not attempting to confirm username – Reachability indicates we will fail.")
             return .failure(.networkError)
         }
 
-        let (linkEntropy, usernameCiphertext) = UsernameLink.encryptUsername(reservedUsername.libSignalUsername)
+        let (linkEntropy, usernameCiphertext) = UsernameLink.encryptUsername(reservedUsername)
 
         // Mark as corrupted in case we encounter an unexpected error while
         // confirming. If that happens we can't be sure if our new username was
@@ -458,17 +458,15 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
         do {
             let linkHandle = try await makeRequestWithNetworkRetries {
                 return try await $0.confirmUsername(
-                    reservedUsername.libSignalUsername,
+                    reservedUsername,
                     usernameCiphertext: usernameCiphertext,
                 )
             }
             await self.db.awaitableWrite { tx in
                 let usernameLink = UsernameLink(handle: linkHandle, entropy: linkEntropy)
 
-                let username = reservedUsername.usernameString
-
                 self.setLocalUsername(
-                    username: username,
+                    username: reservedUsername.value,
                     usernameLink: usernameLink,
                     tx: tx,
                 )

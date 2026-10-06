@@ -249,3 +249,25 @@ extension FixedWidthInteger {
         return withUnsafeBytes(of: littleEndian) { Data($0) }
     }
 }
+
+// MARK: -
+
+public struct DataBase64Url: Codable {
+    public var wrappedValue: Data
+
+    public init(_ wrappedValue: Data) {
+        self.wrappedValue = wrappedValue
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+        let dataValue = try Data.data(fromBase64Url: stringValue)
+        self.init(dataValue)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.wrappedValue.asBase64Url)
+    }
+}

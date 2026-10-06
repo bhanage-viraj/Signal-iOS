@@ -203,7 +203,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         XCTAssertEqual(usernameState(), .linkCorrupted(username: "boba_fett.42"))
 
-        let value = await localUsernameManager.confirmUsername(reservedUsername: try! Usernames.HashedUsername(forUsername: "boba_fett.43"))
+        let value = await localUsernameManager.confirmUsername(reservedUsername: try! LibSignalClient.Username("boba_fett.43"))
 
         XCTAssertEqual(value, .success(.success))
         XCTAssertEqual(usernameState().username, "boba_fett.43")
@@ -223,7 +223,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         XCTAssertEqual(usernameState(), .usernameAndLinkCorrupted)
 
-        let value = await localUsernameManager.confirmUsername(reservedUsername: try! Usernames.HashedUsername(forUsername: "boba_fett.43"))
+        let value = await localUsernameManager.confirmUsername(reservedUsername: try! LibSignalClient.Username("boba_fett.43"))
 
         XCTAssertEqual(value, .success(.success))
         XCTAssertEqual(usernameState().username, "boba_fett.43")
@@ -576,9 +576,9 @@ private extension OWSHTTPError {
     }
 }
 
-private extension Usernames.HashedUsername {
-    static func mock(_ username: String) -> Usernames.HashedUsername {
-        try! Usernames.HashedUsername(forUsername: username)
+private extension LibSignalClient.Username {
+    static func mock(_ username: String) -> LibSignalClient.Username {
+        return try! LibSignalClient.Username(username)
     }
 }
 
