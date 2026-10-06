@@ -57,15 +57,12 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
         /// The user's existing username is unchanged.
         case noChangesToExisting
         /// The user's existing username has changed, but only in letter casing.
-        case caseOnlyChange(newUsername: ParsedUsername)
+        case caseOnlyChange(LibSignalClient.Username)
         /// Username state is pending. Stores an ID, to disambiguate multiple
         /// potentially-overlapping state updates.
         case pending(id: UUID)
         /// The username has been successfully reserved.
-        case reservationSuccessful(
-            username: ParsedUsername,
-            hashedUsername: LibSignalClient.Username,
-        )
+        case reservationSuccessful(LibSignalClient.Username)
         /// The username was rejected by the server during reservation.
         case reservationRejected
         /// The reservation was rejected by the server due to rate limiting.
@@ -97,7 +94,7 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
                 return "caseOnlyChange"
             case .pending(id: _):
                 return "pending"
-            case .reservationSuccessful(username: _, hashedUsername: _):
+            case .reservationSuccessful:
                 return "reservationSuccessful"
             case .reservationRejected:
                 return "reservationRejected"
@@ -124,8 +121,6 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
             }
         }
     }
-
-    typealias ParsedUsername = Usernames.ParsedUsername
 
     // MARK: Private members
 
@@ -154,7 +149,7 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
     }
 
     /// A pre-existing username this controller was seeded with.
-    private let existingUsername: ParsedUsername?
+    private let existingUsername: UsernameComponents?
 
     /// If the user is attempting to recover a corrupted username.
     private var isAttemptingRecovery: Bool
@@ -170,11 +165,11 @@ class UsernameSelectionViewController: OWSViewController, OWSNavigationChildCont
     // MARK: Init
 
     init(
-        existingUsername: ParsedUsername?,
+        existingUsername: LibSignalClient.Username?,
         isAttemptingRecovery: Bool,
         context: Context,
     ) {
-        self.existingUsername = existingUsername
+        self.existingUsername = existingUsername?.components()
         self.isAttemptingRecovery = isAttemptingRecovery
         self.context = context
 
@@ -423,17 +418,16 @@ private extension UsernameSelectionViewController {
             switch self.currentUsernameState {
             case .noChangesToExisting:
                 if let existingUsername = self.existingUsername {
-                    return existingUsername.reassembled
+                    return existingUsername.originalValue.value
                 }
-
                 return OWSLocalizedString(
                     "USERNAME_SELECTION_HEADER_TEXT_FOR_PLACEHOLDER",
                     comment: "When the user has entered text into a text field for setting their username, a header displays the username text. This string is shown in the header when the text field is empty.",
                 )
-            case let .caseOnlyChange(newUsername):
-                return newUsername.reassembled
-            case let .reservationSuccessful(username, _):
-                return username.reassembled
+            case let .caseOnlyChange(username):
+                return username.value
+            case let .reservationSuccessful(username):
+                return username.value
             case
                 .pending,
                 .reservationRejected,
@@ -462,12 +456,12 @@ private extension UsernameSelectionViewController {
         switch self.currentUsernameState {
         case .noChangesToExisting:
             self.usernameTextFieldWrapper.textField.configure(forConfirmedUsername: self.existingUsername)
-        case let .caseOnlyChange(newUsername):
-            self.usernameTextFieldWrapper.textField.configure(forConfirmedUsername: newUsername)
+        case let .caseOnlyChange(username):
+            self.usernameTextFieldWrapper.textField.configure(forConfirmedUsername: username.components())
         case .pending:
             self.usernameTextFieldWrapper.textField.configureForSomethingPending()
-        case let .reservationSuccessful(username, _):
-            self.usernameTextFieldWrapper.textField.configure(forConfirmedUsername: username)
+        case let .reservationSuccessful(username):
+            self.usernameTextFieldWrapper.textField.configure(forConfirmedUsername: username.components())
         case
             .reservationRejected,
             .reservationRateLimited,
@@ -614,12 +608,10 @@ private extension UsernameSelectionViewController {
         let usernameState = self.currentUsernameState
 
         switch usernameState {
-        case let .caseOnlyChange(newUsername):
-            changeUsernameCaseBehindModalActivityIndicator(
-                newUsername: newUsername,
-            )
-        case let .reservationSuccessful(_, hashedUsername):
-            confirmNewUsername(reservedUsername: hashedUsername)
+        case let .caseOnlyChange(username):
+            changeUsernameCaseBehindModalActivityIndicator(newUsername: username)
+        case let .reservationSuccessful(username):
+            confirmNewUsername(reservedUsername: username)
         case
             .noChangesToExisting,
             .pending,
@@ -639,7 +631,7 @@ private extension UsernameSelectionViewController {
     }
 
     private func changeUsernameCaseBehindModalActivityIndicator(
-        newUsername: ParsedUsername,
+        newUsername: LibSignalClient.Username,
     ) {
         ModalActivityIndicatorViewController.present(
             fromViewController: self,
@@ -649,7 +641,7 @@ private extension UsernameSelectionViewController {
             UsernameLogger.shared.info("Changing username case.")
 
             Guarantee.wrapAsync {
-                await self.context.localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: newUsername.reassembled)
+                await self.context.localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: newUsername)
             }.map(on: DispatchQueue.main) { remoteMutationResult -> Usernames.RemoteMutationResult<Void> in
                 let newState = self.context.databaseStorage.read { tx in
                     return self.context.localUsernameManager.usernameState(tx: tx)
@@ -801,11 +793,9 @@ private extension UsernameSelectionViewController {
             !hasEnteredNewCustomDiscriminator,
             let existingUsername,
             let nicknameFromTextField,
-            existingUsername.nickname.lowercased() == nicknameFromTextField.lowercased()
+            let caseAdjustedUsername = existingUsername.adjustingCase(nicknameFromTextField)
         {
-            currentUsernameState = .caseOnlyChange(
-                newUsername: existingUsername.updatingNickame(newNickname: nicknameFromTextField),
-            )
+            currentUsernameState = .caseOnlyChange(caseAdjustedUsername)
         } else if desiredDiscriminator == "00" {
             currentUsernameState = .customDiscriminatorIs00
         } else if let desiredNickname = nicknameFromTextField {
@@ -946,10 +936,7 @@ private extension UsernameSelectionViewController {
             case .success(.successful(let username)):
                 logger.info("Successfully reserved nickname!")
 
-                self.currentUsernameState = .reservationSuccessful(
-                    username: ParsedUsername(rawUsername: username.value).owsFailUnwrap("must be valid"),
-                    hashedUsername: username,
-                )
+                self.currentUsernameState = .reservationSuccessful(username)
             case .success(.rejected):
                 logger.warn("Reservation rejected.")
 

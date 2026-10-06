@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import LibSignalClient
 import SignalServiceKit
 import SignalUI
 
@@ -328,7 +329,7 @@ class ProfileSettingsViewController: OWSTableViewController2 {
             image: Theme.iconImage(.contextMenuEdit),
             handler: { [weak self] _ in
                 self?.presentUsernameSelection(
-                    currentUsername: username,
+                    currentUsername: try? LibSignalClient.Username(username),
                     isAttemptingRecovery: false,
                 )
             },
@@ -530,7 +531,7 @@ class ProfileSettingsViewController: OWSTableViewController2 {
     }
 
     private func presentUsernameSelection(
-        currentUsername: String?,
+        currentUsername: LibSignalClient.Username?,
         isAttemptingRecovery: Bool,
     ) {
         let usernameSelectionCoordinator = UsernameSelectionCoordinator(

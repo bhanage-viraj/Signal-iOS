@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import LibSignalClient
 import SignalServiceKit
 import SignalUI
 
@@ -15,7 +16,7 @@ class UsernameSelectionCoordinator {
         let localUsernameManager: LocalUsernameManager
     }
 
-    private let currentUsername: String?
+    private let currentUsername: LibSignalClient.Username?
     private let isAttemptingRecovery: Bool
 
     private weak var usernameChangeDelegate: UsernameChangeDelegate?
@@ -24,7 +25,7 @@ class UsernameSelectionCoordinator {
     private let context: Context
 
     init(
-        currentUsername: String?,
+        currentUsername: LibSignalClient.Username?,
         isAttemptingRecovery: Bool = false,
         usernameChangeDelegate: UsernameChangeDelegate? = nil,
         usernameSelectionDelegate: (any UsernameSelectionDelegate)? = nil,
@@ -73,7 +74,7 @@ class UsernameSelectionCoordinator {
 
     private func presentUsernameSelection(fromViewController: UIViewController) {
         let vc = UsernameSelectionViewController(
-            existingUsername: .init(rawUsername: currentUsername),
+            existingUsername: currentUsername,
             isAttemptingRecovery: isAttemptingRecovery,
             context: .init(
                 networkManager: context.networkManager,

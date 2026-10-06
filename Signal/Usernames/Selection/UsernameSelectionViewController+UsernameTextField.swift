@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
+import LibSignalClient
 import SignalServiceKit
 import SignalUI
 
@@ -14,7 +15,7 @@ extension UsernameSelectionViewController {
     class UsernameTextFieldWrapper: UIView {
         let textField: UsernameTextField
 
-        init(username: ParsedUsername?) {
+        init(username: UsernameComponents?) {
             textField = UsernameTextField(forUsername: username)
 
             super.init(frame: .zero)
@@ -209,7 +210,7 @@ extension UsernameSelectionViewController {
 
         let discriminatorView: DiscriminatorView = .init(inMode: .empty)
 
-        init(forUsername username: ParsedUsername?) {
+        init(forUsername username: UsernameComponents?) {
             if let username {
                 lastKnownGoodDiscriminator = username.discriminator
                 discriminatorView.mode = .discriminator(value: username.discriminator)
@@ -282,7 +283,7 @@ extension UsernameSelectionViewController {
 
         /// Configure the text field for a confirmed username. If `nil`,
         /// configures for the intentional absence of a username.
-        func configure(forConfirmedUsername confirmedUsername: ParsedUsername?) {
+        func configure(forConfirmedUsername confirmedUsername: UsernameComponents?) {
             if confirmedUsername?.discriminator != discriminatorView.customDiscriminator {
                 discriminatorView.isUsingCustomDiscriminator = false
             }

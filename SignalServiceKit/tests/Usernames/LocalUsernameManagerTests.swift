@@ -424,7 +424,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let currentLink = setUsername(username: "boba_fett.42", linkHandle: linkHandle).usernameLink!
 
-        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: "BoBa_fEtT.42")
+        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: try! LibSignalClient.Username("BoBa_fEtT.42"))
 
         XCTAssertEqual(value.isSuccess, true)
         XCTAssertEqual(
@@ -440,7 +440,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let stateBeforeConfirm = setUsername(username: "boba_fett.42")
 
-        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: "BoBa_fEtT.42")
+        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: try! LibSignalClient.Username("BoBa_fEtT.42"))
 
         XCTAssertEqual(value.isNetworkError, true)
         XCTAssertEqual(usernameState(), stateBeforeConfirm)
@@ -458,7 +458,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         _ = setUsername(username: "boba_fett.42", linkHandle: linkHandle).usernameLink!
 
-        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: "BoBa_fEtT.42")
+        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: try! LibSignalClient.Username("BoBa_fEtT.42"))
 
         XCTAssertEqual(value.isNetworkError, true)
         XCTAssertEqual(
@@ -479,7 +479,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         _ = setUsername(username: "boba_fett.42", linkHandle: linkHandle).usernameLink!
 
-        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: "BoBa_fEtT.42")
+        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: try! LibSignalClient.Username("BoBa_fEtT.42"))
 
         XCTAssertEqual(value.isOtherError, true)
         XCTAssertEqual(
@@ -510,7 +510,7 @@ class LocalUsernameManagerTests: XCTestCase {
 
         let currentLink = setUsername(username: "boba_fett.42", linkHandle: linkHandle).usernameLink!
 
-        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: "BoBa_fEtT.42")
+        let value = await localUsernameManager.updateVisibleCaseOfExistingUsername(newUsername: try! LibSignalClient.Username("BoBa_fEtT.42"))
 
         XCTAssertEqual(value.isSuccess, true)
         XCTAssertEqual(

@@ -91,7 +91,7 @@ public protocol LocalUsernameManager {
     /// The new username must case-insensitively match the existing username
     /// when calling this API.
     func updateVisibleCaseOfExistingUsername(
-        newUsername: String,
+        newUsername: LibSignalClient.Username,
     ) async -> Usernames.RemoteMutationResult<Void>
 }
 
@@ -636,7 +636,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
     }
 
     func updateVisibleCaseOfExistingUsername(
-        newUsername: String,
+        newUsername: LibSignalClient.Username,
     ) async -> Usernames.RemoteMutationResult<Void> {
         guard reachabilityManager.isReachable else {
             logger.warn("Not attempting to update visible username case – Reachability indicates we will fail.")
@@ -650,22 +650,14 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
                 guard
                     let currentUsernameLink = currentUsernameState.usernameLink,
                     let currentUsername = currentUsernameState.username,
-                    newUsername.lowercased() == currentUsername.lowercased()
+                    newUsername.value.lowercased() == currentUsername.lowercased()
                 else {
                     owsFailDebug("Attempting to change username case, but new nickname does not match existing username!")
                     return nil
                 }
 
-                let newUsernameObj: LibSignalClient.Username
-                do {
-                    newUsernameObj = try LibSignalClient.Username(newUsername)
-                } catch {
-                    owsFailDebug("Failed to parse existing username! \(error)")
-                    return nil
-                }
-
                 let newUsernameCiphertext = UsernameLink.encryptUsername(
-                    newUsernameObj,
+                    newUsername,
                     existingEntropy: currentUsernameLink.entropy,
                 )
 
@@ -703,7 +695,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
 
             await self.db.awaitableWrite { tx in
                 self.setLocalUsername(
-                    username: newUsername,
+                    username: newUsername.value,
                     usernameLink: currentUsernameLink,
                     tx: tx,
                 )
@@ -715,7 +707,7 @@ class LocalUsernameManagerImpl: LocalUsernameManager {
             // issue, the new link will reflect the updated nickname.
             await self.db.awaitableWrite { tx in
                 self.setLocalUsernameWithCorruptedLink(
-                    username: newUsername,
+                    username: newUsername.value,
                     tx: tx,
                 )
             }

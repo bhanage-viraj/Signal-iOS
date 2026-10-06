@@ -33,7 +33,7 @@ public class MockLocalUsernameManager: LocalUsernameManager {
     public func confirmUsername(reservedUsername: LibSignalClient.Username) async -> Usernames.RemoteMutationResult<Usernames.ConfirmationResult> { owsFail("Not implemented!") }
     public func deleteUsername() async -> Usernames.RemoteMutationResult<Void> { owsFail("Not implemented!") }
     public func rotateUsernameLink() async -> Usernames.RemoteMutationResult<Usernames.UsernameLink> { owsFail("Not implemented!") }
-    public func updateVisibleCaseOfExistingUsername(newUsername: String) async -> Usernames.RemoteMutationResult<Void> { owsFail("Not implemented!") }
+    public func updateVisibleCaseOfExistingUsername(newUsername: LibSignalClient.Username) async -> Usernames.RemoteMutationResult<Void> { owsFail("Not implemented!") }
 }
 
 #endif
