@@ -44,6 +44,10 @@ public struct MasterKey: Codable {
         try container.encode(self.rawData)
     }
 
+    public var asSvrKey: SvrKey {
+        return failIfThrows { try SvrKey(contents: self.rawData) }
+    }
+
     public func deriveLoggingKey() -> LoggingKey {
         return LoggingKey.deriveFrom(masterKey: self)
     }

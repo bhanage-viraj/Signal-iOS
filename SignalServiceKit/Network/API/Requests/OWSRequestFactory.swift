@@ -14,7 +14,6 @@ public enum OWSRequestFactory {
     static let textSecureSignedKeysAPI = "v2/keys/signed"
     static let textSecureDirectoryAPI = "v1/directory"
     static let textSecure2FAAPI = "v1/accounts/pin"
-    static let textSecureRegistrationLockV2API = "v1/accounts/registration_lock"
     static let textSecureGiftBadgePricesAPI = "v1/subscription/boost/amounts/gift"
 
     public static let textSecureHTTPTimeOut: TimeInterval = 10
@@ -121,27 +120,6 @@ public enum OWSRequestFactory {
             var container = encoder.singleValueContainer()
             try container.encode(self.wrappedValue.canonicalStringRepresentation)
         }
-    }
-
-    static func enableRegistrationLockV2Request(token: SignalServiceKit.RegistrationLock, logger: PrefixedLogger) -> TSRequest {
-        let url = URL(string: textSecureRegistrationLockV2API)!
-        return TSRequest(
-            url: url,
-            method: HTTPMethod.put.methodName,
-            parameters: [
-                "registrationLock": token.canonicalStringRepresentation,
-            ],
-            logger: logger,
-        )
-    }
-
-    static func disableRegistrationLockV2Request() -> TSRequest {
-        let url = URL(string: textSecureRegistrationLockV2API)!
-        return TSRequest(
-            url: url,
-            method: HTTPMethod.delete.methodName,
-            parameters: [:],
-        )
     }
 
     static func unregisterAccountRequest() -> TSRequest {

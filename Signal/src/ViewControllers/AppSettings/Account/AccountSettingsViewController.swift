@@ -487,7 +487,7 @@ class AccountSettingsViewController: OWSTableViewController2 {
                             from: self,
                             title: CommonStrings.updatingModal,
                         ) {
-                            try await SSKEnvironment.shared.ows2FAManagerRef.enableRegistrationLockV2(logger: PrefixedLogger(prefix: "[Settings]"))
+                            try await SSKEnvironment.shared.ows2FAManagerRef.enableRegistrationLock()
                         }
                     } catch where error.isNetworkFailureOrTimeout {
                         owsFailDebug("Network error enabling reglock.")
@@ -535,7 +535,7 @@ class AccountSettingsViewController: OWSTableViewController2 {
                             from: self,
                             title: CommonStrings.updatingModal,
                         ) {
-                            try await SSKEnvironment.shared.ows2FAManagerRef.disableRegistrationLockV2()
+                            try await SSKEnvironment.shared.ows2FAManagerRef.disableRegistrationLock()
                         }
                     } catch where error.isNetworkFailureOrTimeout {
                         owsFailDebug("Network error disabling reglock.")

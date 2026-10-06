@@ -11,7 +11,7 @@ public class OWS2FAManager {
     private var accountAttributesUpdater: AccountAttributesUpdater { DependenciesBridge.shared.accountAttributesUpdater }
     private var accountKeyStore: AccountKeyStore { DependenciesBridge.shared.accountKeyStore }
     private var db: DB { DependenciesBridge.shared.db }
-    private var networkManager: NetworkManagerProtocol { SSKEnvironment.shared.networkManagerRef }
+    private var serviceProvider: any ServiceProvider { DependenciesBridge.shared.chatConnectionManager }
     private var svr: SecureValueRecovery { DependenciesBridge.shared.svr }
     private var tsAccountManager: TSAccountManager { DependenciesBridge.shared.tsAccountManager }
 
@@ -271,7 +271,7 @@ public class OWS2FAManager {
     /// local state as appropriate.
     ///
     /// - Important
-    /// This does not enable reglock. See ``enableRegistrationLockV2()``.
+    /// This does not enable reglock. See ``enableRegistrationLock()``.
     public func enablePin(_ pin: String) async throws {
         owsAssertDebug(!pin.isEmpty)
 
@@ -295,15 +295,15 @@ public class OWS2FAManager {
 
     // MARK: -
 
-    public func enableRegistrationLockV2(logger: PrefixedLogger) async throws {
+    public func enableRegistrationLock() async throws {
         let aep = db.read { tx in accountKeyStore.getAccountEntropyPool(tx: tx) }
         guard let aep else {
             throw OWSAssertionError("can't enable registration lock without an aep")
         }
 
-        let token = aep.getMasterKey().deriveRegistrationLock()
-        let request = OWSRequestFactory.enableRegistrationLockV2Request(token: token, logger: logger)
-        _ = try await networkManager.asyncRequest(request)
+        try await serviceProvider.withAuthService(.accounts) {
+            try await $0.setRegistrationLock(aep.getMasterKey().asSvrKey)
+        }
 
         await db.awaitableWrite { transaction in
             keyValueStore.writeValue(
@@ -326,9 +326,10 @@ public class OWS2FAManager {
         )
     }
 
-    public func disableRegistrationLockV2() async throws {
-        let request = OWSRequestFactory.disableRegistrationLockV2Request()
-        _ = try await networkManager.asyncRequest(request)
+    public func disableRegistrationLock() async throws {
+        try await serviceProvider.withAuthService(.accounts) {
+            try await $0.clearRegistrationLock()
+        }
 
         await db.awaitableWrite { transaction in
             keyValueStore.removeValue(
