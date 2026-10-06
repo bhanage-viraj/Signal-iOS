@@ -1402,7 +1402,7 @@ extension ContactManager {
         return sortedComparableNames(for: addresses, tx: transaction).map { $0.address }
     }
 
-    public func sortedComparableNames(
+    public func comparableNames(
         for addresses: some Sequence<SignalServiceAddress>,
         tx: DBReadTransaction,
     ) -> [ComparableDisplayName] {
@@ -1415,7 +1415,14 @@ extension ContactManager {
                 displayName: displayName,
                 config: config,
             )
-        }.sorted(by: <)
+        }
+    }
+
+    public func sortedComparableNames(
+        for addresses: some Sequence<SignalServiceAddress>,
+        tx: DBReadTransaction,
+    ) -> [ComparableDisplayName] {
+        return comparableNames(for: addresses, tx: tx).sorted(by: <)
     }
 }
 
