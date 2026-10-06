@@ -4,7 +4,7 @@
 //
 
 import CryptoKit
-import LibSignalClient
+public import LibSignalClient
 
 public enum LocalFileBackupError: Error {
     public enum AccessFailureReason {
@@ -16,6 +16,8 @@ public enum LocalFileBackupError: Error {
     }
 
     case unableToAccessLocalFile(AccessFailureReason)
+    case invalidVersion
+    case mismatchedACIAndRecoveryKey
 }
 
 /// Manager to handle local file backup logic, including file I/O, UIDocumentPicker logic, and security-scoped bookmark handling.
@@ -71,6 +73,8 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
     private var folderPickerCompletion: ((FolderPickerResult) -> Void)?
 
     public static let attachmentBatchSize = 50
+
+    public static let localBackupVersion: UInt32 = 1
 
     public enum ProgressLabel {
         public static let writeQueuedAttachment = "writeQueuedAttachment"
@@ -467,7 +471,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         try Aes256Ctr32.process(&encryptedBackupId, key: localBackupMetadataKey, nonce: nonce)
 
         var metadataProto = LocalBackupProto_Metadata()
-        metadataProto.version = 1
+        metadataProto.version = Self.localBackupVersion
 
         var encryptedBackupIdProto = LocalBackupProto_Metadata.EncryptedBackupId()
         encryptedBackupIdProto.iv = iv
@@ -476,6 +480,47 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         metadataProto.backupID = encryptedBackupIdProto
 
         return metadataProto
+    }
+
+    private func readMetadataProto(fromBackupDirectory backupDirectory: URL) throws -> LocalBackupProto_Metadata {
+        let metadataFileURL = backupDirectory.appendingPathComponent(FileStructure.metadataFile.rawValue)
+        let fileCoordinator = NSFileCoordinator()
+        var data: Data?
+        try fileCoordinator.coordinateThrows(
+            readingItemAt: metadataFileURL,
+            options: .withoutChanges,
+            by: { readURL in
+                data = try Data(contentsOf: readURL)
+            },
+        )
+        guard let data else {
+            throw OWSAssertionError("File coordinator returned without providing metadata contents")
+        }
+        return try LocalBackupProto_Metadata(serializedBytes: data)
+    }
+
+    public func verifyVersionAndReadBackupId(
+        fromBackupDirectory backupDirectory: URL,
+        backupKey: BackupKey,
+    ) throws -> Data {
+        let metadataProto = try readMetadataProto(fromBackupDirectory: backupDirectory)
+
+        guard metadataProto.version <= Self.localBackupVersion else {
+            throw LocalFileBackupError.invalidVersion
+        }
+
+        guard metadataProto.hasBackupID else {
+            throw OWSAssertionError("Local backup metadata is missing backupID")
+        }
+        let encryptedBackupId = metadataProto.backupID
+        guard encryptedBackupId.iv.count == 12 else {
+            throw OWSAssertionError("Local backup metadata has invalid IV length")
+        }
+        let localBackupMetadataKey = backupKey.deriveLocalBackupMetadataKey()
+        let nonce = encryptedBackupId.iv + Data(count: 4) // Last 4 bytes are 0 for the counter.
+        var backupIdBytes = encryptedBackupId.encryptedID
+        try Aes256Ctr32.process(&backupIdBytes, key: localBackupMetadataKey, nonce: nonce)
+        return backupIdBytes
     }
 
     func ensureAttachmentMetadataExists(progressSink: OWSProgressSink?) async {

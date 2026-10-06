@@ -21,8 +21,8 @@ public enum BackupImportSource {
 
     /// A local file backup stored on device at a location of the user's choice.
     /// Similar to remote backups, it uses AEP (to derive ``MessageRootBackupKey/backupKey``),
-    /// and ACI (used with backup key to derive ``MessageRootBackupKey/backupId``)
-    case local(key: MessageRootBackupKey)
+    /// and derives backupId from the associated metadata file.
+    case local(backupKey: BackupKey, backupId: Data)
 
     public enum NonceMetadataSource {
         /// We already have the forward secrecy token from Quick Restore;
@@ -145,10 +145,10 @@ extension BackupImportSource {
                 forwardSecrecyToken: nil,
             )
 
-        case let .local(key):
+        case let .local(backupKey, backupId):
             return try MessageBackupKey(
-                backupKey: key.backupKey,
-                backupId: key.backupId,
+                backupKey: backupKey,
+                backupId: backupId,
                 forwardSecrecyToken: nil,
             )
         }

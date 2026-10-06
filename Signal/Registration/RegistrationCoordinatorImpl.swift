@@ -673,6 +673,16 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
                 fileUrl = chosenBackup.appendingPathComponent(LocalFileBackupManager.FileStructure.backupFile.rawValue)
 
+                // Recover the original backup ID from the metadata file.
+                let recoveredBackupId = try await self.deps.localFileBackupManager.verifyVersionAndReadBackupId(
+                    fromBackupDirectory: chosenBackup,
+                    backupKey: backupKey.backupKey,
+                )
+
+                if recoveredBackupId != backupKey.backupId {
+                    throw LocalFileBackupError.mismatchedACIAndRecoveryKey
+                }
+
                 downloadProgress?.addSource(withLabel: "", unitCount: 1).complete()
                 // The recovery key has been derived, the backup file has been sourced,
                 // so this is the last possible point before we commit to importing the backup.
@@ -688,7 +698,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     fileUrl: fileUrl,
                     localIdentifiers: identity.localIdentifiers,
                     isPrimaryDevice: true,
-                    source: .local(key: backupKey),
+                    source: .local(backupKey: backupKey.backupKey, backupId: recoveredBackupId),
                     progress: importProgress,
                     logger: self.logger,
                 )

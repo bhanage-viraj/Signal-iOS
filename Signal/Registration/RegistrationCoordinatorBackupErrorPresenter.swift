@@ -19,6 +19,7 @@ public enum RegistrationBackupRestoreError {
     case rateLimited
     case cancellation
     case missingLocalFileBackupLocation
+    case localBackupMismatchedACIAndRecoveryKey
 }
 
 public enum RegistrationBackupErrorNextStep {
@@ -91,6 +92,10 @@ public class RegistrationCoordinatorBackupErrorPresenterImpl:
                 Logger.error("No access to local file backup location")
                 return .generic
             }
+        case LocalFileBackupError.invalidVersion:
+            return .versionMismatch
+        case LocalFileBackupError.mismatchedACIAndRecoveryKey:
+            return .localBackupMismatchedACIAndRecoveryKey
         default:
             return .generic
         }
@@ -357,6 +362,21 @@ public class RegistrationCoordinatorBackupErrorPresenterImpl:
             message = OWSLocalizedString(
                 "REGISTRATION_BACKUP_RESTORE_ERROR_LOCAL_BACKUP_LOCATION_MESSAGE",
                 comment: "Message for a sheet warning users about an invalid local backup location",
+            )
+            actions.append(ActionSheetAction(title: tryAgainString) { _ in
+                continuation.resume(returning: .tryAgain)
+            })
+            actions.append(ActionSheetAction(title: skipRestoreString) { _ in
+                continuation.resume(returning: .skipRestore)
+            })
+        case .localBackupMismatchedACIAndRecoveryKey:
+            title = OWSLocalizedString(
+                "REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_CANT_RESTORE_TITLE",
+                comment: "Title for a sheet warning users about an error during backup restore.",
+            )
+            message = OWSLocalizedString(
+                "REGISTRATION_BACKUP_RESTORE_ERROR_MISMATCHED_LOCAL_BACKUP_MESSAGE",
+                comment: "Message for a sheet telling the user that their phone number is mismatched with their recovery key used for making a local backup",
             )
             actions.append(ActionSheetAction(title: tryAgainString) { _ in
                 continuation.resume(returning: .tryAgain)
