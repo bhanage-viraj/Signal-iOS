@@ -447,7 +447,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         let videoDuration: TimeInterval?
         let videoStillFramePendingFile: PendingFile?
         let audioDuration: TimeInterval?
-        let audioWaveformSamples: Data?
+        let audioWaveform: AudioWaveform?
     }
 
     private func validateContentType(
@@ -458,7 +458,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         let videoDuration: TimeInterval?
         let videoStillFramePendingFile: PendingFile?
         let audioDuration: TimeInterval?
-        let audioWaveformSamples: Data?
+        let audioWaveform: AudioWaveform?
 
         // Precompute some properties for this attachment, depending on what
         // type we think it is.
@@ -469,7 +469,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
             videoDuration = nil
             videoStillFramePendingFile = nil
             audioDuration = nil
-            audioWaveformSamples = nil
+            audioWaveform = nil
             if
                 input.mimeType == MimeType.textXSignalPlain.rawValue,
                 input.byteSize > OWSMediaUtils.kMaxOversizeTextMessageReceiveSizeBytes
@@ -484,7 +484,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
             videoDuration = nil
             videoStillFramePendingFile = nil
             audioDuration = nil
-            audioWaveformSamples = nil
+            audioWaveform = nil
         case .video:
             (
                 blurHash,
@@ -493,16 +493,16 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
                 videoStillFramePendingFile,
             ) = try validateVideoContentType(input)
             audioDuration = nil
-            audioWaveformSamples = nil
+            audioWaveform = nil
         case .audio:
             if input.shouldDeriveAudioDetails {
                 (
                     audioDuration,
-                    audioWaveformSamples,
+                    audioWaveform,
                 ) = try validateAudioContentType(input)
             } else {
                 audioDuration = nil
-                audioWaveformSamples = nil
+                audioWaveform = nil
             }
             blurHash = nil
             mediaPixelSize = nil
@@ -517,7 +517,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
             videoDuration: videoDuration,
             videoStillFramePendingFile: videoStillFramePendingFile,
             audioDuration: audioDuration,
-            audioWaveformSamples: audioWaveformSamples,
+            audioWaveform: audioWaveform,
         )
     }
 
@@ -672,7 +672,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         _ input: Input,
     ) throws -> (
         duration: TimeInterval?,
-        waveformSamples: Data?,
+        waveform: AudioWaveform?,
     ) {
         let duration: TimeInterval?
         do {
@@ -687,7 +687,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
 
         return (
             duration,
-            waveform?.waveformData,
+            waveform,
         )
     }
 
@@ -823,7 +823,7 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
                 videoDuration: contentResult.videoDuration,
                 videoStillFrameRelativeFilePath: contentResult.videoStillFramePendingFile?.reservedRelativeFilePath,
                 audioDuration: contentResult.audioDuration,
-                audioWaveformSamples: contentResult.audioWaveformSamples,
+                audioWaveform: contentResult.audioWaveform,
             )
         }
         return pendingAttachments

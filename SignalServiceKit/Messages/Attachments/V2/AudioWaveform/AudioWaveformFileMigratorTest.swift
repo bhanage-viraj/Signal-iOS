@@ -48,7 +48,7 @@ struct AudioWaveformFileMigratorTest {
         for attachmentId in attachmentIds {
             let audioDetails = try #require(fetchAudioDetails(attachmentId: attachmentId))
             #expect(audioDetails.duration == 12.5)
-            #expect(audioDetails.waveformSamples == nil)
+            #expect(audioDetails.waveform == nil)
             #expect(audioDetails.waveformRelativeFilePath == nil)
         }
         #expect(orphanedWaveformFilePaths().sorted() == waveformRelativeFilePaths.sorted())
@@ -152,7 +152,7 @@ struct AudioWaveformFileMigratorTest {
             mimeType: "audio/mp4",
             audioDetails: Attachment.AudioDetails(
                 duration: 12.5,
-                waveformSamples: nil,
+                waveform: nil,
                 waveformRelativeFilePath: waveformRelativeFilePath,
             ),
         ))

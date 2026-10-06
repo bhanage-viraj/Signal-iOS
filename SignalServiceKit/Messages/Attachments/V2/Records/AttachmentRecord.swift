@@ -237,7 +237,7 @@ extension Attachment {
             self.cachedVideoDurationSeconds = streamInfo?.cachedVideoDuration
             self.audioDurationSeconds = audioDetails?.duration
             self.audioWaveformRelativeFilePath = audioDetails?.waveformRelativeFilePath
-            self.audioWaveformSamples = audioDetails?.waveformSamples
+            self.audioWaveformSamples = audioDetails?.waveform?.waveformData
             self.videoStillFrameRelativeFilePath = streamInfo?.cachedVideoStillFrameRelativeFilePath
         }
 

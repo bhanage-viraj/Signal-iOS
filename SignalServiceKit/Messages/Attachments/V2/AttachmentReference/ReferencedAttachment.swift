@@ -305,8 +305,8 @@ extension ReferencedAttachment {
             builder.setAudioDurationSeconds(Float(audioDetails.duration))
 
             // Nil for Attachments we haven't yet migrated the waveforms of.
-            if let waveformSamples = audioDetails.waveformSamples {
-                builder.setAudioWaveform(waveformSamples)
+            if let waveform = audioDetails.waveform {
+                builder.setAudioWaveform(waveform.waveformData)
             }
         }
 

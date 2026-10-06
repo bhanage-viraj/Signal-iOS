@@ -12,14 +12,14 @@ import Testing
 struct AttachmentAudioDetailsFromProtoTest {
 
     @Test
-    func takesSenderProvidedDetails() {
+    func takesSenderProvidedDetails() throws {
         let waveformSamples = Data(repeating: 128, count: AudioWaveform.sampleCount)
 
         #expect(
             audioDetails(waveformSamples: waveformSamples, durationSeconds: 12.5)
                 == Attachment.AudioDetails(
                     duration: 12.5,
-                    waveformSamples: waveformSamples,
+                    waveform: try AudioWaveform(waveformData: waveformSamples),
                     waveformRelativeFilePath: nil,
                 ),
         )
@@ -31,7 +31,7 @@ struct AttachmentAudioDetailsFromProtoTest {
             audioDetails(durationSeconds: 12.5)
                 == Attachment.AudioDetails(
                     duration: 12.5,
-                    waveformSamples: nil,
+                    waveform: nil,
                     waveformRelativeFilePath: nil,
                 ),
         )
@@ -48,7 +48,7 @@ struct AttachmentAudioDetailsFromProtoTest {
             audioDetails(waveformSamples: waveformSamples, durationSeconds: 12.5)
                 == Attachment.AudioDetails(
                     duration: 12.5,
-                    waveformSamples: nil,
+                    waveform: nil,
                     waveformRelativeFilePath: nil,
                 ),
         )

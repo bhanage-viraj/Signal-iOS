@@ -416,8 +416,8 @@ extension ReferencedAttachment {
         }
         if let audioDetails = attachment.audioDetails {
             proto.audioDurationSeconds = Float(audioDetails.duration)
-            if let waveformSamples = audioDetails.waveformSamples {
-                proto.audioWaveform = waveformSamples
+            if let waveform = audioDetails.waveform {
+                proto.audioWaveform = waveform.waveformData
             }
         }
 

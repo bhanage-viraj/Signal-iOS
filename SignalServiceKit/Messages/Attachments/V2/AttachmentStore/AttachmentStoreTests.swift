@@ -1112,7 +1112,7 @@ struct AttachmentStoreAudioDetailsTests {
 
     typealias AudioDetailsTestCase = (
         duration: TimeInterval,
-        waveformSamples: Data?,
+        waveform: AudioWaveform?,
         waveformRelativeFilePath: String?,
     )
 
@@ -1121,7 +1121,7 @@ struct AttachmentStoreAudioDetailsTests {
 
     @Test(arguments: [
         // A waveform we computed ourselves, or one the sender gave us.
-        (12.5, Data(UInt8.min...UInt8.max), nil),
+        (12.5, try! AudioWaveform(waveformData: Data([0, 128, 255])), nil),
         // Computing a waveform is best-effort; the duration survives without one.
         (12.5, nil, nil),
         // An attachment that has a waveform file, rather than samples.
@@ -1130,7 +1130,7 @@ struct AttachmentStoreAudioDetailsTests {
     func audioDetailsRoundTrip(testCase: AudioDetailsTestCase) throws {
         let audioDetails = Attachment.AudioDetails(
             duration: testCase.duration,
-            waveformSamples: testCase.waveformSamples,
+            waveform: testCase.waveform,
             waveformRelativeFilePath: testCase.waveformRelativeFilePath,
         )
 
@@ -1143,7 +1143,7 @@ struct AttachmentStoreAudioDetailsTests {
     func offloadingKeepsAudioDetails() throws {
         let audioDetails = Attachment.AudioDetails(
             duration: 12.5,
-            waveformSamples: Data([0, 128, 255]),
+            waveform: try AudioWaveform(waveformData: Data([0, 128, 255])),
             waveformRelativeFilePath: nil,
         )
 

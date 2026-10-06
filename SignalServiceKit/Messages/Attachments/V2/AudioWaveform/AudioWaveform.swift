@@ -6,20 +6,23 @@
 import Accelerate
 import Foundation
 
-public class AudioWaveform: Equatable {
+public struct AudioWaveform: Equatable, Sendable {
 
     /// Display levels from 0 to 1, ready to display as-is.
     private let levels: [Float]
 
-    init(levels: [Float]) {
+    init(levels: [Float]) throws {
+        guard (1...Self.sampleCount).contains(levels.count) else {
+            throw OWSGenericError("Invalid waveform sample count! \(levels.count)")
+        }
         self.levels = levels
     }
 
     /// Create a waveform from its serialized representation: one byte per
     /// sample, each a bar height from 0 (silence) to `UInt8.max` (the loudest
     /// bar we draw).
-    public init(waveformData: Data) {
-        self.levels = waveformData.map { Self.level(fromByte: $0) }
+    public init(waveformData: Data) throws {
+        try self.init(levels: waveformData.map { Self.level(fromByte: $0) })
     }
 
     /// This waveform serialized as one byte per sample; see
@@ -28,20 +31,23 @@ public class AudioWaveform: Equatable {
         Data(levels.map { Self.byte(fromLevel: $0) })
     }
 
-    public static func ==(lhs: AudioWaveform, rhs: AudioWaveform) -> Bool {
-        lhs.levels == rhs.levels
-    }
-
     // MARK: - Legacy waveform files
 
     /// Reads the archived format that waveforms used to be stored in, which
     /// nothing writes anymore; see ``AudioWaveformFileMigrator``.
     public init(archivedData: Data) throws {
-        let unarchivedSamples = try NSKeyedUnarchiver.unarchivedArrayOfObjects(ofClass: NSNumber.self, from: archivedData)
+        let unarchivedSamples = try NSKeyedUnarchiver.unarchivedArrayOfObjects(
+            ofClass: NSNumber.self,
+            from: archivedData,
+        )
+
         guard let unarchivedSamples else {
-            throw OWSAssertionError("Failed to unarchive decibel samples")
+            throw OWSGenericError("Failed to unarchive decibel samples")
         }
-        levels = unarchivedSamples.map { Self.level(fromDecibels: $0.floatValue) }
+
+        try self.init(
+            levels: unarchivedSamples.map { Self.level(fromDecibels: $0.floatValue) },
+        )
     }
 
     // MARK: -

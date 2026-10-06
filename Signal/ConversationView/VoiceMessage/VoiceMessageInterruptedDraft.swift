@@ -62,8 +62,11 @@ final class VoiceMessageInterruptedDraft: VoiceMessageSendableDraft {
                     transaction: tx,
                 )
             }
-            if let cachedSamples {
-                return AudioWaveform(waveformData: cachedSamples)
+            if
+                let cachedSamples,
+                let cachedWaveform = try? AudioWaveform(waveformData: cachedSamples)
+            {
+                return cachedWaveform
             }
 
             let waveform = try audioWaveformManager.computeAudioWaveform(audioFilePath: audioFilePath)

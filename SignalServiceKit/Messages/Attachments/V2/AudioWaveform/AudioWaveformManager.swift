@@ -45,10 +45,8 @@ class AudioWaveformManagerImpl: AudioWaveformManager {
             break
         }
 
-        if let waveformSamples = attachment.audioDetails?.waveformSamples {
-            return Task {
-                AudioWaveform(waveformData: waveformSamples)
-            }
+        if let waveform = attachment.audioDetails?.waveform {
+            return Task { waveform }
         }
 
         // This attachment predates storing waveforms alongside the attachment
@@ -205,9 +203,7 @@ class AudioWaveformManagerImpl: AudioWaveformManager {
 
         let decibelSamples = try readDecibels(from: assetReader)
 
-        try Task.checkCancellation()
-
-        return AudioWaveform(
+        return try AudioWaveform(
             levels: decibelSamples.map { AudioWaveform.level(fromDecibels: $0) },
         )
     }

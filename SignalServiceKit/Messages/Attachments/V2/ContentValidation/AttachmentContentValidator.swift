@@ -40,7 +40,7 @@ public struct PendingAttachment {
     let videoDuration: TimeInterval?
     let videoStillFrameRelativeFilePath: String?
     let audioDuration: TimeInterval?
-    let audioWaveformSamples: Data?
+    let audioWaveform: AudioWaveform?
 
     var contentType: Attachment.ContentType {
         Attachment.ContentType(mimeType: mimeType)
