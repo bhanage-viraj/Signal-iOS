@@ -14,7 +14,7 @@ public class ChatColorSettingStore {
     private let settingStore: NewKeyValueStore
     /// The keys in this store are `CustomChatColor.Key`. The values are
     /// `CustomChatColor`s.
-    private let customColorsStore: KeyValueStore
+    private let customColorsStore: NewKeyValueStore
 
     private let wallpaperStore: WallpaperStore
 
@@ -22,7 +22,7 @@ public class ChatColorSettingStore {
         wallpaperStore: WallpaperStore,
     ) {
         self.settingStore = NewKeyValueStore(collection: "chatColorSettingStore")
-        self.customColorsStore = KeyValueStore(collection: "customColorsStore.3")
+        self.customColorsStore = NewKeyValueStore(collection: "customColorsStore.3")
         self.wallpaperStore = wallpaperStore
     }
 
@@ -50,7 +50,7 @@ public class ChatColorSettingStore {
 
     public func fetchCustomValues(tx: DBReadTransaction) -> [(key: CustomChatColor.Key, value: CustomChatColor)] {
         var customChatColors = [(key: CustomChatColor.Key, value: CustomChatColor)]()
-        for key in customColorsStore.allKeys(transaction: tx) {
+        for key in customColorsStore.fetchKeys(tx: tx) {
             let colorKey = CustomChatColor.Key(rawValue: key)
             guard let colorValue = fetchCustomValue(for: colorKey, tx: tx) else { continue }
             customChatColors.append((colorKey, colorValue))
@@ -60,7 +60,7 @@ public class ChatColorSettingStore {
 
     public func fetchCustomValue(for key: CustomChatColor.Key, tx: DBReadTransaction) -> CustomChatColor? {
         do {
-            return try customColorsStore.getCodableValue(forKey: key.rawValue, transaction: tx)
+            return try customColorsStore.fetchJSONAsValue(CustomChatColor.self, forKey: key.rawValue, tx: tx)
         } catch {
             owsFailDebug("Couldn't decode custom color: \(error)")
             return nil
@@ -68,16 +68,12 @@ public class ChatColorSettingStore {
     }
 
     public func upsertCustomValue(_ value: CustomChatColor, for key: CustomChatColor.Key, tx: DBWriteTransaction) {
-        do {
-            try customColorsStore.setCodable(value, key: key.rawValue, transaction: tx)
-        } catch {
-            owsFailDebug("Couldn't save custom color: \(error)")
-        }
+        customColorsStore.writeValueAsJSON(value, forKey: key.rawValue, tx: tx)
         postChatColorsDidChangeNotification(for: nil, tx: tx)
     }
 
     public func deleteCustomValue(for key: CustomChatColor.Key, tx: DBWriteTransaction) {
-        customColorsStore.removeValue(forKey: key.rawValue, transaction: tx)
+        customColorsStore.removeValue(forKey: key.rawValue, tx: tx)
         postChatColorsDidChangeNotification(for: nil, tx: tx)
     }
 

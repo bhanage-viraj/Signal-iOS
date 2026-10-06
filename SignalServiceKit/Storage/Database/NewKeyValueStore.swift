@@ -74,6 +74,15 @@ public struct NewKeyValueStore {
         }
     }
 
+    /// Fetch and decode a value (or return nil if it doesn't exist).
+    ///
+    /// - Throws: Errors encountered while decoding. Errors encountered while
+    /// fetching result in crashes.
+    public func fetchJSONAsValue<T: Decodable>(_ type: T.Type, forKey key: String, tx: DBReadTransaction) throws -> T? {
+        let encodedValue = fetchValue(Data.self, forKey: key, tx: tx)
+        return try encodedValue.map { try JSONDecoder().decode(T.self, from: $0) }
+    }
+
     /// Write/clear a value or crash if an error occurs.
     public func writeValue<T: KeyValueStoreValue>(_ value: T?, forKey key: String, tx: DBWriteTransaction) {
         failIfThrowsDatabaseError { () throws(GRDB.DatabaseError) in
@@ -84,6 +93,15 @@ public struct NewKeyValueStore {
     /// Write/clear a value or throw the error that occurs.
     public func writeValueOrThrow<T: KeyValueStoreValue>(_ value: T?, forKey key: String, tx: DBWriteTransaction) throws(GRDB.DatabaseError) {
         try withDatabaseError { try self._setValueOrThrow(value?.keyValueStoreValue, key: key, tx: tx) }
+    }
+
+    /// Write/clear a value or crash if an error occurs.
+    ///
+    /// Unlike `fetchJSONAsValue`, this method assumes all in-memory values are
+    /// well-formed and can be serialized to JSON.
+    public func writeValueAsJSON<T: Encodable>(_ encodableValue: T?, forKey key: String, tx: DBWriteTransaction) {
+        let encodedValue = failIfThrows { try encodableValue.map { try JSONEncoder().encode($0) } }
+        writeValue(encodedValue, forKey: key, tx: tx)
     }
 
     /// Clear a value or crash if an error occurs.

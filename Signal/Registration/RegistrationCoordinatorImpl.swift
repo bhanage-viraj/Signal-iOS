@@ -30,7 +30,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         logger: PrefixedLogger,
     ) {
         self._unsafeToModify_mode = mode
-        self.kvStore = KeyValueStore(collection: "RegistrationCoordinator")
+        self.kvStore = NewKeyValueStore(collection: "RegistrationCoordinator")
         self.loader = loader
         self.baseLogger = logger
         self.logger = logger
@@ -892,7 +892,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     private let loader: RegistrationCoordinatorLoaderDelegate
     private let deps: RegistrationCoordinatorDependencies
-    private let kvStore: KeyValueStore
+    private let kvStore: NewKeyValueStore
 
     public private(set) var logger: PrefixedLogger
     private let baseLogger: PrefixedLogger
@@ -1332,7 +1332,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         var state: PersistedState = persistedState
         update(&state)
         self._persistedState = state
-        try? self.kvStore.setCodable(state, key: Constants.persistedStateKey, transaction: transaction)
+        self.kvStore.writeValueAsJSON(state, forKey: Constants.persistedStateKey, tx: transaction)
     }
 
     private func updatePersistedSessionState(
@@ -1372,8 +1372,13 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         // This is best effort; if we fail to parse the consequences will be a restarted
         // registration, which is recoverable by the user (but annoying because they have
         // to repeat some steps).
-        _persistedState = db.read {
-            try? self.kvStore.getCodableValue(forKey: Constants.persistedStateKey, transaction: $0)
+        _persistedState = db.read { tx in
+            do {
+                return try self.kvStore.fetchJSONAsValue(PersistedState.self, forKey: Constants.persistedStateKey, tx: tx)
+            } catch {
+                owsFailDebug("couldn't decode registration state: \(error)")
+                return nil
+            }
         }
 
         // Ideally this would be in the below transaction, but OWSProfileManager
@@ -1740,7 +1745,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     private func wipePersistedState(_ tx: DBWriteTransaction) {
         logger.info("")
 
-        self.kvStore.removeValue(forKey: Constants.persistedStateKey, transaction: tx)
+        self.kvStore.removeValue(forKey: Constants.persistedStateKey, tx: tx)
         self.loader.clearPersistedMode(transaction: tx)
     }
 

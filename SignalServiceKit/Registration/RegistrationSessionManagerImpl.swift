@@ -10,7 +10,7 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
 
     private let dateProvider: DateProvider
     private let db: any DB
-    private let kvStore: KeyValueStore
+    private let kvStore: NewKeyValueStore
     private let signalService: OWSSignalServiceProtocol
 
     public init(
@@ -20,7 +20,7 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
     ) {
         self.dateProvider = dateProvider
         self.db = db
-        self.kvStore = KeyValueStore(collection: KvStore.collectionName)
+        self.kvStore = NewKeyValueStore(collection: KvStore.collectionName)
         self.signalService = signalService
     }
 
@@ -72,7 +72,7 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
     }
 
     public func clearPersistedSession(_ transaction: DBWriteTransaction) {
-        kvStore.removeValue(forKey: KvStore.sessionKey, transaction: transaction)
+        kvStore.removeValue(forKey: KvStore.sessionKey, tx: transaction)
     }
 
     // MARK: - Session persistence
@@ -83,16 +83,12 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
     }
 
     private func persist(session: RegistrationSession, _ transaction: DBWriteTransaction) {
-        do {
-            try kvStore.setCodable(session, key: KvStore.sessionKey, transaction: transaction)
-        } catch {
-            owsFailDebug("Unable to encode session; will not be recoverable after app relaunch.")
-        }
+        kvStore.writeValueAsJSON(session, forKey: KvStore.sessionKey, tx: transaction)
     }
 
     private func getPersistedSession(_ transaction: DBReadTransaction) -> RegistrationSession? {
         do {
-            return try kvStore.getCodableValue(forKey: KvStore.sessionKey, transaction: transaction)
+            return try kvStore.fetchJSONAsValue(RegistrationSession.self, forKey: KvStore.sessionKey, tx: transaction)
         } catch {
             owsFailDebug("Unable to decode session; will not be recoverable after app relaunch.")
             return nil

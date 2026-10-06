@@ -19,12 +19,12 @@ struct OldSenderKeyStore {
     }
 
     func resetAll(tx: DBWriteTransaction) {
-        keyMetadataStore.removeAll(transaction: tx)
+        keyMetadataStore.removeAll(tx: tx)
     }
 
     // MARK: - Storage
 
-    private let keyMetadataStore = KeyValueStore(collection: "SenderKeyStore_KeyMetadata")
+    private let keyMetadataStore = NewKeyValueStore(collection: "SenderKeyStore_KeyMetadata")
 
     func loadSenderKey(
         forSenderAci senderAci: Aci,
@@ -36,11 +36,11 @@ struct OldSenderKeyStore {
     }
 
     func getKeyMetadata(forKeyId keyId: KeyId, tx: DBReadTransaction) throws -> KeyMetadata? {
-        return try keyMetadataStore.getCodableValue(forKey: keyId, transaction: tx)
+        return try keyMetadataStore.fetchJSONAsValue(KeyMetadata.self, forKey: keyId, tx: tx)
     }
 
     func removeKeyMetadata(forKeyId keyId: KeyId, tx: DBWriteTransaction) {
-        keyMetadataStore.removeValue(forKey: keyId, transaction: tx)
+        keyMetadataStore.removeValue(forKey: keyId, tx: tx)
     }
 }
 

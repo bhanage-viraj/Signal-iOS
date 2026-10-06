@@ -271,9 +271,8 @@ extension SpamChallengeResolver {
 
 extension SpamChallengeResolver {
     private static let outstandingChallengesKey = "OutstandingChallengesArray"
-    private static let keyValueStore = KeyValueStore(collection: "SpamChallengeResolver")
+    private static let keyValueStore = NewKeyValueStore(collection: "SpamChallengeResolver")
     private var outstandingChallengesKey: String { Self.outstandingChallengesKey }
-    private var keyValueStore: KeyValueStore { Self.keyValueStore }
 
     private func loadChallengesFromDatabase() {
         assertOnQueue(workQueue)
@@ -284,9 +283,10 @@ extension SpamChallengeResolver {
 
         do {
             challenges = try SSKEnvironment.shared.databaseStorageRef.read { readTx in
-                try keyValueStore.getCodableValue(
+                try Self.keyValueStore.fetchJSONAsValue(
+                    [SpamChallenge].self,
                     forKey: outstandingChallengesKey,
-                    transaction: readTx,
+                    tx: readTx,
                 )
             } ?? []
         } catch {
@@ -300,16 +300,8 @@ extension SpamChallengeResolver {
     private func saveChallenges() {
         assertOnQueue(workQueue)
 
-        do {
-            try SSKEnvironment.shared.databaseStorageRef.write { writeTx in
-                if let challenges {
-                    try keyValueStore.setCodable(challenges, key: outstandingChallengesKey, transaction: writeTx)
-                } else {
-                    keyValueStore.removeValue(forKey: outstandingChallengesKey, transaction: writeTx)
-                }
-            }
-        } catch {
-            owsFailDebug("Failed to save outstanding challenges")
+        SSKEnvironment.shared.databaseStorageRef.write { writeTx in
+            Self.keyValueStore.writeValueAsJSON(challenges, forKey: outstandingChallengesKey, tx: writeTx)
         }
     }
 }

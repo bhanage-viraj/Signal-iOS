@@ -12,7 +12,7 @@ public final class AppExpiry {
 
     public static let appExpiredStatusCode: UInt = 499
 
-    private let keyValueStore: KeyValueStore
+    private let keyValueStore: NewKeyValueStore
 
     private let appVersion: AppVersionNumber4
     private let buildDate: Date
@@ -63,7 +63,7 @@ public final class AppExpiry {
         appVersion: AppVersionNumber4,
         buildDate: Date,
     ) {
-        self.keyValueStore = KeyValueStore(collection: Self.keyValueCollection)
+        self.keyValueStore = NewKeyValueStore(collection: Self.keyValueCollection)
         self.appVersion = appVersion
         self.buildDate = buildDate
 
@@ -74,10 +74,10 @@ public final class AppExpiry {
     }
 
     public func warmCaches(with tx: DBReadTransaction) {
-        let persistedExpirationState: ExpirationState? = try? self.keyValueStore.getCodableValue(
+        let persistedExpirationState = try? self.keyValueStore.fetchJSONAsValue(
+            ExpirationState.self,
             forKey: Self.keyValueKey,
-            failDebugOnParseError: false,
-            transaction: tx,
+            tx: tx,
         )
 
         // We only want to restore the persisted state if it's for our current version.
@@ -97,9 +97,10 @@ public final class AppExpiry {
         await db.awaitableWrite { transaction in
             do {
                 // Don't write or fire notification if the value hasn't changed.
-                let oldState: ExpirationState? = try self.keyValueStore.getCodableValue(
+                let oldState = try self.keyValueStore.fetchJSONAsValue(
+                    ExpirationState.self,
                     forKey: Self.keyValueKey,
-                    transaction: transaction,
+                    tx: transaction,
                 )
                 if let oldState, oldState == state {
                     return
@@ -107,15 +108,11 @@ public final class AppExpiry {
             } catch {
                 owsFailDebug("Error reading expiration state \(error)")
             }
-            do {
-                try self.keyValueStore.setCodable(
-                    state,
-                    key: Self.keyValueKey,
-                    transaction: transaction,
-                )
-            } catch {
-                owsFailDebug("Error persisting expiration state \(error)")
-            }
+            self.keyValueStore.writeValueAsJSON(
+                state,
+                forKey: Self.keyValueKey,
+                tx: transaction,
+            )
         }
 
         await didUpdateExpirationState()

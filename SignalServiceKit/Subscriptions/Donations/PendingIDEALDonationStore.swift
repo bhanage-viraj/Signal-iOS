@@ -122,47 +122,47 @@ public struct PendingIDEALDonationStore {
         static let pendingMonthlyDonationKey = "PendingMonthlyDonationKey"
     }
 
-    private let keyStore: KeyValueStore
+    private let keyStore: NewKeyValueStore
 
     init() {
-        keyStore = KeyValueStore(collection: "PendingExternalDonationStore")
+        keyStore = NewKeyValueStore(collection: "PendingExternalDonationStore")
     }
 
     // MARK: - One-time
 
     public func getPendingOneTimeDonation(tx: DBReadTransaction) -> PendingOneTimeIDEALDonation? {
         do {
-            return try keyStore.getCodableValue(forKey: Constants.pendingOneTimeDonationKey, transaction: tx)
+            return try keyStore.fetchJSONAsValue(PendingOneTimeIDEALDonation.self, forKey: Constants.pendingOneTimeDonationKey, tx: tx)
         } catch {
             owsFailDebug("Could not decode donation: \(error.localizedDescription)")
             return nil
         }
     }
 
-    public func setPendingOneTimeDonation(donation: PendingOneTimeIDEALDonation, tx: DBWriteTransaction) throws {
-        try keyStore.setCodable(donation, key: Constants.pendingOneTimeDonationKey, transaction: tx)
+    public func setPendingOneTimeDonation(donation: PendingOneTimeIDEALDonation, tx: DBWriteTransaction) {
+        keyStore.writeValueAsJSON(donation, forKey: Constants.pendingOneTimeDonationKey, tx: tx)
     }
 
     public func clearPendingOneTimeDonation(tx: DBWriteTransaction) {
-        keyStore.removeValue(forKey: Constants.pendingOneTimeDonationKey, transaction: tx)
+        keyStore.removeValue(forKey: Constants.pendingOneTimeDonationKey, tx: tx)
     }
 
     // MARK: - Monthly
 
     public func getPendingSubscription(tx: DBReadTransaction) -> PendingMonthlyIDEALDonation? {
         do {
-            return try keyStore.getCodableValue(forKey: Constants.pendingMonthlyDonationKey, transaction: tx)
+            return try keyStore.fetchJSONAsValue(PendingMonthlyIDEALDonation.self, forKey: Constants.pendingMonthlyDonationKey, tx: tx)
         } catch {
             owsFailDebug("Could not decode donation: \(error.localizedDescription)")
             return nil
         }
     }
 
-    public func setPendingSubscription(donation: PendingMonthlyIDEALDonation, tx: DBWriteTransaction) throws {
-        try keyStore.setCodable(donation, key: Constants.pendingMonthlyDonationKey, transaction: tx)
+    public func setPendingSubscription(donation: PendingMonthlyIDEALDonation, tx: DBWriteTransaction) {
+        keyStore.writeValueAsJSON(donation, forKey: Constants.pendingMonthlyDonationKey, tx: tx)
     }
 
     public func clearPendingSubscription(tx: DBWriteTransaction) {
-        keyStore.removeValue(forKey: Constants.pendingMonthlyDonationKey, transaction: tx)
+        keyStore.removeValue(forKey: Constants.pendingMonthlyDonationKey, tx: tx)
     }
 }

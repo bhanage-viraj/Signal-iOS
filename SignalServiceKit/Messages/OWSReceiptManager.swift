@@ -79,8 +79,8 @@ public class OWSReceiptManager: NSObject {
     private var isProcessing = AtomicValue(false, lock: .init())
 
     static let keyValueStore = KeyValueStore(collection: "OWSReadReceiptManagerCollection")
-    private static let toLinkedDevicesReadReceiptMapStore = KeyValueStore(collection: "OWSReceiptManager.toLinkedDevicesReadReceiptMapStore")
-    private static let toLinkedDevicesViewedReceiptMapStore = KeyValueStore(collection: "OWSReceiptManager.toLinkedDevicesViewedReceiptMapStore")
+    private static let toLinkedDevicesReadReceiptMapStore = NewKeyValueStore(collection: "OWSReceiptManager.toLinkedDevicesReadReceiptMapStore")
+    private static let toLinkedDevicesViewedReceiptMapStore = NewKeyValueStore(collection: "OWSReceiptManager.toLinkedDevicesViewedReceiptMapStore")
 
     private static let kOwsReceiptManagerAreReadReceiptsEnabled = "areReadReceiptsEnabled"
 
@@ -262,7 +262,9 @@ public class OWSReceiptManager: NSObject {
     private func processReceiptsForLinkedDevices(transaction: DBWriteTransaction) -> Bool {
         let readReceiptsForLinkedDevices: [ReceiptForLinkedDevice]
         do {
-            readReceiptsForLinkedDevices = try Self.toLinkedDevicesReadReceiptMapStore.allCodableValues(transaction: transaction)
+            readReceiptsForLinkedDevices = try Self.toLinkedDevicesReadReceiptMapStore.fetchKeys(tx: transaction).compactMap {
+                return try Self.toLinkedDevicesReadReceiptMapStore.fetchJSONAsValue(ReceiptForLinkedDevice.self, forKey: $0, tx: transaction)
+            }
         } catch {
             owsFailDebug("Error: \(error).")
             return false
@@ -270,7 +272,9 @@ public class OWSReceiptManager: NSObject {
 
         let viewedReceiptsForLinkedDevices: [ReceiptForLinkedDevice]
         do {
-            viewedReceiptsForLinkedDevices = try Self.toLinkedDevicesViewedReceiptMapStore.allCodableValues(transaction: transaction)
+            viewedReceiptsForLinkedDevices = try Self.toLinkedDevicesViewedReceiptMapStore.fetchKeys(tx: transaction).compactMap {
+                return try Self.toLinkedDevicesViewedReceiptMapStore.fetchJSONAsValue(ReceiptForLinkedDevice.self, forKey: $0, tx: transaction)
+            }
         } catch {
             owsFailDebug("Error: \(error).")
             return false
@@ -296,7 +300,7 @@ public class OWSReceiptManager: NSObject {
                 let preparedMessage = PreparedOutgoingMessage.preprepared(transientMessageWithoutAttachments: message)
                 messageSenderJobQueue.add(message: preparedMessage, transaction: transaction)
             }
-            Self.toLinkedDevicesReadReceiptMapStore.removeAll(transaction: transaction)
+            Self.toLinkedDevicesReadReceiptMapStore.removeAll(tx: transaction)
         }
 
         if !viewedReceiptsForLinkedDevices.isEmpty {
@@ -310,7 +314,7 @@ public class OWSReceiptManager: NSObject {
                 let preparedMessage = PreparedOutgoingMessage.preprepared(transientMessageWithoutAttachments: message)
                 messageSenderJobQueue.add(message: preparedMessage, transaction: transaction)
             }
-            Self.toLinkedDevicesViewedReceiptMapStore.removeAll(transaction: transaction)
+            Self.toLinkedDevicesViewedReceiptMapStore.removeAll(tx: transaction)
         }
 
         return true
@@ -349,18 +353,14 @@ public class OWSReceiptManager: NSObject {
             timestamp: Date.ows_millisecondTimestamp(),
         )
 
-        do {
-            if
-                let oldReadReceipt: ReceiptForLinkedDevice = try Self.toLinkedDevicesReadReceiptMapStore.getCodableValue(forKey: threadUniqueId, transaction: transaction),
-                oldReadReceipt.messageIdTimestamp > newReadReceipt.messageIdTimestamp
-            {
-                // If there's an existing "linked device" read receipt for the same thread with
-                // a newer timestamp, discard this "linked device" read receipt.
-            } else {
-                try Self.toLinkedDevicesReadReceiptMapStore.setCodable(newReadReceipt, key: threadUniqueId, transaction: transaction)
-            }
-        } catch {
-            owsFailDebug("Error: \(error).")
+        if
+            let oldReadReceipt = try? Self.toLinkedDevicesReadReceiptMapStore.fetchJSONAsValue(ReceiptForLinkedDevice.self, forKey: threadUniqueId, tx: transaction),
+            oldReadReceipt.messageIdTimestamp > newReadReceipt.messageIdTimestamp
+        {
+            // If there's an existing "linked device" read receipt for the same thread with
+            // a newer timestamp, discard this "linked device" read receipt.
+        } else {
+            Self.toLinkedDevicesReadReceiptMapStore.writeValueAsJSON(newReadReceipt, forKey: threadUniqueId, tx: transaction)
         }
     }
 
@@ -418,11 +418,7 @@ public class OWSReceiptManager: NSObject {
         // known message per story context at the time of reading.
         // On the receiving end we keep track of the latest read timestamp per context and should
         // be fine whether we send every read receipt or just the latest; its purely a bandwidth/perf difference.
-        do {
-            try Self.toLinkedDevicesReadReceiptMapStore.setCodable(newReadReceipt, key: message.uniqueId, transaction: transaction)
-        } catch {
-            owsFailDebug("Error: \(error)")
-        }
+        Self.toLinkedDevicesReadReceiptMapStore.writeValueAsJSON(newReadReceipt, forKey: message.uniqueId, tx: transaction)
     }
 
     func enqueueLinkedDeviceViewedReceipt(
@@ -485,11 +481,7 @@ public class OWSReceiptManager: NSObject {
         // via the unread marker. However, if you view message N (whether it's view
         // once, voice note, etc.), this has no bearing on whether or not you've
         // viewed other messages in the chat.
-        do {
-            try Self.toLinkedDevicesViewedReceiptMapStore.setCodable(newViewedReceipt, key: messageUniqueId, transaction: transaction)
-        } catch {
-            owsFailDebug("Error: \(error)")
-        }
+        Self.toLinkedDevicesViewedReceiptMapStore.writeValueAsJSON(newViewedReceipt, forKey: messageUniqueId, tx: transaction)
     }
 
     private func processReceiptsFromLinkedDevice<T>(

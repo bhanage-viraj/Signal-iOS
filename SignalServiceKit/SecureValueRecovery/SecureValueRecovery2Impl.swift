@@ -180,7 +180,7 @@ public class SecureValueRecovery2Impl: SecureValueRecovery {
 
     private func getBackupAttempt(forEnclave enclave: MrEnclave, tx: DBReadTransaction) -> BackupAttempt? {
         do {
-            return try localStorage.backupAttemptStore.getCodableValue(forKey: enclave.stringValue, transaction: tx)
+            return try localStorage.backupAttemptStore.fetchJSONAsValue(BackupAttempt.self, forKey: enclave.stringValue, tx: tx)
         } catch {
             // If we fail to decode, something has gone wrong locally. But we can
             // treat this like if we never had a backup; after all the user may uninstall,
@@ -192,13 +192,11 @@ public class SecureValueRecovery2Impl: SecureValueRecovery {
     }
 
     private func setBackupAttempt(_ value: BackupAttempt, forEnclave enclave: MrEnclave, tx: DBWriteTransaction) {
-        failIfThrows {
-            try localStorage.backupAttemptStore.setCodable(optional: value, key: enclave.stringValue, transaction: tx)
-        }
+        localStorage.backupAttemptStore.writeValueAsJSON(value, forKey: enclave.stringValue, tx: tx)
     }
 
     private func removeBackupAttempt(forEnclave enclave: String, tx: DBWriteTransaction) {
-        localStorage.backupAttemptStore.removeValue(forKey: enclave, transaction: tx)
+        localStorage.backupAttemptStore.removeValue(forKey: enclave, tx: tx)
     }
 
     public func invalidateBackupAttemptForEveryEnclave(tx: DBWriteTransaction) {
@@ -523,7 +521,7 @@ public class SecureValueRecovery2Impl: SecureValueRecovery {
     private let potentialEnclavesStore = NewKeyValueStore(collection: "SVR.Potential")
 
     private func getEnclavesToPotentiallyDeleteFrom(_ tx: DBReadTransaction) -> Set<String> {
-        let modernEnclaves = localStorage.backupAttemptStore.allKeys(transaction: tx)
+        let modernEnclaves = localStorage.backupAttemptStore.fetchKeys(tx: tx)
         // When this fails, legacy enclaves have been torn down, and we don't need
         // to delete anything from them. We should delete `legacyEnclaves` (and
         // DELETE its contents) at that point in time.

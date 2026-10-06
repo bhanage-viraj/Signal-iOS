@@ -48,14 +48,10 @@ extension DonationPaymentDetailsViewController {
                                     amount: amount,
                                 )
                                 await db.awaitableWrite { transaction in
-                                    do {
-                                        try idealStore.setPendingOneTimeDonation(
-                                            donation: donation,
-                                            tx: transaction,
-                                        )
-                                    } catch {
-                                        owsFailDebug("[Donations] Failed to persist pending One-time iDEAL donation")
-                                    }
+                                    idealStore.setPendingOneTimeDonation(
+                                        donation: donation,
+                                        tx: transaction,
+                                    )
                                 }
                             } else {
                                 Logger.info("[Donations] One-time donation needed 3DS. Presenting...")

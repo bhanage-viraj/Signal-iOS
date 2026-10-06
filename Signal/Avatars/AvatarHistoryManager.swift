@@ -27,7 +27,7 @@ class AvatarHistoryManager {
     }
 
     private let db: any DB
-    private let keyValueStore: KeyValueStore
+    private let keyValueStore: NewKeyValueStore
     private let imageHistoryDirectory: URL
 
     init(
@@ -35,7 +35,7 @@ class AvatarHistoryManager {
         db: any DB,
     ) {
         self.db = db
-        self.keyValueStore = KeyValueStore(collection: "AvatarHistory")
+        self.keyValueStore = NewKeyValueStore(collection: "AvatarHistory")
         self.imageHistoryDirectory = URL(
             fileURLWithPath: "AvatarHistory",
             isDirectory: true,
@@ -47,11 +47,13 @@ class AvatarHistoryManager {
         guard OWSFileSystem.fileOrFolderExists(url: imageHistoryDirectory) else { return }
 
         let allRecords: [[AvatarRecord]] = db.read { tx in
-            do {
-                return try keyValueStore.allCodableValues(transaction: tx)
-            } catch {
-                owsFailDebug("Failed to decode avatar history for orphan cleanup \(error)")
-                return []
+            return keyValueStore.fetchKeys(tx: tx).map { key in
+                do {
+                    return try keyValueStore.fetchJSONAsValue([AvatarRecord].self, forKey: key, tx: tx) ?? []
+                } catch {
+                    owsFailDebug("Failed to decode avatar history for orphan cleanup \(error)")
+                    return []
+                }
             }
         }
 
@@ -97,11 +99,7 @@ class AvatarHistoryManager {
             }
         }
 
-        do {
-            try keyValueStore.setCodable(records, key: context.key, transaction: tx)
-        } catch {
-            owsFailDebug("Failed to touch avatar history \(error)")
-        }
+        keyValueStore.writeValueAsJSON(records, forKey: context.key, tx: tx)
     }
 
     func deletedModel(_ model: AvatarModel, in context: Context, tx: DBWriteTransaction) {
@@ -125,11 +123,7 @@ class AvatarHistoryManager {
             }
         }
 
-        do {
-            try keyValueStore.setCodable(records, key: context.key, transaction: tx)
-        } catch {
-            owsFailDebug("Failed to touch avatar history \(error)")
-        }
+        keyValueStore.writeValueAsJSON(records, forKey: context.key, tx: tx)
     }
 
     func recordModelForImage(_ image: UIImage, in context: Context, tx: DBWriteTransaction) -> AvatarModel? {
@@ -158,18 +152,18 @@ class AvatarHistoryManager {
         for context: Context,
         tx: DBReadTransaction,
     ) -> [AvatarModel] {
-        let records: [AvatarRecord]?
+        let records: [AvatarRecord]
 
         do {
-            records = try keyValueStore.getCodableValue(forKey: context.key, transaction: tx)
+            records = try keyValueStore.fetchJSONAsValue([AvatarRecord].self, forKey: context.key, tx: tx) ?? []
         } catch {
             owsFailDebug("Failed to load persisted avatar records \(error)")
-            records = nil
+            records = []
         }
 
         var models = [AvatarModel]()
 
-        for record in records ?? [] {
+        for record in records {
             switch record.kind {
             case .icon:
                 guard let icon = AvatarIcon(rawValue: record.identifier) else {

@@ -72,11 +72,7 @@ extension DonationPaymentDetailsViewController {
                                     amount: self.donationAmount,
                                 )
                                 await db.awaitableWrite { tx in
-                                    do {
-                                        try idealStore.setPendingSubscription(donation: confirmedDonation, tx: tx)
-                                    } catch {
-                                        owsFailDebug("[Donations] Failed to persist pending iDEAL subscription.")
-                                    }
+                                    idealStore.setPendingSubscription(donation: confirmedDonation, tx: tx)
                                 }
                             } else {
                                 Logger.info("[Donations] Subscription requires 3DS authentication. Presenting...")

@@ -7,5 +7,5 @@ import Foundation
 
 /// Stores state related to SVR; e.g. do we have backups at all, etc.
 public struct SVRLocalStorage {
-    let backupAttemptStore = KeyValueStore(collection: "SVR.Completed")
+    let backupAttemptStore = NewKeyValueStore(collection: "SVR.Completed")
 }

@@ -167,8 +167,8 @@ public class EarlyMessageManager {
     private static let maxEarlyEnvelopeSize: Int = 1024
     private static let maxQueuedPerMessage: Int = 128
 
-    private var pendingEnvelopeStore = KeyValueStore(collection: "EarlyEnvelopesStore")
-    private var pendingReceiptStore = KeyValueStore(collection: "EarlyReceiptsStore")
+    private let pendingEnvelopeStore = NewKeyValueStore(collection: "EarlyEnvelopesStore")
+    private let pendingReceiptStore = NewKeyValueStore(collection: "EarlyReceiptsStore")
     private var metadataStore = KeyValueStore(collection: "EarlyMessageManager.metadata")
 
     public init(appReadiness: AppReadiness) {
@@ -204,7 +204,7 @@ public class EarlyMessageManager {
 
         var envelopes: [EarlyEnvelope]
         do {
-            envelopes = try pendingEnvelopeStore.getCodableValue(forKey: identifier.key, transaction: transaction) ?? []
+            envelopes = try pendingEnvelopeStore.fetchJSONAsValue([EarlyEnvelope].self, forKey: identifier.key, tx: transaction) ?? []
         } catch {
             owsFailDebug("Failed to decode existing early envelopes for message \(identifier) with error \(error)")
             envelopes = []
@@ -222,11 +222,7 @@ public class EarlyMessageManager {
             serverDeliveryTimestamp: serverDeliveryTimestamp,
         ))
 
-        do {
-            try pendingEnvelopeStore.setCodable(envelopes, key: identifier.key, transaction: transaction)
-        } catch {
-            owsFailDebug("Failed to persist early envelope \(OWSMessageDecrypter.description(for: envelope)) for message \(identifier) with error \(error)")
-        }
+        pendingEnvelopeStore.writeValueAsJSON(envelopes, forKey: identifier.key, tx: transaction)
     }
 
     public func recordEarlyReceiptForOutgoingMessage(
@@ -312,7 +308,7 @@ public class EarlyMessageManager {
     ) {
         var receipts: [EarlyReceipt]
         do {
-            receipts = try pendingReceiptStore.getCodableValue(forKey: identifier.key, transaction: transaction) ?? []
+            receipts = try pendingReceiptStore.fetchJSONAsValue([EarlyReceipt].self, forKey: identifier.key, tx: transaction) ?? []
         } catch {
             owsFailDebug("Failed to decode existing early receipts for message \(identifier) with error \(error)")
             receipts = []
@@ -330,11 +326,7 @@ public class EarlyMessageManager {
 
         receipts.append(earlyReceipt)
 
-        do {
-            try pendingReceiptStore.setCodable(receipts, key: identifier.key, transaction: transaction)
-        } catch {
-            owsFailDebug("Failed to persist early receipt for message \(identifier) with error \(error)")
-        }
+        pendingReceiptStore.writeValueAsJSON(receipts, forKey: identifier.key, tx: transaction)
     }
 
     public func applyPendingMessages(for message: TSMessage, registeredState: RegisteredState, transaction: DBWriteTransaction) {
@@ -479,31 +471,31 @@ public class EarlyMessageManager {
         tx transaction: DBWriteTransaction,
         earlyReceiptProcessor: (EarlyReceipt) -> Void,
     ) {
-        let earlyReceipts: [EarlyReceipt]?
+        let earlyReceipts: [EarlyReceipt]
         do {
-            earlyReceipts = try pendingReceiptStore.getCodableValue(forKey: identifier.key, transaction: transaction)
+            earlyReceipts = try pendingReceiptStore.fetchJSONAsValue([EarlyReceipt].self, forKey: identifier.key, tx: transaction) ?? []
         } catch {
             owsFailDebug("Failed to decode early receipts for message \(identifier) with error \(error)")
-            earlyReceipts = nil
+            earlyReceipts = []
         }
 
-        pendingReceiptStore.removeValue(forKey: identifier.key, transaction: transaction)
+        pendingReceiptStore.removeValue(forKey: identifier.key, tx: transaction)
 
         // Apply any early receipts for this message
-        earlyReceipts?.forEach { earlyReceiptProcessor($0) }
+        earlyReceipts.forEach { earlyReceiptProcessor($0) }
 
-        let earlyEnvelopes: [EarlyEnvelope]?
+        let earlyEnvelopes: [EarlyEnvelope]
         do {
-            earlyEnvelopes = try pendingEnvelopeStore.getCodableValue(forKey: identifier.key, transaction: transaction)
+            earlyEnvelopes = try pendingEnvelopeStore.fetchJSONAsValue([EarlyEnvelope].self, forKey: identifier.key, tx: transaction) ?? []
         } catch {
             owsFailDebug("Failed to decode early envelopes for \(identifier) with error \(error)")
-            earlyEnvelopes = nil
+            earlyEnvelopes = []
         }
 
-        pendingEnvelopeStore.removeValue(forKey: identifier.key, transaction: transaction)
+        pendingEnvelopeStore.removeValue(forKey: identifier.key, tx: transaction)
 
         // Re-process any early envelopes associated with this message
-        for earlyEnvelope in earlyEnvelopes ?? [] {
+        for earlyEnvelope in earlyEnvelopes {
             Logger.info("Reprocessing early envelope \(OWSMessageDecrypter.description(for: earlyEnvelope.envelope)) for \(identifier)")
 
             guard let plaintextData = earlyEnvelope.plainTextData else {
@@ -527,7 +519,7 @@ public class EarlyMessageManager {
         SSKEnvironment.shared.databaseStorageRef.asyncWrite { transaction in
             let oldestTimestampToKeep = Date.ows_millisecondTimestamp() - UInt64.weekInMs
 
-            let allEnvelopeKeys = self.pendingEnvelopeStore.allKeys(transaction: transaction)
+            let allEnvelopeKeys = self.pendingEnvelopeStore.fetchKeys(tx: transaction)
             let staleEnvelopeKeys = allEnvelopeKeys.filter {
                 guard
                     let timestampString = $0.split(separator: ".")[safe: 1],
@@ -538,9 +530,11 @@ public class EarlyMessageManager {
                 }
                 return true
             }
-            self.pendingEnvelopeStore.removeValues(forKeys: staleEnvelopeKeys, transaction: transaction)
+            for staleEnvelopeKey in staleEnvelopeKeys {
+                self.pendingEnvelopeStore.removeValue(forKey: staleEnvelopeKey, tx: transaction)
+            }
 
-            let allReceiptKeys = self.pendingReceiptStore.allKeys(transaction: transaction)
+            let allReceiptKeys = self.pendingReceiptStore.fetchKeys(tx: transaction)
             let staleReceiptKeys = allReceiptKeys.filter {
                 guard
                     let timestampString = $0.split(separator: ".")[safe: 1],
@@ -551,7 +545,9 @@ public class EarlyMessageManager {
                 }
                 return true
             }
-            self.pendingReceiptStore.removeValues(forKeys: staleReceiptKeys, transaction: transaction)
+            for staleReceiptKey in staleReceiptKeys {
+                self.pendingReceiptStore.removeValue(forKey: staleReceiptKey, tx: transaction)
+            }
 
             let remainingReceiptKeys = Set(allReceiptKeys).subtracting(staleReceiptKeys)
             self.trimEarlyReceiptsIfNecessary(
@@ -585,9 +581,10 @@ public class EarlyMessageManager {
         for receiptKey in remainingReceiptKeys {
             autoreleasepool {
                 do {
-                    let receipts: [EarlyReceipt] = try self.pendingReceiptStore.getCodableValue(
+                    let receipts = try self.pendingReceiptStore.fetchJSONAsValue(
+                        [EarlyReceipt].self,
                         forKey: receiptKey,
-                        transaction: transaction,
+                        tx: transaction,
                     ) ?? []
                     var deduplicatedReceipts = OrderedSet(receipts).orderedMembers
                     if deduplicatedReceipts.count != receipts.count {
@@ -606,16 +603,16 @@ public class EarlyMessageManager {
                     else {
                         return
                     }
-                    try pendingReceiptStore.setCodable(
+                    pendingReceiptStore.writeValueAsJSON(
                         deduplicatedReceipts,
-                        key: receiptKey,
-                        transaction: transaction,
+                        forKey: receiptKey,
+                        tx: transaction,
                     )
                     owsAssertDebug(receipts.count > deduplicatedReceipts.count)
                     removedTotal += receipts.count - deduplicatedReceipts.count
                 } catch {
                     owsFailDebug("Failed to decode early receipts: \(error)")
-                    self.pendingReceiptStore.removeValue(forKey: receiptKey, transaction: transaction)
+                    self.pendingReceiptStore.removeValue(forKey: receiptKey, tx: transaction)
                 }
             }
         }

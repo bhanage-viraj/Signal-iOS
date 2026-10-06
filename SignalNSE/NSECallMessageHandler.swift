@@ -174,33 +174,29 @@ class NSECallMessageHandler: CallMessageHandler {
         serverDeliveryTimestamp: UInt64,
         tx: DBWriteTransaction,
     ) {
-        do {
-            let payload = try CallMessageRelay.enqueueCallMessageForMainApp(
-                envelope: envelope,
-                callerAci: callerAci,
-                plaintextData: plaintextData,
-                wasReceivedByUD: wasReceivedByUD,
-                serverDeliveryTimestamp: serverDeliveryTimestamp,
-                transaction: tx,
-            )
+        let payload = CallMessageRelay.enqueueCallMessageForMainApp(
+            envelope: envelope,
+            callerAci: callerAci,
+            plaintextData: plaintextData,
+            wasReceivedByUD: wasReceivedByUD,
+            serverDeliveryTimestamp: serverDeliveryTimestamp,
+            transaction: tx,
+        )
 
-            // We don't want to risk consuming any call messages that the main app needs to perform the call
-            // We suspend message processing in our process to give the main app a chance to wake and take over
-            let suspension = messagePipelineSupervisor.suspendMessageProcessing(for: .nseWakingUpApp(suspensionId: UUID(), payloadString: "\(payload)"))
-            DispatchQueue.sharedUtility.asyncAfter(deadline: .now() + .seconds(10)) {
-                suspension.invalidate()
-            }
+        // We don't want to risk consuming any call messages that the main app needs to perform the call
+        // We suspend message processing in our process to give the main app a chance to wake and take over
+        let suspension = messagePipelineSupervisor.suspendMessageProcessing(for: .nseWakingUpApp(suspensionId: UUID(), payloadString: "\(payload)"))
+        DispatchQueue.sharedUtility.asyncAfter(deadline: .now() + .seconds(10)) {
+            suspension.invalidate()
+        }
 
-            NSELogger.uncorrelated.info("Notifying primary app of incoming call with push payload: \(payload)")
-            CXProvider.reportNewIncomingVoIPPushPayload(payload.payloadDict) { error in
-                if let error {
-                    owsFailDebug("Failed to notify main app of call message: \(error)")
-                } else {
-                    NSELogger.uncorrelated.info("Successfully notified main app of call message.")
-                }
+        NSELogger.uncorrelated.info("Notifying primary app of incoming call with push payload: \(payload)")
+        CXProvider.reportNewIncomingVoIPPushPayload(payload.payloadDict) { error in
+            if let error {
+                owsFailDebug("Failed to notify main app of call message: \(error)")
+            } else {
+                NSELogger.uncorrelated.info("Successfully notified main app of call message.")
             }
-        } catch {
-            owsFailDebug("Failed to create relay voip payload for call message \(error)")
         }
     }
 

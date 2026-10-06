@@ -6,7 +6,7 @@
 import Foundation
 
 public struct BannerHidingStore: ThreadRemoverObserver {
-    private let keyValueStore: KeyValueStore
+    private let keyValueStore: NewKeyValueStore
     private let keyPrefix: String
 
     private enum Constants {
@@ -18,17 +18,17 @@ public struct BannerHidingStore: ThreadRemoverObserver {
     }
 
     public static let joinRequestHiddenStore = BannerHidingStore(
-        keyValueStore: KeyValueStore(collection: Constants.joinRequestCollection),
+        keyValueStore: NewKeyValueStore(collection: Constants.joinRequestCollection),
         keyPrefix: Constants.hiddenStatePrefix,
     )
 
     public static let joinRequestMembersStore = BannerHidingStore(
-        keyValueStore: KeyValueStore(collection: Constants.joinRequestCollection),
+        keyValueStore: NewKeyValueStore(collection: Constants.joinRequestCollection),
         keyPrefix: Constants.requestingMembersStatePrefix,
     )
 
     public static let nameCollisionHiddenStore = BannerHidingStore(
-        keyValueStore: KeyValueStore(collection: Constants.nameCollisionCollection),
+        keyValueStore: NewKeyValueStore(collection: Constants.nameCollisionCollection),
         keyPrefix: Constants.hiddenStatePrefix,
     )
 
@@ -37,16 +37,14 @@ public struct BannerHidingStore: ThreadRemoverObserver {
         forThreadUniqueId threadUniqueId: String,
         tx: DBWriteTransaction,
     ) {
-        failIfThrows {
-            try keyValueStore.setCodable(encodableValue, key: keyPrefix + threadUniqueId, transaction: tx)
-        }
+        keyValueStore.writeValueAsJSON(encodableValue, forKey: keyPrefix + threadUniqueId, tx: tx)
     }
 
     public func fetchJSONAsValue<T: Decodable>(_ type: T.Type, forThreadUniqueId threadUniqueId: String, tx: DBReadTransaction) throws -> T? {
-        return try keyValueStore.getCodableValue(forKey: keyPrefix + threadUniqueId, failDebugOnParseError: false, transaction: tx)
+        return try keyValueStore.fetchJSONAsValue(type, forKey: keyPrefix + threadUniqueId, tx: tx)
     }
 
     public func didRemoveThread(_ thread: TSThread, tx: DBWriteTransaction) {
-        keyValueStore.removeValue(forKey: keyPrefix + thread.uniqueId, transaction: tx)
+        keyValueStore.removeValue(forKey: keyPrefix + thread.uniqueId, tx: tx)
     }
 }

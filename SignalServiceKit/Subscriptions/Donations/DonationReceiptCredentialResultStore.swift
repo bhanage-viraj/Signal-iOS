@@ -26,15 +26,15 @@ public struct DonationReceiptCredentialResultStore {
         static let recurringSubscriptionRenewalKey = "recurringSubscriptionRenewal"
     }
 
-    private let errorKVStore: KeyValueStore
-    private let successKVStore: KeyValueStore
+    private let errorKVStore: NewKeyValueStore
+    private let successKVStore: NewKeyValueStore
 
     private let errorPresentationKVStore: KeyValueStore
     private let successPresentationKVStore: KeyValueStore
 
     init() {
-        errorKVStore = KeyValueStore(collection: StoreConstants.errorCollection)
-        successKVStore = KeyValueStore(collection: StoreConstants.successCollection)
+        errorKVStore = NewKeyValueStore(collection: StoreConstants.errorCollection)
+        successKVStore = NewKeyValueStore(collection: StoreConstants.successCollection)
 
         errorPresentationKVStore = KeyValueStore(collection: StoreConstants.errorPresentationCollection)
         successPresentationKVStore = KeyValueStore(collection: StoreConstants.successPresentationCollection)
@@ -76,9 +76,10 @@ public struct DonationReceiptCredentialResultStore {
         errorMode: Mode,
         tx: DBReadTransaction,
     ) -> DonationReceiptCredentialRequestError? {
-        return try? errorKVStore.getCodableValue(
+        return try? errorKVStore.fetchJSONAsValue(
+            DonationReceiptCredentialRequestError.self,
             forKey: key(mode: errorMode),
-            transaction: tx,
+            tx: tx,
         )
     }
 
@@ -90,7 +91,7 @@ public struct DonationReceiptCredentialResultStore {
         tx: DBWriteTransaction,
     ) {
         let modeKey = key(mode: errorMode)
-        try? errorKVStore.setCodable(error, key: modeKey, transaction: tx)
+        errorKVStore.writeValueAsJSON(error, forKey: modeKey, tx: tx)
 
         // Setting a new error means we haven't presented it, either.
         errorPresentationKVStore.removeValue(forKey: modeKey, transaction: tx)
@@ -103,7 +104,7 @@ public struct DonationReceiptCredentialResultStore {
 
     public func clearRequestError(errorMode: Mode, tx: DBWriteTransaction) {
         let modeKey = key(mode: errorMode)
-        errorKVStore.removeValue(forKey: modeKey, transaction: tx)
+        errorKVStore.removeValue(forKey: modeKey, tx: tx)
 
         // Clearing the error means we haven't presented it, either.
         errorPresentationKVStore.removeValue(forKey: modeKey, transaction: tx)
@@ -137,9 +138,10 @@ public struct DonationReceiptCredentialResultStore {
         successMode: Mode,
         tx: DBReadTransaction,
     ) -> DonationReceiptCredentialRedemptionSuccess? {
-        return try? successKVStore.getCodableValue(
+        return try? successKVStore.fetchJSONAsValue(
+            DonationReceiptCredentialRedemptionSuccess.self,
             forKey: key(mode: successMode),
-            transaction: tx,
+            tx: tx,
         )
     }
 
@@ -151,11 +153,7 @@ public struct DonationReceiptCredentialResultStore {
         tx: DBWriteTransaction,
     ) {
         let modeKey = key(mode: successMode)
-        try? successKVStore.setCodable(
-            success,
-            key: modeKey,
-            transaction: tx,
-        )
+        successKVStore.writeValueAsJSON(success, forKey: modeKey, tx: tx)
 
         // Setting a new success means we haven't presented it, either.
         successPresentationKVStore.removeValue(forKey: modeKey, transaction: tx)
@@ -171,10 +169,7 @@ public struct DonationReceiptCredentialResultStore {
         tx: DBWriteTransaction,
     ) {
         let modeKey = key(mode: successMode)
-        successKVStore.removeValue(
-            forKey: modeKey,
-            transaction: tx,
-        )
+        successKVStore.removeValue(forKey: modeKey, tx: tx)
 
         // Clearing the success means we haven't presented it, either.
         successPresentationKVStore.removeValue(forKey: modeKey, transaction: tx)

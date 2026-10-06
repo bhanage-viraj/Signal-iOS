@@ -262,19 +262,6 @@ public struct KeyValueStore {
         }
     }
 
-    public func allCodableValues<T: Decodable>(transaction: DBReadTransaction) throws -> [T] {
-        var result = [T]()
-        for data in allDataValues(transaction: transaction) {
-            do {
-                result.append(try JSONDecoder().decode(T.self, from: data))
-            } catch {
-                owsFailDebug("Failed to decode: \(error).")
-                throw error
-            }
-        }
-        return result
-    }
-
     // MARK: - Archived Values
 
     public func getObject<ObjectType: NSObject & NSSecureCoding>(_ key: String, ofClass cls: ObjectType.Type, transaction: DBReadTransaction) -> ObjectType? {

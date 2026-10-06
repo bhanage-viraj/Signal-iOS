@@ -19,10 +19,10 @@ public struct OWSDeviceStore {
         static let mostRecentlyLinkedDeviceDetails: String = "mostRecentlyLinkedDeviceDetails"
     }
 
-    private let kvStore: KeyValueStore
+    private let kvStore: NewKeyValueStore
 
     init() {
-        kvStore = KeyValueStore(collection: "DeviceStore")
+        kvStore = NewKeyValueStore(collection: "DeviceStore")
     }
 
     // MARK: -
@@ -91,9 +91,10 @@ public struct OWSDeviceStore {
         tx: DBReadTransaction,
     ) -> MostRecentlyLinkedDeviceDetails? {
         do {
-            return try kvStore.getCodableValue(
+            return try kvStore.fetchJSONAsValue(
+                MostRecentlyLinkedDeviceDetails.self,
                 forKey: StoreKeys.mostRecentlyLinkedDeviceDetails,
-                transaction: tx,
+                tx: tx,
             )
         } catch {
             owsFailDebug("Failed to get MostRecentlyLinkedDeviceDetails! \(error)")
@@ -106,24 +107,20 @@ public struct OWSDeviceStore {
         notificationDelay: TimeInterval,
         tx: DBWriteTransaction,
     ) {
-        do {
-            try kvStore.setCodable(
-                MostRecentlyLinkedDeviceDetails(
-                    linkedTime: linkedTime,
-                    notificationDelay: notificationDelay,
-                ),
-                key: StoreKeys.mostRecentlyLinkedDeviceDetails,
-                transaction: tx,
-            )
-        } catch {
-            owsFailDebug("Failed to set MostRecentlyLinkedDeviceDetails!")
-        }
+        kvStore.writeValueAsJSON(
+            MostRecentlyLinkedDeviceDetails(
+                linkedTime: linkedTime,
+                notificationDelay: notificationDelay,
+            ),
+            forKey: StoreKeys.mostRecentlyLinkedDeviceDetails,
+            tx: tx,
+        )
     }
 
     public func clearMostRecentlyLinkedDeviceDetails(tx: DBWriteTransaction) {
         kvStore.removeValue(
             forKey: StoreKeys.mostRecentlyLinkedDeviceDetails,
-            transaction: tx,
+            tx: tx,
         )
     }
 }

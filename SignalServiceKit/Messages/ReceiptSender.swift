@@ -50,9 +50,9 @@ class MessageReceiptSet: NSObject, Codable {
 public class ReceiptSender: NSObject {
     private let recipientDatabaseTable: RecipientDatabaseTable
 
-    private let deliveryReceiptStore: KeyValueStore
-    private let readReceiptStore: KeyValueStore
-    private let viewedReceiptStore: KeyValueStore
+    private let deliveryReceiptStore: NewKeyValueStore
+    private let readReceiptStore: NewKeyValueStore
+    private let viewedReceiptStore: NewKeyValueStore
 
     private var observers = [NSObjectProtocol]()
     private let pendingTasks = PendingTasks()
@@ -60,9 +60,9 @@ public class ReceiptSender: NSObject {
 
     public init(appReadiness: AppReadiness, recipientDatabaseTable: RecipientDatabaseTable) {
         self.recipientDatabaseTable = recipientDatabaseTable
-        self.deliveryReceiptStore = KeyValueStore(collection: "kOutgoingDeliveryReceiptManagerCollection")
-        self.readReceiptStore = KeyValueStore(collection: "kOutgoingReadReceiptManagerCollection")
-        self.viewedReceiptStore = KeyValueStore(collection: "kOutgoingViewedReceiptManagerCollection")
+        self.deliveryReceiptStore = NewKeyValueStore(collection: "kOutgoingDeliveryReceiptManagerCollection")
+        self.readReceiptStore = NewKeyValueStore(collection: "kOutgoingReadReceiptManagerCollection")
+        self.viewedReceiptStore = NewKeyValueStore(collection: "kOutgoingViewedReceiptManagerCollection")
 
         self.sendingState = AtomicValue(SendingState(), lock: .init())
 
@@ -378,7 +378,7 @@ public class ReceiptSender: NSObject {
         // into the `nil` ACI case. The sendReceipts method will turn this into a
         // no-op an then prune those identifiers from the database.
         var results = [Aci?: [ReceiptBatch]]()
-        for identifier in keyValueStore(for: receiptType).allKeys(transaction: tx) {
+        for identifier in keyValueStore(for: receiptType).fetchKeys(tx: tx) {
             let recipientAci = fetchRecipientAci(for: identifier, tx: tx)
             let receiptSet = _fetchReceiptSet(receiptType: receiptType, identifier: identifier, tx: tx)
             results[recipientAci, default: []].append(ReceiptBatch(receiptSet: receiptSet, identifier: identifier))
@@ -407,10 +407,14 @@ public class ReceiptSender: NSObject {
     ) -> MessageReceiptSet {
         let store = keyValueStore(for: receiptType)
         let result = MessageReceiptSet()
-        if let receiptSet: MessageReceiptSet = try? store.getCodableValue(forKey: identifier, transaction: tx) {
+        if let receiptSet = try? store.fetchJSONAsValue(MessageReceiptSet.self, forKey: identifier, tx: tx) {
             result.union(receiptSet)
-        } else if let numberSet = store.getSet(identifier, ofClass: NSNumber.self, transaction: tx)?.map({ $0.uint64Value }) {
-            result.union(timestampSet: numberSet)
+        } else if
+            let receiptSetData = store.fetchValue(Data.self, forKey: identifier, tx: tx),
+            let receiptSetAny = try? NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSSet.self, NSNumber.self], from: receiptSetData),
+            let receiptSet = receiptSetAny as? Set<NSNumber>
+        {
+            result.union(timestampSet: receiptSet.map(\.uint64Value))
         }
         return result
     }
@@ -422,17 +426,13 @@ public class ReceiptSender: NSObject {
     func _storeReceiptSet(_ receiptSet: MessageReceiptSet, receiptType: ReceiptType, identifier: String, tx: DBWriteTransaction) {
         let store = keyValueStore(for: receiptType)
         if receiptSet.timestamps.count > 0 {
-            do {
-                try store.setCodable(receiptSet, key: identifier, transaction: tx)
-            } catch {
-                owsFailDebug("\(error)")
-            }
+            store.writeValueAsJSON(receiptSet, forKey: identifier, tx: tx)
         } else {
-            store.removeValue(forKey: identifier, transaction: tx)
+            store.removeValue(forKey: identifier, tx: tx)
         }
     }
 
-    private func keyValueStore(for receiptType: ReceiptType) -> KeyValueStore {
+    private func keyValueStore(for receiptType: ReceiptType) -> NewKeyValueStore {
         switch receiptType {
         case .delivery: return deliveryReceiptStore
         case .read: return readReceiptStore
