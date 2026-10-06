@@ -577,7 +577,9 @@ class ProfileSettingsViewController: OWSTableViewController2 {
             title: CommonStrings.updatingModal,
             canCancel: false,
             asyncBlock: { modal in
-                let remoteMutationResult = await self.context.localUsernameManager.deleteUsername()
+                let result = await Result(catching: {
+                    try await self.context.localUsernameManager.deleteUsername()
+                })
 
                 let newState = self.context.db.read { tx in
                     return self.context.localUsernameManager.usernameState(tx: tx)
@@ -586,13 +588,13 @@ class ProfileSettingsViewController: OWSTableViewController2 {
                 // State may have changed with either success or failure.
                 self.usernameStateDidChange(newState: newState)
 
-                switch remoteMutationResult {
+                switch result {
                 case .success:
                     modal.dismiss()
-                case .failure(let remoteMutationError):
+                case .failure(let error):
                     modal.dismiss {
                         OWSActionSheets.showErrorAlert(
-                            message: remoteMutationError.localizedDescription,
+                            message: Usernames.localizedDescription(forError: error),
                         )
                     }
                 }

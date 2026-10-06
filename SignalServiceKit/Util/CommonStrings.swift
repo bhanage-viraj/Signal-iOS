@@ -385,15 +385,14 @@ public enum CommonStrings {
 
 // MARK: -
 
-public extension Usernames.RemoteMutationError {
-    var localizedDescription: String {
-        switch self {
-        case .networkError:
+extension Usernames {
+    public static func localizedDescription(forError error: any Error) -> String {
+        if error.isNetworkFailureOrTimeout {
             return OWSLocalizedString(
                 "USERNAMES_REMOTE_MUTATION_ERROR_DESCRIPTION",
                 comment: "An error message indicating that a usernames-related requeset failed because of a network error.",
             )
-        case .otherError:
+        } else {
             return CommonStrings.somethingWentWrongTryAgainLaterError
         }
     }

@@ -586,9 +586,11 @@ class UsernameLinkPresentQRCodeViewController: OWSTableViewController2 {
             reloadTableContents()
         }
 
-        Guarantee.wrapAsync {
-            await self.localUsernameManager.rotateUsernameLink()
-        }.map(on: DispatchQueue.main) { remoteMutationResult -> Usernames.RemoteMutationResult<Usernames.UsernameLink> in
+        Task {
+            let result = await Result(catching: {
+                _ = try await self.localUsernameManager.rotateUsernameLink()
+            })
+
             let latestUsernameState: Usernames.LocalUsernameState = self.db.read { tx in
                 self.localUsernameManager.usernameState(tx: tx)
             }
@@ -603,13 +605,9 @@ class UsernameLinkPresentQRCodeViewController: OWSTableViewController2 {
 
             self.reloadTableContents()
 
-            self.usernameChangeDelegate?.usernameStateDidChange(
-                newState: latestUsernameState,
-            )
+            self.usernameChangeDelegate?.usernameStateDidChange(newState: latestUsernameState)
 
-            return remoteMutationResult
-        }.done(on: DispatchQueue.main) { remoteMutationResult in
-            switch remoteMutationResult {
+            switch result {
             case .success:
                 OWSActionSheets.showActionSheet(
                     message: OWSLocalizedString(
