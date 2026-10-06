@@ -42,12 +42,23 @@ extension String {
 // MARK: URLs
 
 extension URL {
-    static func mediaFilePath(dirUrl: URL, mediaLocalRelativePath: String) -> URL? {
+    static func mediaFilePath(
+        dirUrl: URL,
+        mediaLocalRelativePath: String,
+        mimeType: String?,
+    ) -> URL? {
         guard OWSFileSystem.ensureDirectoryExists(dirUrl.path) else {
             return nil
         }
 
-        return dirUrl.appendingPathComponent(mediaLocalRelativePath)
+        let fileUrl = dirUrl.appendingPathComponent(mediaLocalRelativePath)
+
+        // Without a file extension, the AVAsset may be unreadable, preventing
+        // correct sizing & layout.
+        if let mimeType, let ext = MimeTypeUtil.fileExtensionForMimeType(mimeType) {
+            return fileUrl.appendingPathExtension(ext)
+        }
+        return fileUrl
     }
 }
 
@@ -111,12 +122,19 @@ public class RemoteReleaseNotesFetcher<ManifestType, TranslationType> {
         mediaRemoteUrlPath: String?,
         mediaFileDirectory: URL,
         translationId: String,
+        mimeType: String?,
     ) async throws -> Bool {
         guard let mediaRemoteUrlPath else {
             return false
         }
 
-        guard let mediaFileUrl: URL = .mediaFilePath(dirUrl: mediaFileDirectory, mediaLocalRelativePath: translationId) else {
+        guard
+            let mediaFileUrl: URL = .mediaFilePath(
+                dirUrl: mediaFileDirectory,
+                mediaLocalRelativePath: translationId,
+                mimeType: mimeType,
+            )
+        else {
             throw OWSAssertionError("Failed to get image file path for translation with ID \(translationId)")
         }
 

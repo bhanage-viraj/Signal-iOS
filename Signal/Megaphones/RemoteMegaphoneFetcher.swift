@@ -96,6 +96,7 @@ public class RemoteMegaphoneFetcher: RemoteReleaseNotesFetcher<RemoteMegaphoneMo
                     mediaRemoteUrlPath: translation.imageRemoteUrlPath,
                     mediaFileDirectory: RemoteMegaphoneModel.imagesDirectory,
                     translationId: translation.id,
+                    mimeType: nil,
                 ))
                 if manifest.id != translation.id {
                     // We shouldn't fail here, but this scenario is
