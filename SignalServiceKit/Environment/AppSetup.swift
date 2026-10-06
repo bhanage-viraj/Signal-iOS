@@ -287,10 +287,7 @@ extension AppSetup.GlobalsContinuation {
             recipientIdFinder: recipientIdFinder,
             sessionStore: sessionStore,
         )
-        let blockedRecipientStore = BlockedRecipientStore()
         let blockingManager = BlockingManager(
-            blockedGroupStore: BlockedGroupStore(),
-            blockedRecipientStore: blockedRecipientStore,
             blockedReleaseNotesStore: BlockedReleaseNotesStore(),
         )
         let earlyMessageManager = EarlyMessageManager(appReadiness: appReadiness)
@@ -1063,7 +1060,6 @@ extension AppSetup.GlobalsContinuation {
 
         let authorMergeHelper = AuthorMergeHelper()
         let recipientMerger = RecipientMergerImpl(
-            blockedRecipientStore: blockedRecipientStore,
             identityManager: identityManager,
             observers: RecipientMergerImpl.buildObservers(
                 authorMergeHelper: authorMergeHelper,
@@ -1114,7 +1110,6 @@ extension AppSetup.GlobalsContinuation {
             backupCDNCredentialStore: backupCDNCredentialStore,
             backupSubscriptionManager: backupSubscriptionManager,
             backupTestFlightEntitlementManager: backupTestFlightEntitlementManager,
-            blockedRecipientStore: blockedRecipientStore,
             chatConnectionManager: chatConnectionManager,
             cron: cron,
             db: db,
@@ -1126,6 +1121,7 @@ extension AppSetup.GlobalsContinuation {
             paymentsEvents: paymentsEvents,
             recipientManager: recipientManager,
             recipientMerger: recipientMerger,
+            recipientStore: recipientDatabaseTable,
             senderKeyManager: senderKeyManager,
             signalProtocolStoreManager: signalProtocolStoreManager,
             storageServiceManager: storageServiceManager,
@@ -1856,7 +1852,6 @@ extension AppSetup.GlobalsContinuation {
             backupSubscriptionManager: backupSubscriptionManager,
             backupTestFlightEntitlementManager: backupTestFlightEntitlementManager,
             badgeCountFetcher: badgeCountFetcher,
-            blockedRecipientStore: blockedRecipientStore,
             callLinkStore: callLinkStore,
             callRecordDeleteManager: callRecordDeleteManager,
             callRecordMissedCallManager: callRecordMissedCallManager,

@@ -302,7 +302,7 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
     ) {
         enum MessageRequestResponseThread {
             case groupThread(TSGroupThread)
-            case contactThread(TSContactThread)
+            case contactThread(Aci, TSContactThread)
         }
         let thread = { () -> MessageRequestResponseThread? in
             if
@@ -321,7 +321,7 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
             {
                 return TSContactThread
                     .getWithContactAddress(SignalServiceAddress(threadAci), transaction: transaction)
-                    .map({ .contactThread($0) })
+                    .map({ .contactThread(threadAci, $0) })
             }
             return nil
         }()
@@ -360,16 +360,21 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
 
         switch thread {
         case .groupThread(let thread):
+            let groupRecord = GroupStore().fetchGroup(forGroupIdData: thread.groupId, tx: transaction)
+            guard var groupRecord else {
+                owsFailDebug("can't fetch GroupRecord that must exist for GroupThread")
+                break
+            }
             if shouldAccept {
-                blockingManager.removeBlockedThread(thread, wasLocallyInitiated: false, transaction: transaction)
-                profileManager.addGroupId(
-                    toProfileWhitelist: thread.groupModel.groupId,
+                blockingManager.removeBlockedGroup(&groupRecord, wasLocallyInitiated: false, tx: transaction)
+                profileManager.addGroupToProfileWhitelist(
+                    &groupRecord,
                     userProfileWriter: .syncMessage,
-                    transaction: transaction,
+                    tx: transaction,
                 )
             }
             if shouldBlock {
-                blockingManager.addBlockedThread(thread, blockMode: .syncMessage, transaction: transaction)
+                blockingManager.addBlockedGroup(&groupRecord, blockMode: .syncMessage, tx: transaction)
             }
             if shouldSpam {
                 TSInfoMessage(thread: thread, messageType: .reportedSpam).anyInsert(transaction: transaction)
@@ -383,14 +388,10 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
                     tx: transaction,
                 )
             }
-        case .contactThread(let thread):
-            let recipient = recipientFetcher.fetchOrCreate(address: thread.contactAddress, tx: transaction)
-            guard var recipient else {
-                owsFailDebug("can't create SignalRecipient for malformed address")
-                break
-            }
+        case .contactThread(let aci, let thread):
+            var recipient = recipientFetcher.fetchOrCreate(serviceId: aci, tx: transaction)
             if shouldAccept {
-                blockingManager.removeBlockedThread(thread, wasLocallyInitiated: false, transaction: transaction)
+                blockingManager.removeBlockedRecipient(&recipient, wasLocallyInitiated: false, tx: transaction)
                 /// When we accept a message request on a linked device, we unhide the
                 /// message sender. We will eventually also learn about the unhide via a
                 /// StorageService contact sync, since the linked device should mark
@@ -400,7 +401,11 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
                 profileManager.addRecipientToProfileWhitelist(&recipient, userProfileWriter: .syncMessage, tx: transaction)
             }
             if shouldBlock {
-                blockingManager.addBlockedThread(thread, blockMode: .syncMessage, transaction: transaction)
+                if localIdentifiers.contains(serviceId: aci) {
+                    owsFailDebug("ignoring request to block note to self from sync message")
+                } else {
+                    blockingManager.addBlockedRecipient(&recipient, blockMode: .syncMessage, tx: transaction)
+                }
             }
             if shouldSpam {
                 TSInfoMessage(thread: thread, messageType: .reportedSpam).anyInsert(transaction: transaction)

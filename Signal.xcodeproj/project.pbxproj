@@ -860,7 +860,6 @@
 		50A76F562AF573CE00FCF02D /* AppActivePrecondition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A76F552AF573CE00FCF02D /* AppActivePrecondition.swift */; };
 		50A76F582AF5765000FCF02D /* FullTextSearchOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F0B53E2982D7800012C590 /* FullTextSearchOptimizer.swift */; };
 		50AA3EC329F1C4B900EC50A3 /* RecipientFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AA3EC229F1C4B900EC50A3 /* RecipientFetcher.swift */; };
-		50AABEE82CDD9A440077E306 /* BlockedGroupStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AABEE72CDD9A440077E306 /* BlockedGroupStore.swift */; };
 		50B0BCA32DFA17BE0076B680 /* Monitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B0BCA22DFA17BE0076B680 /* Monitor.swift */; };
 		50B0E9482AC73C3B005D46AB /* RecipientStateMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B0E9472AC73C3B005D46AB /* RecipientStateMerger.swift */; };
 		50B0E94A2AC747B3005D46AB /* RecipientStateMergerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B0E9492AC747B3005D46AB /* RecipientStateMergerTest.swift */; };
@@ -947,7 +946,6 @@
 		50EF8DCA2A1885C000A00935 /* AppIconBadgeUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EF8DC92A1885C000A00935 /* AppIconBadgeUpdater.swift */; };
 		50EF8DCC2A189B3000A00935 /* ConversationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EF8DCB2A189B3000A00935 /* ConversationViewModel.swift */; };
 		50EF8DD52A1FE55D00A00935 /* SignalAccountMergeObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EF8DD42A1FE55D00A00935 /* SignalAccountMergeObserver.swift */; };
-		50F039C42C6D239500162B99 /* BlockedRecipientStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F039C32C6D239500162B99 /* BlockedRecipientStore.swift */; };
 		50F3DF633017F5E9003A5F15 /* PinnedThreadRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F3DF623017F5E9003A5F15 /* PinnedThreadRecord.swift */; };
 		50F401CC2D483BF40094CA56 /* DeviceId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F401CB2D483BF40094CA56 /* DeviceId.swift */; };
 		50F54C2D2CE3FF7C005765EA /* GroupSendEndorsementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F54C2C2CE3FF7C005765EA /* GroupSendEndorsementStore.swift */; };
@@ -5267,7 +5265,6 @@
 		50A76F522AF565AC00FCF02D /* Preconditions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preconditions.swift; sourceTree = "<group>"; };
 		50A76F552AF573CE00FCF02D /* AppActivePrecondition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivePrecondition.swift; sourceTree = "<group>"; };
 		50AA3EC229F1C4B900EC50A3 /* RecipientFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipientFetcher.swift; sourceTree = "<group>"; };
-		50AABEE72CDD9A440077E306 /* BlockedGroupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedGroupStore.swift; sourceTree = "<group>"; };
 		50B0BCA22DFA17BE0076B680 /* Monitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Monitor.swift; sourceTree = "<group>"; };
 		50B0E9472AC73C3B005D46AB /* RecipientStateMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipientStateMerger.swift; sourceTree = "<group>"; };
 		50B0E9492AC747B3005D46AB /* RecipientStateMergerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipientStateMergerTest.swift; sourceTree = "<group>"; };
@@ -5346,7 +5343,6 @@
 		50EF8DCB2A189B3000A00935 /* ConversationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationViewModel.swift; sourceTree = "<group>"; };
 		50EF8DCD2A1BEBAE00A00935 /* BadgeManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeManagerTest.swift; sourceTree = "<group>"; };
 		50EF8DD42A1FE55D00A00935 /* SignalAccountMergeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalAccountMergeObserver.swift; sourceTree = "<group>"; };
-		50F039C32C6D239500162B99 /* BlockedRecipientStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedRecipientStore.swift; sourceTree = "<group>"; };
 		50F3DF623017F5E9003A5F15 /* PinnedThreadRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedThreadRecord.swift; sourceTree = "<group>"; };
 		50F401CB2D483BF40094CA56 /* DeviceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceId.swift; sourceTree = "<group>"; };
 		50F54C2C2CE3FF7C005765EA /* GroupSendEndorsementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSendEndorsementStore.swift; sourceTree = "<group>"; };
@@ -15251,8 +15247,6 @@
 				F9C5C95F289453B100548EEE /* UD */,
 				D99677942F689E4100F4234D /* AddressableMessage.swift */,
 				500B25822DD6A08300E9ECAA /* BackgroundMessageFetcher.swift */,
-				50AABEE72CDD9A440077E306 /* BlockedGroupStore.swift */,
-				50F039C32C6D239500162B99 /* BlockedRecipientStore.swift */,
 				044EA2262FC8760A005B5A3E /* BlockedReleaseNotesStore.swift */,
 				F9C5C940289453B100548EEE /* BlockingManager.swift */,
 				50A5AA982A7449A100CF2ECC /* DecryptedIncomingEnvelope.swift */,
@@ -19714,8 +19708,6 @@
 				F9C5CE36289453B400548EEE /* Batching.swift in Sources */,
 				F9C5CE12289453B400548EEE /* Bench.swift in Sources */,
 				04B2850530223EDE00BCF018 /* BGProcessingTaskRescheduleOnCatch.swift in Sources */,
-				50AABEE82CDD9A440077E306 /* BlockedGroupStore.swift in Sources */,
-				50F039C42C6D239500162B99 /* BlockedRecipientStore.swift in Sources */,
 				044EA2272FC87611005B5A3E /* BlockedReleaseNotesStore.swift in Sources */,
 				F9C5CC31289453B300548EEE /* BlockingManager.swift in Sources */,
 				F9C5CC74289453B300548EEE /* BlurHash.swift in Sources */,

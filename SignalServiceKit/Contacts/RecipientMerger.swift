@@ -96,7 +96,6 @@ struct MergedRecipient {
 }
 
 class RecipientMergerImpl: RecipientMerger {
-    private let blockedRecipientStore: BlockedRecipientStore
     private let identityManager: OWSIdentityManager
     private let observers: Observers
     private let pinnedThreadMerger: any PinnedThreadMerger
@@ -114,7 +113,6 @@ class RecipientMergerImpl: RecipientMerger {
     /// which we learned about the new association, and they are notified in the
     /// order in which they are provided.
     init(
-        blockedRecipientStore: BlockedRecipientStore,
         identityManager: OWSIdentityManager,
         observers: Observers,
         pinnedThreadMerger: any PinnedThreadMerger,
@@ -125,7 +123,6 @@ class RecipientMergerImpl: RecipientMerger {
         storageServiceManager: StorageServiceManager,
         storyRecipientStore: StoryRecipientStore,
     ) {
-        self.blockedRecipientStore = blockedRecipientStore
         self.identityManager = identityManager
         self.observers = observers
         self.pinnedThreadMerger = pinnedThreadMerger
@@ -807,7 +804,7 @@ class RecipientMergerImpl: RecipientMerger {
         // Don't throw errors or return until we've saved every affectedRecipient
         // to the database.
 
-        let mergedRecipient: SignalRecipient
+        var mergedRecipient: SignalRecipient
         let otherUpdatedRecipients: [SignalRecipient]
         (mergedRecipient, otherUpdatedRecipients) = applyMerge(tx)
 
@@ -828,7 +825,9 @@ class RecipientMergerImpl: RecipientMerger {
                 // TODO: Should we clean up any more state related to the discarded recipient?
                 sessionStore.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, localIdentity: .aci, tx: tx)
                 identityManager.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
-                blockedRecipientStore.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, tx: tx)
+                if affectedRecipient.isBlocked, !mergedRecipient.isBlocked {
+                    mergedRecipient.status = .blocked
+                }
                 storyRecipientStore.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
                 pinnedThreadMerger.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, updateStorageService: shouldUpdateStorageService, tx: tx)
                 recipientDatabaseTable.removeRecipient(affectedRecipient, transaction: tx)

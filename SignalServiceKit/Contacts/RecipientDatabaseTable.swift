@@ -130,6 +130,12 @@ public struct RecipientDatabaseTable {
         return failIfThrows { try fetchRequest.fetchAll(tx.database) }
     }
 
+    public func fetchBlockedRecipients(tx: DBReadTransaction) -> [SignalRecipient] {
+        let fetchRequest = SignalRecipient
+            .filter(Column(SignalRecipient.CodingKeys.status.rawValue) == SignalRecipient.Status.blocked.rawValue)
+        return failIfThrows { try fetchRequest.fetchAll(tx.database) }
+    }
+
     public func fetchAllPhoneNumbers(tx: DBReadTransaction) -> [String: Bool] {
         var result = [String: Bool]()
         enumerateAll(tx: tx) { signalRecipient in

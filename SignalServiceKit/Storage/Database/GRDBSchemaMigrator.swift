@@ -370,6 +370,7 @@ public class GRDBSchemaMigrator {
         case addAciContactShareNamesToSearchableName
         case addShouldNotifyForUnreadRemindersWhenMutedColumn
         case disableUnreadRemindersForExistingUsers
+        case migrateBlocked
 
         // NOTE: Every time we add a migration id, consider
         // incrementing grdbSchemaVersionLatest.
@@ -499,7 +500,7 @@ public class GRDBSchemaMigrator {
     }
 
     public static let grdbSchemaVersionDefault: UInt = 0
-    public static let grdbSchemaVersionLatest: UInt = 162
+    public static let grdbSchemaVersionLatest: UInt = 163
 
     private class DatabaseMigratorWrapper {
         // Run with immediate (or disabled) foreign key checks so that pre-existing
@@ -5692,6 +5693,14 @@ public class GRDBSchemaMigrator {
             return .success(())
         }
 
+        migrator.registerMigration(.migrateBlocked) { tx in
+            try addGroupStatus(tx: tx)
+            try migrateBlocked(tx: tx)
+            try removeBlockedRecipients(tx: tx)
+            try removeBlockedGroups(tx: tx)
+            return .success(())
+        }
+
         // MARK: - Schema Migration Insertion Point
     }
 
@@ -7065,6 +7074,34 @@ public class GRDBSchemaMigrator {
         return tx.database.lastInsertedRowID
     }
 
+    private struct GroupIdForMigrationV1 {
+        let rawValue: Data
+
+        init?(rawValue: Data) {
+            guard rawValue.count == 16 || rawValue.count == 32 else {
+                return nil
+            }
+            self.rawValue = rawValue
+        }
+    }
+
+    private static func fetchOrCreateGroup(groupId: GroupIdForMigrationV1, tx: DBWriteTransaction) throws -> GroupRecord.RowId {
+        let db = tx.database
+        let rowId = try GroupRecord.RowId.fetchOne(db, sql: "SELECT rowId FROM GroupRecord WHERE groupId = ?", arguments: [groupId.rawValue])
+        if let rowId {
+            return rowId
+        }
+        return try createGroup(groupId: groupId, tx: tx)
+    }
+
+    private static func createGroup(groupId: GroupIdForMigrationV1, tx: DBWriteTransaction) throws -> GroupRecord.RowId {
+        try tx.database.execute(
+            sql: "INSERT INTO GroupRecord (groupId) VALUES (?)",
+            arguments: [groupId.rawValue],
+        )
+        return tx.database.lastInsertedRowID
+    }
+
     private static func fetchLocalAci(tx: DBReadTransaction) throws -> Aci? {
         let aciString = try String.fetchOne(
             tx.database,
@@ -7918,7 +7955,7 @@ public class GRDBSchemaMigrator {
         try tx.database.alter(table: "model_SignalRecipient") {
             $0.add(column: "status", .integer).notNull().defaults(to: 0)
         }
-        // For fetching whitelisted recipients.
+        // For fetching blocked/whitelisted recipients.
         try tx.database.create(index: "Recipient_Status", on: "model_SignalRecipient", columns: ["status"])
     }
 
@@ -8594,6 +8631,79 @@ public class GRDBSchemaMigrator {
         INSERT OR IGNORE INTO keyvalue (key, collection, value)
         VALUES ('ShowUnreadReminders', 'NotificationPreferences', 0)
         """)
+    }
+
+    static func addGroupStatus(tx: DBWriteTransaction) throws {
+        try tx.database.alter(table: "GroupRecord") {
+            $0.add(column: "status", .integer).notNull().defaults(to: 0)
+        }
+        // For fetching blocked/whitelisted groups.
+        try tx.database.create(index: "GroupRecord_Status", on: "GroupRecord", columns: ["status"])
+    }
+
+    static func migrateBlocked(tx: DBWriteTransaction) throws {
+        let hasAnyBlockedWhitelistedRecipients = try Bool.fetchOne(
+            tx.database,
+            sql: """
+            SELECT EXISTS (SELECT * FROM "model_SignalRecipient" WHERE "status" = 1 AND "id" IN (SELECT "recipientId" FROM "BlockedRecipient"))
+            """,
+        ).owsFailUnwrap("must return value")
+
+        try tx.database.execute(sql: """
+        UPDATE "model_SignalRecipient" SET "status" = 2 WHERE "id" IN (SELECT "recipientId" FROM "BlockedRecipient")
+        """)
+
+        let whitelistedGroupIds = try Data?.fetchAll(
+            tx.database,
+            sql: """
+            SELECT unhex("key") FROM "keyvalue" WHERE "collection" = ?
+            """,
+            arguments: ["kOWSProfileManager_GroupWhitelistCollection"],
+        )
+        for whitelistedGroupId in whitelistedGroupIds {
+            guard
+                let whitelistedGroupId,
+                let groupId = GroupIdForMigrationV1(rawValue: whitelistedGroupId)
+            else {
+                Logger.warn("couldn't migrate malformed group id: \(whitelistedGroupId as Optional)")
+                continue
+            }
+            let rowId = try fetchOrCreateGroup(groupId: groupId, tx: tx)
+            try tx.database.execute(sql: "UPDATE GroupRecord SET status = 1 WHERE rowId = ?", arguments: [rowId])
+        }
+
+        let blockedGroupIds = try Data.fetchAll(
+            tx.database,
+            sql: "SELECT groupId FROM BlockedGroup",
+        )
+        for blockedGroupId in blockedGroupIds {
+            guard let groupId = GroupIdForMigrationV1(rawValue: blockedGroupId) else {
+                Logger.warn("couldn't migrate malformed group id: \(blockedGroupId)")
+                continue
+            }
+            let rowId = try fetchOrCreateGroup(groupId: groupId, tx: tx)
+            try tx.database.execute(sql: "UPDATE GroupRecord SET status = 2 WHERE rowId = ?", arguments: [rowId])
+        }
+
+        let hasAnyBlockedWhitelistedGroups = !Set(blockedGroupIds).isDisjoint(with: whitelistedGroupIds.lazy.compactMap({ $0 }))
+
+        if hasAnyBlockedWhitelistedRecipients || hasAnyBlockedWhitelistedGroups {
+            let randomToken = Randomness.generateRandomBytes(16)
+            try tx.database.execute(
+                sql: """
+                INSERT OR REPLACE INTO "keyvalue" ("collection", "key", "value") VALUES (?, ?, ?)
+                """,
+                arguments: ["kOWSProfileManager_Metadata", "leaveGroupTriggerTimestampKey", randomToken],
+            )
+        }
+    }
+
+    static func removeBlockedRecipients(tx: DBWriteTransaction) throws {
+        try tx.database.drop(table: "BlockedRecipient")
+    }
+
+    static func removeBlockedGroups(tx: DBWriteTransaction) throws {
+        try tx.database.drop(table: "BlockedGroup")
     }
 
     static func dedupeSignalRecipients(tx: DBWriteTransaction) throws {

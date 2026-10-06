@@ -38,6 +38,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
     public enum Status: Int64, Codable {
         case unspecified = 0
         case whitelisted = 1
+        case blocked = 2
     }
 
     public typealias RowId = Int64
@@ -180,11 +181,20 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
         SignalServiceAddress.addressComponentsDescription(uuidString: aciString, phoneNumber: phoneNumber?.stringValue)
     }
 
+    public var isBlocked: Bool {
+        switch self.status {
+        case .blocked:
+            return true
+        case .whitelisted, .unspecified:
+            return false
+        }
+    }
+
     public var isWhitelisted: Bool {
         switch self.status {
         case .whitelisted:
             return true
-        case .unspecified:
+        case .blocked, .unspecified:
             return false
         }
     }

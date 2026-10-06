@@ -58,8 +58,6 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
     ) throws(CancellationError) -> ArchiveMultiFrameResult {
         var errors = [ArchiveFrameError]()
 
-        let blockedGroupIds = Set(blockingManager.blockedGroupIds(tx: context.tx))
-
         do {
             try context.bencher.wrapEnumeration(
                 tx: context.tx,
@@ -69,7 +67,6 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
                 perEnumerantBlock: { [self] groupRecord, frameBencher -> Bool in
                     archiveGroupThread(
                         groupRecord,
-                        blockedGroupIds: blockedGroupIds,
                         stream: stream,
                         frameBencher: frameBencher,
                         context: context,
@@ -131,7 +128,6 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
 
     private func archiveGroupThread(
         _ groupRecord: GroupRecord,
-        blockedGroupIds: Set<Data>,
         stream: BackupArchiveOutputStream,
         frameBencher: BackupArchive.Bencher.FrameBencher,
         context: BackupArchive.RecipientArchivingContext,
@@ -160,7 +156,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
 
         var group = BackupProto_Group()
         group.masterKey = masterKey.serialize()
-        group.blocked = blockedGroupIds.contains(groupId.serialize())
+        group.blocked = groupRecord.isBlocked
         if let groupPair {
             group.whitelisted = profileManager.isGroupId(
                 inProfileWhitelist: groupId.serialize(),
@@ -468,7 +464,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
             }
 
             if groupProto.whitelisted {
-                profileManager.addToWhitelist(groupThread, tx: context.tx)
+                profileManager.addGroupToWhitelist(&groupRecord, tx: context.tx)
             }
 
             if
@@ -511,7 +507,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
         }
 
         if groupProto.blocked {
-            blockingManager.addBlockedGroupId(groupId.serialize(), tx: context.tx)
+            blockingManager.addBlockedGroup(&groupRecord, tx: context.tx)
         }
 
         // MARK: Return successfully!

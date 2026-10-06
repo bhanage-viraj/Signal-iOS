@@ -191,9 +191,14 @@ public class BlockListUIUtils {
 
         let blockingManager = SSKEnvironment.shared.blockingManagerRef
         let databaseStorage = SSKEnvironment.shared.databaseStorageRef
+        let recipientFetcher = DependenciesBridge.shared.recipientFetcher
 
         databaseStorage.write { tx in
-            blockingManager.addBlockedAddress(address, blockMode: .localUser, transaction: tx)
+            if var recipient = recipientFetcher.fetchOrCreate(address: address, tx: tx) {
+                blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+            } else {
+                owsFailDebug("couldn't block invalid address")
+            }
         }
 
         showOkActionSheet(
@@ -222,13 +227,21 @@ public class BlockListUIUtils {
         let blockingManager = SSKEnvironment.shared.blockingManagerRef
         let databaseStorage = SSKEnvironment.shared.databaseStorageRef
 
+        let groupId: AnyGroupIdentifier
+        do {
+            groupId = try AnyGroupIdentifier.parseFrom(groupThread.groupId)
+        } catch {
+            owsFail("can't block group with malformed id: \(error)")
+        }
+
         databaseStorage.write(block: { tx in
             // block the group regardless of the ability to deliver the
             // "leave group" message.
-            blockingManager.addBlockedGroupId(
-                groupThread.groupId,
+            var groupRecord = GroupStore().fetchGroupOrInsert(groupId: groupId, tx: tx)
+            blockingManager.addBlockedGroup(
+                &groupRecord,
                 blockMode: .localUser,
-                transaction: tx,
+                tx: tx,
             )
             if groupThread.groupModel.groupMembership.isLocalUserFullOrInvitedMember {
                 // We don't wait for this because it's durably enqeueued and may take up to
@@ -408,9 +421,14 @@ public class BlockListUIUtils {
 
         let blockingManager = SSKEnvironment.shared.blockingManagerRef
         let databaseStorage = SSKEnvironment.shared.databaseStorageRef
+        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
 
         databaseStorage.write { tx in
-            blockingManager.removeBlockedAddress(address, wasLocallyInitiated: true, transaction: tx)
+            if var recipient = recipientStore.fetchRecipient(address: address, tx: tx) {
+                blockingManager.removeBlockedRecipient(&recipient, wasLocallyInitiated: true, tx: tx)
+            } else {
+                owsFailDebug("couldn't unblock missing recipient")
+            }
         }
 
         let actionSheetTitleFormat = OWSLocalizedString(
@@ -431,7 +449,12 @@ public class BlockListUIUtils {
         let databaseStorage = SSKEnvironment.shared.databaseStorageRef
 
         databaseStorage.write { tx in
-            blockingManager.removeBlockedGroup(groupId: groupId, wasLocallyInitiated: true, transaction: tx)
+            let groupRecord = GroupStore().fetchGroup(forGroupIdData: groupId, tx: tx)
+            guard var groupRecord else {
+                // It's already unblocked.
+                return
+            }
+            blockingManager.removeBlockedGroup(&groupRecord, wasLocallyInitiated: true, tx: tx)
         }
 
         let actionSheetTitleFormat = OWSLocalizedString(

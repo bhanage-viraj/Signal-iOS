@@ -135,10 +135,10 @@ public class GroupManager: NSObject {
                 transaction: tx,
             )
             let profileManager = SSKEnvironment.shared.profileManagerRef
-            profileManager.addGroupId(
-                toProfileWhitelist: groupModel.groupId,
+            profileManager.addGroupToProfileWhitelist(
+                &groupRecord,
                 userProfileWriter: .localUser,
-                transaction: tx,
+                tx: tx,
             )
             if let groupSendEndorsementsResponse = snapshotResponse.groupSendEndorsementsResponse {
                 SSKEnvironment.shared.groupsV2Ref.handleGroupSendEndorsementsResponse(
@@ -372,10 +372,15 @@ public class GroupManager: NSObject {
         }
         let groupId = try secretParams.getPublicParams().getGroupIdentifier()
         await databaseStorage.awaitableWrite { tx in
-            profileManager.addGroupId(
-                toProfileWhitelist: groupId.serialize(),
+            let groupRecord = GroupStore().fetchGroup(forGroupId: groupId, tx: tx)
+            guard var groupRecord else {
+                owsFailDebug("can't whitelist group that no longer exists")
+                return
+            }
+            profileManager.addGroupToProfileWhitelist(
+                &groupRecord,
                 userProfileWriter: .localUser,
-                transaction: tx,
+                tx: tx,
             )
         }
         try await updateGroupV2(
@@ -487,10 +492,15 @@ public class GroupManager: NSObject {
         )
 
         await databaseStorage.awaitableWrite { tx in
-            profileManager.addGroupId(
-                toProfileWhitelist: groupId.serialize(),
+            let groupRecord = GroupStore().fetchGroup(forGroupId: groupId, tx: tx)
+            guard var groupRecord else {
+                owsFailDebug("can't whitelist group that no longer exists")
+                return
+            }
+            profileManager.addGroupToProfileWhitelist(
+                &groupRecord,
                 userProfileWriter: .localUser,
-                transaction: tx,
+                tx: tx,
             )
         }
     }
@@ -818,6 +828,7 @@ public class GroupManager: NSObject {
         )
 
         autoWhitelistGroupIfNecessary(
+            &groupRecord,
             oldGroupModel: nil,
             newGroupModel: groupModel,
             groupUpdateSource: groupUpdateSource,
@@ -1079,6 +1090,7 @@ public class GroupManager: NSObject {
         }
 
         autoWhitelistGroupIfNecessary(
+            &groupRecord,
             oldGroupModel: oldGroupModel,
             newGroupModel: newGroupModel,
             groupUpdateSource: groupUpdateSource,
@@ -1175,6 +1187,7 @@ public class GroupManager: NSObject {
     // MARK: - Profiles
 
     private static func autoWhitelistGroupIfNecessary(
+        _ groupRecord: inout GroupRecord,
         oldGroupModel: TSGroupModel?,
         newGroupModel: TSGroupModel,
         groupUpdateSource: GroupUpdateSource,
@@ -1215,10 +1228,10 @@ public class GroupManager: NSObject {
         // We don't want to do this if we're just a pending member or are leaving/have
         // already left the group.
         let profileManager = SSKEnvironment.shared.profileManagerRef
-        profileManager.addGroupId(
-            toProfileWhitelist: newGroupModel.groupId,
+        profileManager.addGroupToProfileWhitelist(
+            &groupRecord,
             userProfileWriter: .localUser,
-            transaction: tx,
+            tx: tx,
         )
     }
 

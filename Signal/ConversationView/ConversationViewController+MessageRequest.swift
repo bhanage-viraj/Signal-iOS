@@ -182,16 +182,6 @@ private extension ConversationViewController {
         let profileManager = SSKEnvironment.shared.profileManagerRef
         let recipientFetcher = DependenciesBridge.shared.recipientFetcher
 
-        func unblockThreadIfNeeded(transaction: DBWriteTransaction) {
-            if unblockThread {
-                blockingManager.removeBlockedThread(
-                    thread,
-                    wasLocallyInitiated: true,
-                    transaction: transaction,
-                )
-            }
-        }
-
         func acceptMessageRequestIfNeeded(transaction: DBWriteTransaction) {
             /// If we're not in "unblock" mode, we should take "accept message
             /// request" actions. (Bleh.)
@@ -218,18 +208,34 @@ private extension ConversationViewController {
         await databaseStorage.awaitableWrite { transaction in
             switch thread {
             case let thread as TSGroupThread:
-                unblockThreadIfNeeded(transaction: transaction)
+                let groupRecord = GroupStore().fetchGroup(forGroupIdData: thread.groupId, tx: transaction)
+                guard var groupRecord else {
+                    owsFailDebug("couldn't fetch GroupRecord for TSGroupThread")
+                    break
+                }
+                if unblockThread {
+                    blockingManager.removeBlockedGroup(&groupRecord, wasLocallyInitiated: true, tx: transaction)
+                }
                 acceptMessageRequestIfNeeded(transaction: transaction)
-                profileManager.addGroupId(
-                    toProfileWhitelist: thread.groupModel.groupId,
+                profileManager.addGroupToProfileWhitelist(
+                    &groupRecord,
                     userProfileWriter: .localUser,
-                    transaction: transaction,
+                    tx: transaction,
                 )
 
             case let thread as TSContactThread:
-                unblockThreadIfNeeded(transaction: transaction)
                 // Might be nil if thread.contactAddress isn't valid.
                 var recipient = recipientFetcher.fetchOrCreate(address: thread.contactAddress, tx: transaction)
+                if unblockThread {
+                    if var innerRecipient = recipient {
+                        blockingManager.removeBlockedRecipient(
+                            &innerRecipient,
+                            wasLocallyInitiated: true,
+                            tx: transaction,
+                        )
+                        recipient = innerRecipient
+                    }
+                }
                 if var innerRecipient = recipient {
                     if unhideRecipient, !thread.contactAddress.isLocalAddress {
                         hidingManager.removeHiddenRecipient(&innerRecipient, wasLocallyInitiated: true, tx: transaction)

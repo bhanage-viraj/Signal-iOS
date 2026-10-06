@@ -139,7 +139,6 @@ extension ConversationViewController: ContactPickerDelegate, ContactSharingPicke
             return ContactShareDraft.loadWithMatchingSignalAvatar(
                 cnContact: cnContact,
                 signalContact: systemContact,
-                blockingManager: SSKEnvironment.shared.blockingManagerRef,
                 contactManager: SSKEnvironment.shared.contactManagerRef,
                 phoneNumberUtil: SSKEnvironment.shared.phoneNumberUtilRef,
                 profileManager: SSKEnvironment.shared.profileManagerRef,

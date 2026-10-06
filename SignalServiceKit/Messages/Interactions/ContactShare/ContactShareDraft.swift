@@ -32,7 +32,6 @@ public class ContactShareDraft {
     public static func loadWithMatchingSignalAvatar(
         cnContact: CNContact,
         signalContact: SystemContact,
-        blockingManager: BlockingManager,
         contactManager: any ContactManager,
         phoneNumberUtil: PhoneNumberUtil,
         profileManager: any ProfileManager,
@@ -46,7 +45,6 @@ public class ContactShareDraft {
             contactManager: contactManager,
             signalAvatarData: loadSignalAvatarData(
                 signalContact: signalContact,
-                blockingManager: blockingManager,
                 phoneNumberUtil: phoneNumberUtil,
                 profileManager: profileManager,
                 recipientHidingManager: recipientHidingManager,
@@ -80,7 +78,6 @@ public class ContactShareDraft {
 
     private static func loadSignalAvatarData(
         signalContact: SystemContact,
-        blockingManager: BlockingManager,
         phoneNumberUtil: PhoneNumberUtil,
         profileManager: any ProfileManager,
         recipientHidingManager: any RecipientHidingManager,
@@ -104,7 +101,6 @@ public class ContactShareDraft {
                     let recipient,
                     recipient.isWhitelisted,
                     recipient.isRegistered,
-                    !blockingManager.isRecipientBlocked(recipientId: recipient.id, tx: tx),
                     !recipientHidingManager.isHiddenRecipient(recipientId: recipient.id, tx: tx)
                 else {
                     continue

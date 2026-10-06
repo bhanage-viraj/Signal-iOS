@@ -292,11 +292,10 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         // This could be an ACI or a PNI address.
         let anyAddress = SignalServiceAddress(contact.serviceIds.aciOrElsePni)
 
-        let isInWhitelist = profileManager.isRecipientInProfileWhitelist(recipient, tx: tx)
-        builder.setWhitelisted(isInWhitelist)
-
-        builder.setBlocked(blockingManager.isAddressBlocked(anyAddress, transaction: tx))
-        builder.setHidden(recipientHidingManager.isHiddenAddress(anyAddress, tx: tx))
+        let isHidden = recipientHidingManager.isHiddenAddress(anyAddress, tx: tx)
+        builder.setHidden(isHidden)
+        builder.setWhitelisted(recipient.isWhitelisted && !isHidden)
+        builder.setBlocked(recipient.isBlocked)
 
         // Identity
 
@@ -523,9 +522,6 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         let anyAddress = SignalServiceAddress(serviceIds.aciOrElsePni)
 
         // Gather some local contact state to do comparisons against.
-        let localIsBlocked = blockingManager.isAddressBlocked(anyAddress, transaction: tx)
-        let localIsHidden = recipientHidingManager.isHiddenAddress(anyAddress, tx: tx)
-        let localIsWhitelisted = profileManager.isRecipientInProfileWhitelist(recipient, tx: tx)
         let localUserProfile = profileManager.userProfile(for: anyAddress, tx: tx)
 
         // If our local profile key record differs from what's on the service, use the service's value.
@@ -602,29 +598,30 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         }
 
         // If our local blocked state differs from the service state, use the service's value.
-        if record.blocked != localIsBlocked {
+        if record.blocked != recipient.isBlocked {
             if record.blocked {
-                blockingManager.addBlockedAddress(anyAddress, blockMode: .storageService, transaction: tx)
+                blockingManager.addBlockedRecipient(&recipient, blockMode: .storageService, tx: tx)
             } else {
-                blockingManager.removeBlockedAddress(anyAddress, wasLocallyInitiated: false, transaction: tx)
+                blockingManager.removeBlockedRecipient(&recipient, wasLocallyInitiated: false, tx: tx)
             }
         }
 
         // If our local hidden state differs from the service state, use the service's value.
+        let localIsHidden = recipientHidingManager.isHiddenRecipient(recipientId: recipient.id, tx: tx)
         if record.hidden != localIsHidden {
             if record.hidden {
-                do {
-                    try recipientHidingManager.addHiddenRecipient(
-                        anyAddress,
-                        inKnownMessageRequestState: false,
-                        wasLocallyInitiated: false,
-                        tx: tx,
-                    )
-                } catch {
-                    Logger.warn("Recipient hidden remotely could not be hidden locally.")
-                }
+                recipientHidingManager.addHiddenRecipient(
+                    &recipient,
+                    inKnownMessageRequestState: false,
+                    wasLocallyInitiated: false,
+                    tx: tx,
+                )
             } else {
-                recipientHidingManager.removeHiddenRecipient(anyAddress, wasLocallyInitiated: false, tx: tx)
+                recipientHidingManager.removeHiddenRecipient(
+                    &recipient,
+                    wasLocallyInitiated: false,
+                    tx: tx,
+                )
             }
         }
 
@@ -633,7 +630,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         // transitions schedule a profile key rotation.
 
         // If our local whitelisted state differs from the service state, use the service's value.
-        if record.whitelisted != localIsWhitelisted {
+        if record.whitelisted != recipient.isWhitelisted {
             if record.whitelisted {
                 profileManager.addRecipientToProfileWhitelist(&recipient, userProfileWriter: .storageService, tx: tx)
             } else {
@@ -1019,8 +1016,8 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
 
         var builder = StorageServiceProtoGroupV2Record.builder(masterKey: masterKeyData)
 
-        builder.setWhitelisted(profileManager.isGroupId(inProfileWhitelist: groupId.serialize(), transaction: transaction))
-        builder.setBlocked(blockingManager.isGroupIdBlocked(groupId, transaction: transaction))
+        builder.setWhitelisted(groupRecord.isWhitelisted)
+        builder.setBlocked(groupRecord.isBlocked)
 
         if let storyContextAssociatedData = StoryFinder.getAssociatedData(forContext: .group(groupId: groupId.serialize()), transaction: transaction) {
             builder.setHideStory(storyContextAssociatedData.isHidden)
@@ -1133,16 +1130,12 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             localRecord.setLastVerifiedGroupNameHash(verifiedHash, tx: transaction)
         }
 
-        // Gather some local contact state to do comparisons against.
-        let localIsBlocked = blockingManager.isGroupIdBlocked(groupId, transaction: transaction)
-        let localIsWhitelisted = profileManager.isGroupId(inProfileWhitelist: groupId.serialize(), transaction: transaction)
-
         // If our local blocked state differs from the service state, use the service's value.
-        if record.blocked != localIsBlocked {
+        if record.blocked != localRecord.isBlocked {
             if record.blocked {
-                blockingManager.addBlockedGroupId(groupId.serialize(), blockMode: .storageService, transaction: transaction)
+                blockingManager.addBlockedGroup(&localRecord, blockMode: .storageService, tx: transaction)
             } else {
-                blockingManager.removeBlockedGroup(groupId: groupId.serialize(), wasLocallyInitiated: false, transaction: transaction)
+                blockingManager.removeBlockedGroup(&localRecord, wasLocallyInitiated: false, tx: transaction)
             }
         }
 
@@ -1151,18 +1144,18 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
         // transitions schedule a profile key rotation.
 
         // If our local whitelisted state differs from the service state, use the service's value.
-        if record.whitelisted != localIsWhitelisted {
+        if record.whitelisted != localRecord.isWhitelisted {
             if record.whitelisted {
-                profileManager.addGroupId(
-                    toProfileWhitelist: groupId.serialize(),
+                profileManager.addGroupToProfileWhitelist(
+                    &localRecord,
                     userProfileWriter: .storageService,
-                    transaction: transaction,
+                    tx: transaction,
                 )
             } else {
-                _ = profileManager.removeGroupId(
-                    fromProfileWhitelist: groupId.serialize(),
+                _ = profileManager.removeGroupFromProfileWhitelist(
+                    &localRecord,
                     userProfileWriter: .storageService,
-                    transaction: transaction,
+                    tx: transaction,
                 )
             }
         }

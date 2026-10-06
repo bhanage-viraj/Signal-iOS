@@ -987,8 +987,15 @@ extension ConversationViewController: CVComponentDelegate {
                 guard self != nil else { return }
                 let blockingManager = SSKEnvironment.shared.blockingManagerRef
                 let databaseStorage = SSKEnvironment.shared.databaseStorageRef
+                let recipientFetcher = DependenciesBridge.shared.recipientFetcher
                 databaseStorage.write { tx in
-                    blockingManager.addBlockedAddress(address, blockMode: .localUser, transaction: tx)
+                    if address.isLocalAddress {
+                        owsFailDebug("can't block local address")
+                    } else if var recipient = recipientFetcher.fetchOrCreate(address: address, tx: tx) {
+                        blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+                    } else {
+                        owsFailDebug("can't block invalid address")
+                    }
                 }
             },
         )

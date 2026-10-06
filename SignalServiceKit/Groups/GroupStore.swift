@@ -15,13 +15,13 @@ public struct GroupStore {
         return fetchGroup(forGroupIdData: groupId.serialize(), tx: tx)
     }
 
-    func fetchGroup(forGroupIdData groupIdData: Data, tx: DBReadTransaction) -> GroupRecord? {
+    public func fetchGroup(forGroupIdData groupIdData: Data, tx: DBReadTransaction) -> GroupRecord? {
         let fetchRequest = GroupRecord
             .filter(GroupRecord.Columns.groupId == groupIdData)
         return failIfThrows { try fetchRequest.fetchOne(tx.database) }
     }
 
-    func fetchGroupOrInsert(
+    public func fetchGroupOrInsert(
         groupId: AnyGroupIdentifier,
         refreshedAt: Date = GroupRecord.addingRefreshJitter(toDate: Date()),
         tx: DBWriteTransaction,
@@ -103,5 +103,11 @@ public struct GroupStore {
             .filter(GroupRecord.Columns.refreshedAt < Int64(staleDate.timeIntervalSince1970))
             .order(GroupRecord.Columns.refreshedAt)
         return failIfThrows { try fetchRequest.fetchOne(tx.database) }
+    }
+
+    public func fetchBlockedGroups(tx: DBReadTransaction) -> [GroupRecord] {
+        let fetchRequest = GroupRecord
+            .filter(GroupRecord.Columns.status == GroupRecord.Status.blocked.rawValue)
+        return failIfThrows { try fetchRequest.fetchAll(tx.database) }
     }
 }

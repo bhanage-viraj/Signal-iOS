@@ -57,7 +57,6 @@ private class TestDependencies {
             threadStore: threadStore,
         )
         recipientMerger = RecipientMergerImpl(
-            blockedRecipientStore: BlockedRecipientStore(),
             identityManager: identityManager,
             observers: RecipientMergerImpl.Observers(
                 preThreadMerger: [],

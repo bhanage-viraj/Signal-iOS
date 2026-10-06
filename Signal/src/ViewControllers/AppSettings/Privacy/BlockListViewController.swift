@@ -55,15 +55,21 @@ class BlockListViewController: OWSTableViewController2 {
         let groups: [(groupId: Data, groupName: String, groupModel: TSGroupModel?, groupAvatarImage: UIImage?)]
         (addresses, groups) = SSKEnvironment.shared.databaseStorageRef.read { transaction in
             let avatarBuilder = SSKEnvironment.shared.avatarBuilderRef
-            let blockingManager = SSKEnvironment.shared.blockingManagerRef
             let contactManager = SSKEnvironment.shared.contactManagerRef
+            let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+
             let addresses = contactManager.sortSignalServiceAddresses(
-                blockingManager.blockedAddresses(transaction: transaction),
+                recipientStore.fetchBlockedRecipients(tx: transaction).map(\.address),
                 transaction: transaction,
             )
             let groups: [(groupId: Data, groupName: String, groupModel: TSGroupModel?, groupAvatarImage: UIImage?)]
-            groups = blockingManager.blockedGroupIds(transaction: transaction).map { groupId in
-                let groupModel = TSGroupThread.fetchThread(forGroupIdData: groupId, tx: transaction)?.groupModel
+            groups = GroupStore().fetchBlockedGroups(tx: transaction).map { groupRecord in
+                let groupThread = groupRecord.threadId.flatMap {
+                    return TSGroupThread.threadUniqueId(forThreadId: $0, tx: transaction)
+                }.flatMap {
+                    return TSGroupThread.fetchViaCache(uniqueId: $0, transaction: transaction)
+                }
+                let groupModel = groupThread?.groupModel
                 let groupName = groupModel?.groupName ?? OWSLocalizedString(
                     "UNKNOWN_GROUP",
                     comment: "Title shown for a group when it's name isn't known. Visible for blocked groups whose name isn't known.",
@@ -74,12 +80,12 @@ class BlockListViewController: OWSTableViewController2 {
                     }
 
                     return avatarBuilder.defaultAvatarImage(
-                        forGroupId: groupId,
+                        forGroupId: groupRecord.groupId,
                         diameterPoints: AvatarBuilder.standardAvatarSizePoints,
                         transaction: transaction,
                     )
                 }()
-                return (groupId, groupName, groupModel, groupAvatarImage)
+                return (groupRecord.groupId, groupName, groupModel, groupAvatarImage)
             }.sorted(by: {
                 switch $0.groupName.localizedCaseInsensitiveCompare($1.groupName) {
                 case .orderedAscending:

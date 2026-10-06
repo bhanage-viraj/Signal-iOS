@@ -15,7 +15,6 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
     private let backupCDNCredentialStore: BackupCDNCredentialStore
     private let backupSubscriptionManager: BackupSubscriptionManager
     private let backupTestFlightEntitlementManager: BackupTestFlightEntitlementManager
-    private let blockedRecipientStore: BlockedRecipientStore
     private let chatConnectionManager: any ChatConnectionManager
     private let cron: Cron
     private let db: DB
@@ -27,6 +26,7 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
     private let paymentsEvents: PaymentsEvents
     private let recipientManager: any SignalRecipientManager
     private let recipientMerger: RecipientMerger
+    private let recipientStore: RecipientDatabaseTable
     private let senderKeyManager: SenderKeyManager
     private let signalProtocolStoreManager: SignalProtocolStoreManager
     private let storageServiceManager: StorageServiceManager
@@ -40,7 +40,6 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         backupCDNCredentialStore: BackupCDNCredentialStore,
         backupSubscriptionManager: BackupSubscriptionManager,
         backupTestFlightEntitlementManager: BackupTestFlightEntitlementManager,
-        blockedRecipientStore: BlockedRecipientStore,
         chatConnectionManager: any ChatConnectionManager,
         cron: Cron,
         db: DB,
@@ -52,6 +51,7 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         paymentsEvents: PaymentsEvents,
         recipientManager: any SignalRecipientManager,
         recipientMerger: RecipientMerger,
+        recipientStore: RecipientDatabaseTable,
         senderKeyManager: SenderKeyManager,
         signalProtocolStoreManager: SignalProtocolStoreManager,
         storageServiceManager: StorageServiceManager,
@@ -64,7 +64,6 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         self.backupCDNCredentialStore = backupCDNCredentialStore
         self.backupSubscriptionManager = backupSubscriptionManager
         self.backupTestFlightEntitlementManager = backupTestFlightEntitlementManager
-        self.blockedRecipientStore = blockedRecipientStore
         self.chatConnectionManager = chatConnectionManager
         self.cron = cron
         self.db = db
@@ -76,6 +75,7 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         self.paymentsEvents = paymentsEvents
         self.recipientManager = recipientManager
         self.recipientMerger = recipientMerger
+        self.recipientStore = recipientStore
         self.senderKeyManager = senderKeyManager
         self.signalProtocolStoreManager = signalProtocolStoreManager
         self.storageServiceManager = storageServiceManager
@@ -347,7 +347,11 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         )
         // Always make sure we haven't blocked ourselves. (It's logically
         // impossible to do so, so we set the bit in the database directly.)
-        blockedRecipientStore.setBlocked(false, recipientId: recipient.id, tx: tx)
+        if recipient.isBlocked {
+            owsFailDebug("shouldn't have been able to block note to self")
+            recipient.status = .unspecified
+            recipientStore.updateRecipient(recipient, transaction: tx)
+        }
     }
 
     // MARK: Notifications

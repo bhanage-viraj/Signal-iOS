@@ -45,12 +45,14 @@ extension OWSFakeProfileManager: ProfileManagerProtocol {
         return groupIdWhitelist.contains(groupId)
     }
 
-    func addGroupId(toProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {
-        groupIdWhitelist.insert(groupId)
+    func addGroupToProfileWhitelist(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) {
+        groupRecord.setWhitelisted(true, tx: tx)
+        groupIdWhitelist.insert(groupRecord.groupId)
     }
 
-    func removeGroupId(fromProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) -> Bool {
-        return groupIdWhitelist.remove(groupId) != nil
+    func removeGroupFromProfileWhitelist(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) -> Bool {
+        groupRecord.setWhitelisted(false, tx: tx)
+        return groupIdWhitelist.remove(groupRecord.groupId) != nil
     }
 
     func setLocalProfileKey(_ key: Aes256Key, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {

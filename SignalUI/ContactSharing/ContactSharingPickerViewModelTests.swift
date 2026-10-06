@@ -79,8 +79,7 @@ struct ContactSharingPickerViewModelTests {
     @Test
     func testBlockedRecipientsAreExcluded() async throws {
         addContact(named: "Alice")
-        let blocked = addContact(named: "Bob")
-        providers.blockedRecipientIds.insert(blocked.id)
+        addContact(named: "Bob", isBlocked: true)
 
         let viewModel = makeViewModel()
         viewModel.loadData()
@@ -298,8 +297,7 @@ struct ContactSharingPickerViewModelTests {
     @Test
     func testABlockedRecipientsCardIsExcludedToo() async throws {
         addContact(named: "Alice")
-        let blocked = addContact(named: "Bob", phoneNumber: "+16505550101")
-        providers.blockedRecipientIds.insert(blocked.id)
+        addContact(named: "Bob", phoneNumber: "+16505550101", isBlocked: true)
         providers.systemContacts = [
             makeSystemContact(givenName: "Bobby", phoneNumber: "+16505550101"),
         ]
@@ -330,8 +328,7 @@ struct ContactSharingPickerViewModelTests {
 
     @Test
     func testAnUnrelatedCardSurvivesAnExclusion() async throws {
-        let blocked = addContact(named: "Bob", phoneNumber: "+16505550101")
-        providers.blockedRecipientIds.insert(blocked.id)
+        addContact(named: "Bob", phoneNumber: "+16505550101", isBlocked: true)
         providers.systemContacts = [
             makeSystemContact(givenName: "Bobby", phoneNumber: "+16505550101"),
             makeSystemContact(givenName: "Dave", phoneNumber: "+16505550199"),
@@ -968,7 +965,6 @@ struct ContactSharingPickerViewModelTests {
         let comparableValueConfig = comparableValueConfig
         return ContactSharingPickerViewModel(
             avatarBuilder: AvatarBuilder(appReadiness: AppReadinessMock()),
-            blockedRecipientIdentifiersProvider: { _ in providers.blockedRecipientIds },
             comparableValueConfigProvider: { comparableValueConfig },
             contactManager: contactManager,
             contactsAccessRequester: { providers.requestContactsAccess() },
@@ -1019,13 +1015,14 @@ struct ContactSharingPickerViewModelTests {
         phoneNumber: String? = nil,
         isRegistered: Bool = true,
         isWhitelisted: Bool = true,
+        isBlocked: Bool = false,
     ) -> SignalRecipient {
         let recipient = db.write { tx in
             try! SignalRecipient.insertRecord(
                 aci: aci,
                 phoneNumber: phoneNumber.flatMap { E164($0) },
                 deviceIds: isRegistered ? [DeviceId(validating: 1)!] : [],
-                status: isWhitelisted ? .whitelisted : .unspecified,
+                status: isBlocked ? .blocked : isWhitelisted ? .whitelisted : .unspecified,
                 tx: tx,
             )
         }
@@ -1121,7 +1118,6 @@ struct ContactSharingPickerViewModelTests {
 
 private final class StubbedProviders {
 
-    var blockedRecipientIds: Set<SignalRecipient.RowId> = []
     var contactsAuthorizationStatus: RawContactAuthorizationStatus = .authorized
     var contactsAuthorizationStatusAfterAccessRequest: RawContactAuthorizationStatus?
     var onRequestContactsAccess: (() -> Void)?

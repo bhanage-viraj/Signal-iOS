@@ -329,10 +329,15 @@ extension ThreadUtil {
             databaseStorage.write { tx in
                 switch thread {
                 case let thread as TSGroupThread:
-                    profileManager.addGroupId(
-                        toProfileWhitelist: thread.groupModel.groupId,
+                    let groupRecord = GroupStore().fetchGroup(forGroupIdData: thread.groupId, tx: tx)
+                    guard var groupRecord else {
+                        owsFailDebug("can't fetch GroupRecord that must exist for TSGroupThread")
+                        break
+                    }
+                    profileManager.addGroupToProfileWhitelist(
+                        &groupRecord,
                         userProfileWriter: .localUser,
-                        transaction: tx,
+                        tx: tx,
                     )
                 case let thread as TSContactThread:
                     if var recipient = recipientFetcher.fetchOrCreate(address: thread.contactAddress, tx: tx) {
@@ -370,10 +375,15 @@ extension ThreadUtil {
         if shouldAddToProfileWhitelist {
             switch thread {
             case let thread as TSGroupThread:
-                profileManager.addGroupId(
-                    toProfileWhitelist: thread.groupModel.groupId,
+                let groupRecord = GroupStore().fetchGroup(forGroupIdData: thread.groupId, tx: tx)
+                guard var groupRecord else {
+                    owsFailDebug("can't fetch GroupRecord that must exist for TSGroupThread")
+                    break
+                }
+                profileManager.addGroupToProfileWhitelist(
+                    &groupRecord,
                     userProfileWriter: .localUser,
-                    transaction: tx,
+                    tx: tx,
                 )
             case let thread as TSContactThread:
                 if var recipient = recipientFetcher.fetchOrCreate(address: thread.contactAddress, tx: tx) {

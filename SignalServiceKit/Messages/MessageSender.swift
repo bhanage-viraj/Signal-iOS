@@ -505,7 +505,8 @@ public class MessageSenderImpl: MessageSender, DeviceMessageBuilder {
             }
             recipientAddresses.formIntersection(currentValidRecipients)
 
-            let blockedAddresses = SSKEnvironment.shared.blockingManagerRef.blockedAddresses(transaction: tx)
+            let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+            let blockedAddresses = recipientStore.fetchBlockedRecipients(tx: tx).map(\.address)
             recipientAddresses.subtract(blockedAddresses)
 
             return Array(recipientAddresses)
@@ -540,7 +541,8 @@ public class MessageSenderImpl: MessageSender, DeviceMessageBuilder {
 
             recipientAddresses.formIntersection(currentValidThreadRecipients)
 
-            let blockedAddresses = SSKEnvironment.shared.blockingManagerRef.blockedAddresses(transaction: tx)
+            let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+            let blockedAddresses = recipientStore.fetchBlockedRecipients(tx: tx).map(\.address)
             recipientAddresses.subtract(blockedAddresses)
 
             recipientAddresses.remove(localIdentifiers.aciAddress)

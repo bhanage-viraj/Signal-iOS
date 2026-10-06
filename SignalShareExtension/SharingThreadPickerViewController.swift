@@ -144,7 +144,6 @@ class SharingThreadPickerViewController: ConversationPickerViewController {
                 return ContactShareDraft.loadWithMatchingSignalAvatar(
                     cnContact: cnContact,
                     signalContact: SystemContact(cnContact: cnContact),
-                    blockingManager: SSKEnvironment.shared.blockingManagerRef,
                     contactManager: SSKEnvironment.shared.contactManagerRef,
                     phoneNumberUtil: SSKEnvironment.shared.phoneNumberUtilRef,
                     profileManager: SSKEnvironment.shared.profileManagerRef,

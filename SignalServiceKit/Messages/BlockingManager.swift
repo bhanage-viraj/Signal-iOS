@@ -34,8 +34,6 @@ public enum BlockMode {
 // MARK: -
 
 public class BlockingManager {
-    private let blockedGroupStore: BlockedGroupStore
-    private let blockedRecipientStore: BlockedRecipientStore
     private let blockedReleaseNotesStore: BlockedReleaseNotesStore
 
     private let syncQueue = SerialTaskQueue()
@@ -47,12 +45,8 @@ public class BlockingManager {
 #endif
 
     init(
-        blockedGroupStore: BlockedGroupStore,
-        blockedRecipientStore: BlockedRecipientStore,
         blockedReleaseNotesStore: BlockedReleaseNotesStore,
     ) {
-        self.blockedGroupStore = blockedGroupStore
-        self.blockedRecipientStore = blockedRecipientStore
         self.blockedReleaseNotesStore = blockedReleaseNotesStore
     }
 
@@ -89,14 +83,10 @@ public class BlockingManager {
             return false
         }
         let recipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable
-        guard let recipientId = recipientDatabaseTable.fetchRecipient(address: address, tx: transaction)?.id else {
+        guard let recipient = recipientDatabaseTable.fetchRecipient(address: address, tx: transaction) else {
             return false
         }
-        return isRecipientBlocked(recipientId: recipientId, tx: transaction)
-    }
-
-    public func isRecipientBlocked(recipientId: SignalRecipient.RowId, tx: DBReadTransaction) -> Bool {
-        return blockedRecipientStore.isBlocked(recipientId: recipientId, tx: tx)
+        return recipient.isBlocked
     }
 
     public func isGroupIdBlocked(_ groupId: GroupIdentifier, transaction tx: DBReadTransaction) -> Bool {
@@ -108,58 +98,26 @@ public class BlockingManager {
     }
 
     private func _isGroupIdBlocked(_ groupId: Data, tx: DBReadTransaction) -> Bool {
-        return blockedGroupStore.isBlocked(groupId: groupId, tx: tx)
+        return GroupStore().fetchGroup(forGroupIdData: groupId, tx: tx)?.isBlocked == true
     }
 
     public func isReleaseNotesThreadBlocked(tx: DBReadTransaction) -> Bool {
         return blockedReleaseNotesStore.isBlocked(tx: tx)
     }
 
-    public func blockedRecipientIds(tx: DBReadTransaction) -> Set<SignalRecipient.RowId> {
-        return Set(blockedRecipientStore.blockedRecipientIds(tx: tx))
-    }
-
-    public func blockedAddresses(transaction: DBReadTransaction) -> Set<SignalServiceAddress> {
-        let recipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable
-
-        let blockedRecipientIds = self.blockedRecipientIds(tx: transaction)
-        return Set(blockedRecipientIds.compactMap {
-            return recipientDatabaseTable.fetchRecipient(rowId: $0, tx: transaction)?.address
-        })
-    }
-
-    public func blockedGroupIds(transaction: DBReadTransaction) -> [Data] {
-        return blockedGroupStore.blockedGroupIds(tx: transaction)
-    }
-
-    public func addBlockedAci(_ aci: Aci, blockMode: BlockMode, tx: DBWriteTransaction) {
-        self.addBlockedAddress(SignalServiceAddress(aci), blockMode: blockMode, transaction: tx)
-    }
-
-    public func addBlockedAddress(
-        _ address: SignalServiceAddress,
+    public func addBlockedRecipient(
+        _ recipient: inout SignalRecipient,
         blockMode: BlockMode,
-        transaction tx: DBWriteTransaction,
+        tx: DBWriteTransaction,
     ) {
+        let interactionStore = DependenciesBridge.shared.interactionStore
         let profileManager = SSKEnvironment.shared.profileManagerRef
+        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+        let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
+        let storyRecipientManager = DependenciesBridge.shared.storyRecipientManager
+        let threadStore = DependenciesBridge.shared.threadStore
 
-        guard !address.isLocalAddress else {
-            owsFailDebug("can't block local address")
-            return
-        }
-
-        let recipientFetcher = DependenciesBridge.shared.recipientFetcher
-        var recipient: SignalRecipient
-        if let serviceId = address.serviceId {
-            recipient = recipientFetcher.fetchOrCreate(serviceId: serviceId, tx: tx)
-        } else if let phoneNumber = E164(address.phoneNumber) {
-            recipient = recipientFetcher.fetchOrCreate(phoneNumber: phoneNumber, tx: tx)
-        } else {
-            owsFailDebug("can't block invalid address: \(address)")
-            return
-        }
-
-        let isBlocked = blockedRecipientStore.isBlocked(recipientId: recipient.id, tx: tx)
+        let isBlocked = recipient.isBlocked
         guard !isBlocked else {
             return
         }
@@ -168,23 +126,24 @@ public class BlockingManager {
             userProfileWriter: blockMode.asUserProfileWriter,
             tx: tx,
         )
-        blockedRecipientStore.setBlocked(true, recipientId: recipient.id, tx: tx)
+        owsAssertDebug(recipient.status == .unspecified)
+        recipient.status = .blocked
+        recipientStore.updateRecipient(recipient, transaction: tx)
         if wasRemoved {
             profileManager.setNeedsProfileKeyRotation(tx: tx)
         }
 
-        Logger.info("Added blocked address: \(address)")
+        Logger.info("blocked address: \(recipient.address)")
 
         if blockMode.isLocallyInitiated {
-            SSKEnvironment.shared.storageServiceManagerRef.recordPendingUpdates(updatedAddresses: [address])
+            storageServiceManager.recordPendingUpdates(updatedRecipientUniqueIds: [recipient.uniqueId])
         }
 
         // We will start dropping new stories from the blocked address;
         // delete any existing ones we already have.
-        if let aci = address.aci {
+        if let aci = recipient.aci {
             StoryManager.deleteAllStories(forSender: aci, tx: tx)
         }
-        let storyRecipientManager = DependenciesBridge.shared.storyRecipientManager
         storyRecipientManager.removeRecipientIdFromAllPrivateStoryThreads(
             recipient.id,
             shouldUpdateStorageService: true,
@@ -198,8 +157,6 @@ public class BlockingManager {
             break
         case .storageService, .syncMessage, .localUser:
             // Insert an info message that we blocked this user.
-            let threadStore = DependenciesBridge.shared.threadStore
-            let interactionStore = DependenciesBridge.shared.interactionStore
             if let contactThread = threadStore.fetchContactThread(recipient: recipient, tx: tx) {
                 interactionStore.insertInteraction(
                     TSInfoMessage(thread: contactThread, messageType: .blockedOtherUser),
@@ -211,37 +168,30 @@ public class BlockingManager {
         didUpdate(wasLocallyInitiated: blockMode.isLocallyInitiated, tx: tx)
     }
 
-    public func removeBlockedAddress(
-        _ address: SignalServiceAddress,
+    public func removeBlockedRecipient(
+        _ recipient: inout SignalRecipient,
         wasLocallyInitiated: Bool,
-        transaction tx: DBWriteTransaction,
+        tx: DBWriteTransaction,
     ) {
-        guard address.isValid else {
-            owsFailDebug("Invalid address: \(address).")
-            return
-        }
+        let interactionStore = DependenciesBridge.shared.interactionStore
+        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+        let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
+        let threadStore = DependenciesBridge.shared.threadStore
 
-        let recipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable
-        guard let recipient = recipientDatabaseTable.fetchRecipient(address: address, tx: tx) else {
-            // No need to unblock non-existent recipients. They can't possibly be blocked.
-            return
-        }
-
-        let isBlocked = blockedRecipientStore.isBlocked(recipientId: recipient.id, tx: tx)
+        let isBlocked = recipient.isBlocked
         guard isBlocked else {
             return
         }
-        blockedRecipientStore.setBlocked(false, recipientId: recipient.id, tx: tx)
+        recipient.status = .unspecified
+        recipientStore.updateRecipient(recipient, transaction: tx)
 
-        Logger.info("Removed blocked address: \(address)")
+        Logger.info("unblocked address: \(recipient.address)")
 
         if wasLocallyInitiated {
-            SSKEnvironment.shared.storageServiceManagerRef.recordPendingUpdates(updatedAddresses: [address])
+            storageServiceManager.recordPendingUpdates(updatedRecipientUniqueIds: [recipient.uniqueId])
         }
 
         // Insert an info message that we unblocked this user.
-        let threadStore = DependenciesBridge.shared.threadStore
-        let interactionStore = DependenciesBridge.shared.interactionStore
         if let contactThread = threadStore.fetchContactThread(recipient: recipient, tx: tx) {
             interactionStore.insertInteraction(
                 TSInfoMessage(thread: contactThread, messageType: .unblockedOtherUser),
@@ -252,35 +202,30 @@ public class BlockingManager {
         didUpdate(wasLocallyInitiated: wasLocallyInitiated, tx: tx)
     }
 
-    public func addBlockedGroupId(_ groupId: Data, blockMode: BlockMode, transaction: DBWriteTransaction) {
+    public func addBlockedGroup(_ record: inout GroupRecord, blockMode: BlockMode, tx: DBWriteTransaction) {
         let interactionStore = DependenciesBridge.shared.interactionStore
         let profileManager = SSKEnvironment.shared.profileManagerRef
         let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
 
-        guard (try? AnyGroupIdentifier.parseFrom(groupId)) != nil else {
-            owsFailDebug("Can't block invalid groupId: \(groupId.toHex())")
-            return
-        }
-
-        let isBlocked = blockedGroupStore.isBlocked(groupId: groupId, tx: transaction)
+        let isBlocked = record.isBlocked
         guard !isBlocked else {
             return
         }
-        let didRemove = profileManager.removeGroupId(
-            fromProfileWhitelist: groupId,
+        let didRemove = profileManager.removeGroupFromProfileWhitelist(
+            &record,
             userProfileWriter: blockMode.asUserProfileWriter,
-            transaction: transaction,
+            tx: tx,
         )
-        blockedGroupStore.setBlocked(true, groupId: groupId, tx: transaction)
+        record.setBlocked(true, tx: tx)
         if didRemove {
-            profileManager.setNeedsProfileKeyRotation(tx: transaction)
+            profileManager.setNeedsProfileKeyRotation(tx: tx)
         }
 
-        Logger.info("Added blocked groupId: \(groupId.toHex())")
+        Logger.info("blocked groupId: \(record.groupId.toHex())")
 
-        if blockMode.isLocallyInitiated, let groupId = try? GroupIdentifier(contents: groupId) {
-            let masterKey = GroupStore().fetchGroup(forGroupId: groupId, tx: transaction)?.masterKey
-            owsAssertDebug(masterKey != nil, "Must have GroupRecord.masterKey in order to block v2 group.")
+        if blockMode.isLocallyInitiated, (try? GroupIdentifier(contents: record.groupId)) != nil {
+            let masterKey = record.masterKey
+            owsAssertDebug(masterKey != nil, "must have GroupRecord.masterKey in order to block v2 group")
             if let masterKey {
                 storageServiceManager.recordPendingUpdates(updatedGroupV2MasterKeys: [masterKey])
             }
@@ -292,59 +237,60 @@ public class BlockingManager {
             // inserting a message. One either existed in the backup or not.
             break
         case .storageService, .syncMessage, .localUser:
-            let groupThread = TSGroupThread.fetchThread(forGroupIdData: groupId, tx: transaction)
+            let groupThread = record.threadId.flatMap {
+                return TSGroupThread.threadUniqueId(forThreadId: $0, tx: tx)
+            }.flatMap {
+                return TSGroupThread.fetchViaCache(uniqueId: $0, transaction: tx)
+            }
             owsAssertDebug(groupThread != nil, "Must have TSGroupThread in order to insert an event.")
             if let groupThread {
                 // Insert an info message that we blocked this group.
                 interactionStore.insertInteraction(
                     TSInfoMessage(thread: groupThread, messageType: .blockedGroup),
-                    tx: transaction,
+                    tx: tx,
                 )
             }
         }
 
-        didUpdate(wasLocallyInitiated: blockMode.isLocallyInitiated, tx: transaction)
+        didUpdate(wasLocallyInitiated: blockMode.isLocallyInitiated, tx: tx)
     }
 
-    public func removeBlockedGroup(groupId: Data, wasLocallyInitiated: Bool, transaction: DBWriteTransaction) {
-        let isBlocked = blockedGroupStore.isBlocked(groupId: groupId, tx: transaction)
+    public func removeBlockedGroup(_ record: inout GroupRecord, wasLocallyInitiated: Bool, tx: DBWriteTransaction) {
+        let isBlocked = record.isBlocked
         guard isBlocked else {
             return
         }
-        blockedGroupStore.setBlocked(false, groupId: groupId, tx: transaction)
+        record.setBlocked(false, tx: tx)
 
-        Logger.info("Removed blocked groupId: \(groupId.toHex())")
+        Logger.info("unblocked groupId: \(record.groupId.toHex())")
 
-        if wasLocallyInitiated {
-            let masterKey = { () -> GroupMasterKey? in
-                guard let groupId = try? GroupIdentifier(contents: groupId) else {
-                    // Not a V2 group.
-                    return nil
-                }
-                let groupRecord = GroupStore().fetchGroup(forGroupId: groupId, tx: transaction)
-                let masterKey = groupRecord?.masterKey
-                owsAssertDebug(masterKey != nil, "should have MasterKey when unblocking V2 group")
-                return masterKey
-            }()
+        if wasLocallyInitiated, (try? GroupIdentifier(contents: record.groupId)) != nil {
+            let masterKey = record.masterKey
+            owsAssertDebug(masterKey != nil, "must have GroupRecord.masterKey in order to unblock v2 group")
             if let masterKey {
                 SSKEnvironment.shared.storageServiceManagerRef.recordPendingUpdates(updatedGroupV2MasterKeys: [masterKey])
             }
         }
 
-        if let groupThread = TSGroupThread.fetchThread(forGroupIdData: groupId, tx: transaction) {
+        let groupThread = record.threadId.flatMap {
+            return TSGroupThread.threadUniqueId(forThreadId: $0, tx: tx)
+        }.flatMap {
+            return TSGroupThread.fetchViaCache(uniqueId: $0, transaction: tx)
+        }
+        if let groupThread {
             // Insert an info message that we unblocked.
             DependenciesBridge.shared.interactionStore.insertInteraction(
                 TSInfoMessage(thread: groupThread, messageType: .unblockedGroup),
-                tx: transaction,
+                tx: tx,
             )
 
             // Refresh unblocked group.
-            transaction.addSyncCompletion {
+            tx.addSyncCompletion {
                 SSKEnvironment.shared.groupV2UpdatesRef.refreshGroupUpThroughCurrentRevision(groupThread: groupThread, throttle: false)
             }
         }
 
-        didUpdate(wasLocallyInitiated: wasLocallyInitiated, tx: transaction)
+        didUpdate(wasLocallyInitiated: wasLocallyInitiated, tx: tx)
     }
 
     public func addBlockedReleaseNotesThread(
@@ -352,22 +298,25 @@ public class BlockingManager {
         blockMode: BlockMode,
         transaction: DBWriteTransaction,
     ) {
+        let interactionStore = DependenciesBridge.shared.interactionStore
+        let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
+
         let isBlocked = blockedReleaseNotesStore.isBlocked(tx: transaction)
         guard !isBlocked else {
             return
         }
         blockedReleaseNotesStore.setBlocked(true, tx: transaction)
 
-        Logger.info("Added blocked release notes thread")
+        Logger.info("blocked release notes thread")
 
-        DependenciesBridge.shared.interactionStore.insertInteraction(
+        interactionStore.insertInteraction(
             TSInfoMessage(thread: thread, messageType: .blockedGroup),
             tx: transaction,
         )
 
         let wasLocallyInitiated = blockMode.isLocallyInitiated
         if wasLocallyInitiated {
-            SSKEnvironment.shared.storageServiceManagerRef.recordPendingLocalAccountUpdates()
+            storageServiceManager.recordPendingLocalAccountUpdates()
         }
     }
 
@@ -376,22 +325,25 @@ public class BlockingManager {
         wasLocallyInitiated: Bool,
         transaction: DBWriteTransaction,
     ) {
+        let interactionStore = DependenciesBridge.shared.interactionStore
+        let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
+
         let isBlocked = blockedReleaseNotesStore.isBlocked(tx: transaction)
         guard isBlocked else {
             return
         }
         blockedReleaseNotesStore.setBlocked(false, tx: transaction)
 
-        Logger.info("Removed blocked release notes thread")
+        Logger.info("unblocked release notes thread")
 
         // Insert an info message that we unblocked.
-        DependenciesBridge.shared.interactionStore.insertInteraction(
+        interactionStore.insertInteraction(
             TSInfoMessage(thread: thread, messageType: .unblockedGroup),
             tx: transaction,
         )
 
         if wasLocallyInitiated {
-            SSKEnvironment.shared.storageServiceManagerRef.recordPendingLocalAccountUpdates()
+            storageServiceManager.recordPendingLocalAccountUpdates()
         }
     }
 
@@ -412,44 +364,19 @@ public class BlockingManager {
         }
     }
 
-    public func addBlockedThread(_ thread: TSThread, blockMode: BlockMode, transaction: DBWriteTransaction) {
-        if let contactThread = thread as? TSContactThread {
-            addBlockedAddress(contactThread.contactAddress, blockMode: blockMode, transaction: transaction)
-        } else if let groupThread = thread as? TSGroupThread {
-            addBlockedGroupId(groupThread.groupId, blockMode: blockMode, transaction: transaction)
-        } else if let releaseNotesThread = thread as? TSReleaseNotesThread {
-            addBlockedReleaseNotesThread(thread: releaseNotesThread, blockMode: blockMode, transaction: transaction)
-        } else {
-            owsFailDebug("Invalid thread: \(type(of: thread))")
-        }
-    }
-
-    public func removeBlockedThread(_ thread: TSThread, wasLocallyInitiated: Bool, transaction: DBWriteTransaction) {
-        if let contactThread = thread as? TSContactThread {
-            removeBlockedAddress(contactThread.contactAddress, wasLocallyInitiated: wasLocallyInitiated, transaction: transaction)
-        } else if let groupThread = thread as? TSGroupThread {
-            removeBlockedGroup(groupId: groupThread.groupId, wasLocallyInitiated: wasLocallyInitiated, transaction: transaction)
-        } else if let releaseNotesThread = thread as? TSReleaseNotesThread {
-            removeBlockedReleaseNotesThread(
-                thread: releaseNotesThread,
-                wasLocallyInitiated: wasLocallyInitiated,
-                transaction: transaction,
-            )
-        } else {
-            owsFailDebug("Invalid thread: \(type(of: thread))")
-        }
-    }
-
     // MARK: - Syncing
 
     public func processIncomingSync(
         blockedPhoneNumbers: Set<String>,
         blockedAcis: Set<Aci>,
         blockedGroupIds: Set<Data>,
+        localIdentifiers: LocalIdentifiers,
         tx transaction: DBWriteTransaction,
     ) {
         let blockMode = BlockMode.syncMessage
         let profileManager = SSKEnvironment.shared.profileManagerRef
+        let recipientFetcher = DependenciesBridge.shared.recipientFetcher
+        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
 
         Logger.info("")
         transaction.addSyncCompletion {
@@ -459,53 +386,75 @@ public class BlockingManager {
         var didChange = false
         var shouldRotateProfileKey = false
 
-        let oldBlockedGroupIds = Set(blockedGroupStore.blockedGroupIds(tx: transaction))
-        let newBlockedGroupIds = blockedGroupIds
-        oldBlockedGroupIds.subtracting(newBlockedGroupIds).forEach {
+        let oldBlockedGroups = GroupStore().fetchBlockedGroups(tx: transaction)
+        var newBlockedGroupIds = blockedGroupIds
+        for var blockedGroup in oldBlockedGroups {
+            if newBlockedGroupIds.remove(blockedGroup.groupId) != nil {
+                // It was already blocked and should remain blocked.
+                continue
+            }
+            blockedGroup.setBlocked(false, tx: transaction)
             didChange = true
-            blockedGroupStore.setBlocked(false, groupId: $0, tx: transaction)
         }
-        newBlockedGroupIds.subtracting(oldBlockedGroupIds).forEach {
-            didChange = true
-            let didRemove = profileManager.removeGroupId(
-                fromProfileWhitelist: $0,
+        for groupIdData in newBlockedGroupIds {
+            let groupId: AnyGroupIdentifier
+            do {
+                groupId = try AnyGroupIdentifier.parseFrom(groupIdData)
+            } catch {
+                Logger.warn("ignoring malformed group id: \(error)")
+                continue
+            }
+            var record = GroupStore().fetchGroupOrInsert(groupId: groupId, tx: transaction)
+            let didRemove = profileManager.removeGroupFromProfileWhitelist(
+                &record,
                 userProfileWriter: blockMode.asUserProfileWriter,
-                transaction: transaction,
+                tx: transaction,
             )
-            blockedGroupStore.setBlocked(true, groupId: $0, tx: transaction)
+            record.setBlocked(true, tx: transaction)
+            didChange = true
             if didRemove {
                 shouldRotateProfileKey = true
             }
         }
 
-        var blockedRecipients = [SignalRecipient.RowId: SignalRecipient]()
-        let recipientFetcher = DependenciesBridge.shared.recipientFetcher
+        var newBlockedRecipients = [SignalRecipient.RowId: SignalRecipient]()
         for blockedAci in blockedAcis {
             let blockedRecipient = recipientFetcher.fetchOrCreate(serviceId: blockedAci, tx: transaction)
-            blockedRecipients[blockedRecipient.id] = blockedRecipient
+            newBlockedRecipients[blockedRecipient.id] = blockedRecipient
         }
         for blockedPhoneNumber in blockedPhoneNumbers.compactMap(E164.init) {
             let blockedRecipient = recipientFetcher.fetchOrCreate(phoneNumber: blockedPhoneNumber, tx: transaction)
-            blockedRecipients[blockedRecipient.id] = blockedRecipient
+            newBlockedRecipients[blockedRecipient.id] = blockedRecipient
         }
 
-        let oldBlockedRecipientIds = Set(blockedRecipientStore.blockedRecipientIds(tx: transaction))
-        oldBlockedRecipientIds.subtracting(blockedRecipients.keys).forEach {
-            didChange = true
-            blockedRecipientStore.setBlocked(false, recipientId: $0, tx: transaction)
-        }
-        blockedRecipients.forEach {
-            if oldBlockedRecipientIds.contains($0.key) {
-                return
+        let oldBlockedRecipients = recipientStore.fetchBlockedRecipients(tx: transaction)
+        for var blockedRecipient in oldBlockedRecipients {
+            if newBlockedRecipients.removeValue(forKey: blockedRecipient.id) != nil {
+                // It was already blocked and should remain blocked.
+                continue
             }
+            blockedRecipient.status = .unspecified
+            recipientStore.updateRecipient(blockedRecipient, transaction: transaction)
             didChange = true
-            var mutableRecipient = $0.value
+        }
+        for var blockedRecipient in newBlockedRecipients.values {
+            let isLocalRecipient = localIdentifiers.containsAnyOf(
+                aci: blockedRecipient.aci,
+                phoneNumber: blockedRecipient.phoneNumber?.stringValue,
+                pni: blockedRecipient.pni,
+            )
+            if isLocalRecipient {
+                owsFailDebug("ignoring sync message trying to block the local user")
+                continue
+            }
             let didRemove = profileManager.removeRecipientFromProfileWhitelist(
-                &mutableRecipient,
+                &blockedRecipient,
                 userProfileWriter: blockMode.asUserProfileWriter,
                 tx: transaction,
             )
-            blockedRecipientStore.setBlocked(true, recipientId: $0.key, tx: transaction)
+            blockedRecipient.status = .blocked
+            recipientStore.updateRecipient(blockedRecipient, transaction: transaction)
+            didChange = true
             if didRemove {
                 shouldRotateProfileKey = true
             }
@@ -522,6 +471,9 @@ public class BlockingManager {
 
     public func syncBlockListIfNecessary(force: Bool) async throws {
         let sendResult = try await SSKEnvironment.shared.databaseStorageRef.awaitableWrite { tx -> (sendPromise: Promise<Void>, changeToken: UInt64)? in
+            let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
+            let tsAccountManager = DependenciesBridge.shared.tsAccountManager
+
             // If we're not forcing a sync, then we only sync if our last synced token is stale
             // and we're not in the NSE. We'll leaving syncing to the main app.
             let changeToken = fetchChangeToken(tx: tx)
@@ -534,7 +486,6 @@ public class BlockingManager {
                 }
             }
 
-            let tsAccountManager = DependenciesBridge.shared.tsAccountManager
             let registeredState = try tsAccountManager.registeredState(tx: tx)
 
             let localThread = TSContactThread.getOrCreateThread(
@@ -542,18 +493,14 @@ public class BlockingManager {
                 transaction: tx,
             )
 
-            let recipientDatabaseTable = DependenciesBridge.shared.recipientDatabaseTable
-            let blockedRecipients = blockedRecipientStore.blockedRecipientIds(tx: tx).compactMap {
-                return recipientDatabaseTable.fetchRecipient(rowId: $0, tx: tx)
-            }
-
-            let blockedGroupIds = blockedGroupStore.blockedGroupIds(tx: tx)
+            let blockedRecipients = recipientStore.fetchBlockedRecipients(tx: tx)
+            let blockedGroups = GroupStore().fetchBlockedGroups(tx: tx)
 
             let message = OutgoingBlockedSyncMessage(
                 localThread: localThread,
                 phoneNumbers: blockedRecipients.compactMap { $0.phoneNumber?.stringValue },
                 acis: blockedRecipients.compactMap { $0.aci },
-                groupIds: Array(blockedGroupIds),
+                groupIds: blockedGroups.map(\.groupId),
                 tx: tx,
             )
 

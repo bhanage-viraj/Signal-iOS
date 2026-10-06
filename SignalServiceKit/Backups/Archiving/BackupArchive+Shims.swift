@@ -51,11 +51,8 @@ extension BackupArchive {
 
 public protocol _MessageBackup_BlockingManagerShim {
 
-    func blockedRecipientIds(tx: DBReadTransaction) -> Set<SignalRecipient.RowId>
-    func blockedGroupIds(tx: DBReadTransaction) -> [Data]
-
-    func addBlockedAddress(_ address: SignalServiceAddress, tx: DBWriteTransaction)
-    func addBlockedGroupId(_ groupId: Data, tx: DBWriteTransaction)
+    func addBlockedRecipient(_ recipient: inout SignalRecipient, tx: DBWriteTransaction)
+    func addBlockedGroup(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction)
 }
 
 public class _MessageBackup_BlockingManagerWrapper: _MessageBackup_BlockingManagerShim {
@@ -66,20 +63,12 @@ public class _MessageBackup_BlockingManagerWrapper: _MessageBackup_BlockingManag
         self.blockingManager = blockingManager
     }
 
-    public func blockedRecipientIds(tx: DBReadTransaction) -> Set<SignalRecipient.RowId> {
-        return blockingManager.blockedRecipientIds(tx: tx)
+    public func addBlockedRecipient(_ recipient: inout SignalRecipient, tx: DBWriteTransaction) {
+        blockingManager.addBlockedRecipient(&recipient, blockMode: .backupRestore, tx: tx)
     }
 
-    public func blockedGroupIds(tx: DBReadTransaction) -> [Data] {
-        return blockingManager.blockedGroupIds(transaction: tx)
-    }
-
-    public func addBlockedAddress(_ address: SignalServiceAddress, tx: DBWriteTransaction) {
-        blockingManager.addBlockedAddress(address, blockMode: .backupRestore, transaction: tx)
-    }
-
-    public func addBlockedGroupId(_ groupId: Data, tx: DBWriteTransaction) {
-        blockingManager.addBlockedGroupId(groupId, blockMode: .backupRestore, transaction: tx)
+    public func addBlockedGroup(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction) {
+        blockingManager.addBlockedGroup(&groupRecord, blockMode: .backupRestore, tx: tx)
     }
 }
 
@@ -277,7 +266,7 @@ public protocol _MessageBackup_ProfileManagerShim {
 
     func addRecipientToProfileWhitelist(_ recipient: inout SignalRecipient, tx: DBWriteTransaction)
 
-    func addToWhitelist(_ thread: TSGroupThread, tx: DBWriteTransaction)
+    func addGroupToWhitelist(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction)
 
     func insertLocalUserProfile(
         givenName: String,
@@ -336,11 +325,11 @@ public class _MessageBackup_ProfileManagerWrapper: _MessageBackup_ProfileManager
         )
     }
 
-    public func addToWhitelist(_ thread: TSGroupThread, tx: DBWriteTransaction) {
-        profileManager.addGroupId(
-            toProfileWhitelist: thread.groupModel.groupId,
+    public func addGroupToWhitelist(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction) {
+        profileManager.addGroupToProfileWhitelist(
+            &groupRecord,
             userProfileWriter: .backupRestore,
-            transaction: tx,
+            tx: tx,
         )
     }
 

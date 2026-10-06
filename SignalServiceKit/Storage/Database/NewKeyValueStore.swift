@@ -432,6 +432,7 @@ public struct KeyValueStoreDeleter {
         "kOWS2FAManager_Collection",
         "kOWSKeyBackupService_Keys",
         "kOWSKeyBackupService_Token",
+        "kOWSProfileManager_GroupWhitelistCollection",
         "kOWSProfileManager_UserUUIDWhitelistCollection",
         "kOWSProfileManager_UserWhitelistCollection",
         "viewOnceMessages",

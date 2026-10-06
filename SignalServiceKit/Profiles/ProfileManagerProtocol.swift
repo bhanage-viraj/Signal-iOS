@@ -17,8 +17,8 @@ public protocol ProfileManagerProtocol {
     func isRecipientInProfileWhitelist(_ recipient: SignalRecipient, tx: DBReadTransaction) -> Bool
 
     func isGroupId(inProfileWhitelist groupId: Data, transaction: DBReadTransaction) -> Bool
-    func addGroupId(toProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction)
-    func removeGroupId(fromProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) -> Bool
+    func addGroupToProfileWhitelist(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction)
+    func removeGroupFromProfileWhitelist(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) -> Bool
 
     func setLocalProfileKey(_ key: Aes256Key, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction)
 

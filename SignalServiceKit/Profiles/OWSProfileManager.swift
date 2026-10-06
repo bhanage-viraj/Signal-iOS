@@ -17,7 +17,6 @@ public class OWSProfileManager: ProfileManagerProtocol {
     public static let notificationKeyUserProfileWriter = "kNSNotificationKey_UserProfileWriter"
 
     private let metadataStore = KeyValueStore(collection: "kOWSProfileManager_Metadata")
-    private let whitelistedGroupsStore = NewKeyValueStore(collection: "kOWSProfileManager_GroupWhitelistCollection")
     private let settingsStore = KeyValueStore(collection: "kOWSProfileManager_SettingsStore")
 
     private let pendingUpdateRequests = AtomicValue<[OWSProfileManager.ProfileUpdateRequest]>([], lock: .init())
@@ -45,7 +44,6 @@ public class OWSProfileManager: ProfileManagerProtocol {
 
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActive(_:)), name: .OWSApplicationDidBecomeActive, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reachabilityChanged(_:)), name: SSKReachability.owsReachabilityDidChange, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(blockListDidChange(_:)), name: BlockingManager.blockListDidChange, object: nil)
     }
 
     public static func avatarData(avatarImage image: UIImage) -> Data? {
@@ -84,18 +82,14 @@ public class OWSProfileManager: ProfileManagerProtocol {
         userProfileWriter: UserProfileWriter,
         tx: DBWriteTransaction,
     ) {
-        let blockingManager = SSKEnvironment.shared.blockingManagerRef
         let hidingManager = DependenciesBridge.shared.recipientHidingManager
         let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
 
-        if blockingManager.isRecipientBlocked(recipientId: recipient.id, tx: tx) {
-            return
-        }
         if hidingManager.isHiddenRecipient(recipientId: recipient.id, tx: tx) {
             return
         }
         switch recipient.status {
-        case .whitelisted:
+        case .whitelisted, .blocked:
             return
         case .unspecified:
             break
@@ -112,7 +106,7 @@ public class OWSProfileManager: ProfileManagerProtocol {
     ) -> Bool {
         let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
         switch recipient.status {
-        case .unspecified:
+        case .unspecified, .blocked:
             return false
         case .whitelisted:
             break
@@ -149,65 +143,71 @@ public class OWSProfileManager: ProfileManagerProtocol {
     }
 
     public func isRecipientInProfileWhitelist(_ recipient: SignalRecipient, tx: DBReadTransaction) -> Bool {
-        let blockingManager = SSKEnvironment.shared.blockingManagerRef
         let hidingManager = DependenciesBridge.shared.recipientHidingManager
-
-        return
-            !blockingManager.isRecipientBlocked(recipientId: recipient.id, tx: tx)
-                && !hidingManager.isHiddenRecipient(recipientId: recipient.id, tx: tx)
-                && recipient.status == .whitelisted
-
+        return recipient.status == .whitelisted && !hidingManager.isHiddenRecipient(recipientId: recipient.id, tx: tx)
     }
 
-    public func addGroupId(toProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {
-        owsAssertDebug(!groupId.isEmpty)
-        let blockingManager = SSKEnvironment.shared.blockingManagerRef
-        if blockingManager.isGroupIdBlocked_deprecated(groupId, tx: transaction) {
+    public func addGroupToProfileWhitelist(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) {
+        switch groupRecord.status {
+        case .blocked:
             owsFailDebug("can't whitelist a blocked group")
             return
+        case .whitelisted:
+            // Already whitelisted.
+            return
+        case .unspecified:
+            break
         }
-        let groupIdKey = groupKey(groupId: groupId)
-        if whitelistedGroupsStore.fetchValue(Bool.self, forKey: groupIdKey, tx: transaction) == nil {
-            addConfirmedUnwhitelistedGroupId(groupId, userProfileWriter: userProfileWriter, transaction: transaction)
-        }
+        addConfirmedUnwhitelistedGroup(&groupRecord, userProfileWriter: userProfileWriter, tx: tx)
     }
 
-    public func removeGroupId(fromProfileWhitelist groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) -> Bool {
-        owsAssertDebug(!groupId.isEmpty)
-        let groupIdKey = groupKey(groupId: groupId)
-        guard whitelistedGroupsStore.fetchValue(Bool.self, forKey: groupIdKey, tx: transaction) != nil else {
+    public func removeGroupFromProfileWhitelist(
+        _ groupRecord: inout GroupRecord,
+        userProfileWriter: UserProfileWriter,
+        tx: DBWriteTransaction,
+    ) -> Bool {
+        switch groupRecord.status {
+        case .blocked:
             return false
+        case .unspecified:
+            // Already removed.
+            return false
+        case .whitelisted:
+            break
         }
-        removeConfirmedWhitelistedGroupId(groupId, userProfileWriter: userProfileWriter, transaction: transaction)
+        removeConfirmedWhitelistedGroup(&groupRecord, userProfileWriter: userProfileWriter, tx: tx)
         return true
     }
 
-    private func removeConfirmedWhitelistedGroupId(_ groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {
-        owsAssertDebug(!groupId.isEmpty)
-        let groupIdKey = groupKey(groupId: groupId)
-        whitelistedGroupsStore.removeValue(forKey: groupIdKey, tx: transaction)
-        didUpdateGroupWhitelist(groupId: groupId, userProfileWriter: userProfileWriter, transaction: transaction)
+    private func removeConfirmedWhitelistedGroup(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) {
+        owsAssertDebug(groupRecord.status == .whitelisted)
+        groupRecord.setWhitelisted(false, tx: tx)
+        didUpdateGroupWhitelist(groupRecord: groupRecord, userProfileWriter: userProfileWriter, tx: tx)
     }
 
-    private func addConfirmedUnwhitelistedGroupId(_ groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {
-        owsAssertDebug(!groupId.isEmpty)
-        let groupIdKey = groupKey(groupId: groupId)
-        whitelistedGroupsStore.writeValue(true, forKey: groupIdKey, tx: transaction)
-        didUpdateGroupWhitelist(groupId: groupId, userProfileWriter: userProfileWriter, transaction: transaction)
+    private func addConfirmedUnwhitelistedGroup(_ groupRecord: inout GroupRecord, userProfileWriter: UserProfileWriter, tx: DBWriteTransaction) {
+        owsAssertDebug(groupRecord.status == .unspecified)
+        groupRecord.setWhitelisted(true, tx: tx)
+        didUpdateGroupWhitelist(groupRecord: groupRecord, userProfileWriter: userProfileWriter, tx: tx)
     }
 
-    private func didUpdateGroupWhitelist(groupId: Data, userProfileWriter: UserProfileWriter, transaction: DBWriteTransaction) {
-        if let groupThread = TSGroupThread.fetchThread(forGroupIdData: groupId, tx: transaction) {
+    private func didUpdateGroupWhitelist(groupRecord: GroupRecord, userProfileWriter: UserProfileWriter, tx transaction: DBWriteTransaction) {
+        let groupId = groupRecord.groupId
+
+        if
+            let threadId = groupRecord.threadId,
+            let threadUniqueId = TSGroupThread.threadUniqueId(forThreadId: threadId, tx: transaction),
+            let groupThread = TSGroupThread.fetchViaCache(uniqueId: threadUniqueId, transaction: transaction)
+        {
             SSKEnvironment.shared.databaseStorageRef.touch(thread: groupThread, shouldReindex: false, tx: transaction)
         }
 
         let masterKeyForStorageServiceUpdate: GroupMasterKey?
         if
             OWSUserProfile.shouldUpdateStorageServiceForUserProfileWriter(userProfileWriter),
-            let groupId = try? GroupIdentifier(contents: groupId)
+            (try? GroupIdentifier(contents: groupId)) != nil
         {
-            let groupRecord = GroupStore().fetchGroup(forGroupId: groupId, tx: transaction)
-            masterKeyForStorageServiceUpdate = groupRecord?.masterKey
+            masterKeyForStorageServiceUpdate = groupRecord.masterKey
             owsAssertDebug(masterKeyForStorageServiceUpdate != nil, "missing master key for group whitelist update")
         } else {
             masterKeyForStorageServiceUpdate = nil
@@ -227,11 +227,7 @@ public class OWSProfileManager: ProfileManagerProtocol {
 
     public func isGroupId(inProfileWhitelist groupId: Data, transaction: DBReadTransaction) -> Bool {
         owsAssertDebug(!groupId.isEmpty)
-        if SSKEnvironment.shared.blockingManagerRef.isGroupIdBlocked_deprecated(groupId, tx: transaction) {
-            return false
-        }
-        let groupIdKey = groupKey(groupId: groupId)
-        return whitelistedGroupsStore.fetchValue(Bool.self, forKey: groupIdKey, tx: transaction) != nil
+        return GroupStore().fetchGroup(forGroupIdData: groupId, tx: transaction)?.status == .whitelisted
     }
 
     // MARK: Other User's Profiles
@@ -259,26 +255,10 @@ public class OWSProfileManager: ProfileManagerProtocol {
         updateProfileOnServiceIfNecessary(authedAccount: .implicit)
     }
 
-    @objc
-    private func blockListDidChange(_ notification: NSNotification) {
-        AssertIsOnMainThread()
-        appReadiness.runNowOrWhenAppDidBecomeReadyAsync {
-            Task {
-                await self.rotateProfileKeyIfNecessary()
-            }
-        }
-    }
-
     // MARK: - Clean Up
 
     public static func allProfileAvatarFilePaths(transaction: DBReadTransaction) -> Set<String> {
         OWSUserProfile.allProfileAvatarFilePaths(tx: transaction)
-    }
-
-    // MARK: - Profile Key Rotation
-
-    public func groupKey(groupId: Data) -> String {
-        groupId.hexadecimalString
     }
 }
 
@@ -491,14 +471,9 @@ extension OWSProfileManager: ProfileManager {
             return
         }
 
-        let triggers = databaseStorage.read { tx in
-            return [
-                self.blocklistRotationTriggerIfNeeded(tx: tx),
-                self.tokenTriggerIfNeeded(tx: tx),
-            ].compacted()
-        }
+        let triggerTokenData = databaseStorage.read { tx in self.triggerToken(tx: tx) }
 
-        if triggers.isEmpty {
+        guard let triggerTokenData else {
             // No need to rotate the profile key.
             let lastGroupProfileKeyCheckTimestamp = databaseStorage.read { tx in
                 return self.lastGroupProfileKeyCheckTimestamp(tx: tx) ?? .distantPast
@@ -514,53 +489,12 @@ extension OWSProfileManager: ProfileManager {
             return
         }
 
-        await self.rotateProfileKey(triggers: triggers, authedAccount: .implicit)
-    }
-
-    private enum RotateProfileKeyTrigger {
-        /// We need to rotate because one or more whitelist members is also on the blocklist.
-        /// Those members may be phone numbers, ACIs, PNIs, or groupIds, which are provided.
-        /// Once rotation is complete, these members should be removed from the whitelist;
-        /// their presence in the whitelist _and_ blocklist is what durably determines a rotation
-        /// is needed, so prematurely removing them and then failing to rotate means we won't retry.
-        case blocklistChange(BlocklistChange)
-
-        struct BlocklistChange {
-            let recipientIds: [SignalRecipient.RowId]
-            let groupIds: [Data]
-        }
-
-        /// We save a token when scheduling a profile key rotation. We schedule
-        /// *another* rotation if the token changes before we finish.
-        case tokenData(Data)
-    }
-
-    private func blocklistRotationTriggerIfNeeded(tx: DBReadTransaction) -> RotateProfileKeyTrigger? {
-        let victimRecipientIds = self.blockedRecipientIdsInWhitelist(tx: tx)
-        let victimGroupIds = self.blockedGroupIDsInWhitelist(tx: tx)
-
-        if victimRecipientIds.isEmpty, victimGroupIds.isEmpty {
-            // No need to rotate the profile key.
-            return nil
-        }
-        return .blocklistChange(RotateProfileKeyTrigger.BlocklistChange(
-            recipientIds: victimRecipientIds,
-            groupIds: victimGroupIds,
-        ))
-    }
-
-    private func tokenTriggerIfNeeded(tx: DBReadTransaction) -> RotateProfileKeyTrigger? {
-        // If it's not nil, we should rotate. After rotating, if it hasn't changed,
-        // we write nil, so presence is the only trigger.
-        guard let triggerToken = self.triggerToken(tx: tx) else {
-            return nil
-        }
-        return .tokenData(triggerToken)
+        await self.rotateProfileKey(triggerTokenData: triggerTokenData, authedAccount: .implicit)
     }
 
     @MainActor
     private func rotateProfileKey(
-        triggers: [RotateProfileKeyTrigger],
+        triggerTokenData: Data,
         authedAccount: AuthedAccount,
     ) async {
         guard !isRotatingProfileKey else {
@@ -572,7 +506,7 @@ extension OWSProfileManager: ProfileManager {
             defer {
                 isRotatingProfileKey = false
             }
-            needsAnotherRotation = (try? await _rotateProfileKey(triggers: triggers, authedAccount: authedAccount)) ?? false
+            needsAnotherRotation = (try? await _rotateProfileKey(triggerTokenData: triggerTokenData, authedAccount: authedAccount)) ?? false
         }
         if needsAnotherRotation {
             await self.rotateProfileKeyIfNecessary()
@@ -580,7 +514,7 @@ extension OWSProfileManager: ProfileManager {
     }
 
     private func _rotateProfileKey(
-        triggers: [RotateProfileKeyTrigger],
+        triggerTokenData: Data,
         authedAccount: AuthedAccount,
     ) async throws -> Bool {
         let databaseStorage = SSKEnvironment.shared.databaseStorageRef
@@ -642,16 +576,7 @@ extension OWSProfileManager: ProfileManager {
             Logger.info("Scheduling account attributes update after profile key rotation.")
             let attributesUpdateTask = accountAttributesUpdater.scheduleAccountAttributesUpdate(authedAccount: authedAccount, tx: tx)
 
-            var needsAnotherRotation = false
-
-            triggers.forEach { trigger in
-                switch trigger {
-                case .blocklistChange(let values):
-                    self.didRotateProfileKeyFromBlocklistTrigger(values, tx: tx)
-                case .tokenData(let tokenData):
-                    needsAnotherRotation = !self.clearTriggerToken(tokenData, tx: tx) || needsAnotherRotation
-                }
-            }
+            let needsAnotherRotation = !self.clearTriggerToken(triggerTokenData, tx: tx)
 
             return (needsAnotherRotation, attributesUpdateTask)
         }
@@ -676,27 +601,6 @@ extension OWSProfileManager: ProfileManager {
         return needsAnotherRotation
     }
 
-    private func didRotateProfileKeyFromBlocklistTrigger(
-        _ trigger: RotateProfileKeyTrigger.BlocklistChange,
-        tx: DBWriteTransaction,
-    ) {
-        // It's absolutely essential that these values are persisted in the same transaction
-        // in which we persist our new profile key, since storing them is what marks the
-        // profile key rotation as "complete" (removing newly blocked users from the whitelist).
-        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
-        trigger.recipientIds.forEach { recipientId in
-            let recipient = recipientStore.fetchRecipient(rowId: recipientId, tx: tx)
-            guard var recipient else {
-                return
-            }
-            recipient.status = .unspecified
-            recipientStore.updateRecipient(recipient, transaction: tx)
-        }
-        trigger.groupIds.forEach { groupId in
-            self.whitelistedGroupsStore.removeValue(forKey: self.groupKey(groupId: groupId), tx: tx)
-        }
-    }
-
     // Returns true if the trigger was cleared.
     private func clearTriggerToken(_ tokenData: Data, tx: DBWriteTransaction) -> Bool {
         // Fetch the latest trigger date; it might have changed if we triggered
@@ -706,35 +610,6 @@ extension OWSProfileManager: ProfileManager {
         }
         self.setTriggerToken(nil, tx: tx)
         return true
-    }
-
-    private func blockedRecipientIdsInWhitelist(tx: DBReadTransaction) -> [SignalRecipient.RowId] {
-        let blockingManager = SSKEnvironment.shared.blockingManagerRef
-        let recipientStore = DependenciesBridge.shared.recipientDatabaseTable
-
-        return blockingManager.blockedRecipientIds(tx: tx).filter {
-            return recipientStore.fetchRecipient(rowId: $0, tx: tx)!.status == .whitelisted
-        }
-    }
-
-    private func blockedGroupIDsInWhitelist(tx: DBReadTransaction) -> [Data] {
-        let allWhitelistedGroupKeys = whitelistedGroupsStore.fetchKeys(tx: tx)
-
-        return allWhitelistedGroupKeys.lazy
-            .compactMap { self.groupIdForGroupKey($0)?.serialize() }
-            .filter { SSKEnvironment.shared.blockingManagerRef.isGroupIdBlocked_deprecated($0, tx: tx) }
-    }
-
-    private func groupIdForGroupKey(_ groupKey: String) -> AnyGroupIdentifier? {
-        guard let groupId = Data.data(fromHex: groupKey) else {
-            return nil
-        }
-        do {
-            return try AnyGroupIdentifier.parseFrom(groupId)
-        } catch {
-            owsFailDebug("couldn't parse group id: \(error)")
-            return nil
-        }
     }
 
     class func updateStorageServiceIfNecessary() {
@@ -1346,6 +1221,8 @@ extension OWSProfileManager: ProfileManager {
     private static let deprecated_recipientHidingTriggerTokenKey = "recipientHidingTriggerTimestampKey"
 
     private func triggerToken(tx: DBReadTransaction) -> Data? {
+        // If it's not nil, we should rotate. After rotating, if it hasn't changed,
+        // we write nil, so presence is the only trigger.
         return
             self.metadataStore.getData(Self.leaveGroupTriggerTokenKey, transaction: tx)
                 ?? self.metadataStore.getData(Self.deprecated_recipientHidingTriggerTokenKey, transaction: tx)

@@ -77,8 +77,6 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         stream: BackupArchiveOutputStream,
         context: BackupArchive.RecipientArchivingContext,
     ) throws(CancellationError) -> ArchiveMultiFrameResult {
-        let blockedRecipientIds = blockingManager.blockedRecipientIds(tx: context.tx)
-
         var errors = [ArchiveFrameError]()
 
         func writeToStream(
@@ -212,7 +210,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
                     recipient: recipient,
                     tx: context.tx,
                 ),
-                isBlocked: blockedRecipientIds.contains(recipient.id),
+                isBlocked: recipient.isBlocked,
                 isWhitelisted: recipient.isWhitelisted,
                 isStoryHidden: isStoryHidden,
                 visibility: { () -> BackupProto_Contact.Visibility in
@@ -649,7 +647,6 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         }
         context[recipient.recipientId] = .contact(backupContactAddress)
 
-        // Stop early if this is the local user. That shouldn't happen.
         let profileInsertableAddress: OWSUserProfile.InsertableAddress
         if let serviceId = backupContactAddress.aci ?? backupContactAddress.pni {
             profileInsertableAddress = OWSUserProfile.insertableAddress(
@@ -664,6 +661,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         } else {
             return restoreFrameError(.developerError(OWSAssertionError("How did we have no identifiers after constructing a backup contact address?")))
         }
+        // Stop early if this is the local user. That shouldn't happen.
         switch profileInsertableAddress {
         case .localUser:
             return restoreFrameError(.invalidProtoData(.otherContactWithLocalIdentifiers))
@@ -790,7 +788,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         }
 
         if contactProto.blocked {
-            blockingManager.addBlockedAddress(recipient.address, tx: context.tx)
+            blockingManager.addBlockedRecipient(&recipient, tx: context.tx)
         }
 
         func addHiddenRecipient(isHiddenInKnownMessageRequestState: Bool) {

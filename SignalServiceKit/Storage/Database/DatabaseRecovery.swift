@@ -408,9 +408,7 @@ public enum DatabaseRecovery {
             // We don't want to get our linked devices wrong.
             // We *could* fetch these from the server. Could be a good followup change.
             OWSDevice.databaseTableName,
-            // We must get these 3 right to keep everyone blocked.
-            BlockedRecipient.databaseTableName,
-            BlockedGroup.databaseTableName,
+            // We must get this 1 right to keep everyone blocked.
             StoryRecipient.databaseTableName,
             PreKeyRecord.databaseTableName,
             KyberPreKeyUseRecord.databaseTableName,

@@ -406,10 +406,11 @@ public final class MessageReceiver {
                 if dataMessage.hasProfileKey {
                     if let groupId {
                         let profileManager = SSKEnvironment.shared.profileManagerRef
-                        profileManager.addGroupId(
-                            toProfileWhitelist: groupId.serialize(),
+                        var groupRecord = GroupStore().fetchGroupOrInsert(groupId: .V2(groupId), tx: tx)
+                        profileManager.addGroupToProfileWhitelist(
+                            &groupRecord,
                             userProfileWriter: .syncMessage,
-                            transaction: tx,
+                            tx: tx,
                         )
                     } else {
                         let serviceId = ServiceId.parseFrom(
@@ -679,8 +680,7 @@ public final class MessageReceiver {
         } else if let request = syncMessage.request {
             handleIncomingSyncRequest(request, tx: tx)
         } else if let blocked = syncMessage.blocked {
-            Logger.info("Received blocked sync message.")
-            handleSyncedBlocklist(blocked, tx: tx)
+            handleSyncedBlocklist(blocked, localIdentifiers: localIdentifiers, tx: tx)
         } else if !syncMessage.read.isEmpty {
             let earlyReceipts = SSKEnvironment.shared.receiptManagerRef.processReadReceiptsFromLinkedDevice(
                 syncMessage.read,
@@ -929,7 +929,12 @@ public final class MessageReceiver {
         }
     }
 
-    private func handleSyncedBlocklist(_ blocked: SSKProtoSyncMessageBlocked, tx: DBWriteTransaction) {
+    private func handleSyncedBlocklist(
+        _ blocked: SSKProtoSyncMessageBlocked,
+        localIdentifiers: LocalIdentifiers,
+        tx: DBWriteTransaction,
+    ) {
+        let blockingManager = SSKEnvironment.shared.blockingManagerRef
         var blockedAcis = Set<Aci>()
         if !blocked.acisBinary.isEmpty {
             for aciBinary in blocked.acisBinary {
@@ -948,10 +953,11 @@ public final class MessageReceiver {
                 blockedAcis.insert(aci)
             }
         }
-        SSKEnvironment.shared.blockingManagerRef.processIncomingSync(
+        blockingManager.processIncomingSync(
             blockedPhoneNumbers: Set(blocked.numbers),
             blockedAcis: blockedAcis,
             blockedGroupIds: Set(blocked.groupIds),
+            localIdentifiers: localIdentifiers,
             tx: tx,
         )
     }

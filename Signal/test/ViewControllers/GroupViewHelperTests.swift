@@ -44,15 +44,9 @@ final class GroupViewHelperTests: SignalBaseTest {
                 threadId: thread.sqliteRowId!,
                 masterKey: try! secretParams.getMasterKey(),
                 refreshedAt: .distantPast,
+                status: isBlocked ? .blocked : .unspecified,
                 tx: tx,
             )
-            if isBlocked {
-                SSKEnvironment.shared.blockingManagerRef.addBlockedGroupId(
-                    groupModel.groupId,
-                    blockMode: .localUser,
-                    transaction: tx,
-                )
-            }
             return thread
         }
 

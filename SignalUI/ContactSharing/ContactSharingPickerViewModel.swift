@@ -12,7 +12,6 @@ import UIKit
 @MainActor
 final class ContactSharingPickerViewModel {
 
-    typealias BlockedRecipientIdentifiersProvider = (DBReadTransaction) -> Set<SignalRecipient.RowId>
     typealias ComparableValueConfigProvider = () -> DisplayName.ComparableValue.Config
     typealias ContactsAccessRequester = () async -> Void
     typealias ContactsAuthorizationStatusProvider = () -> RawContactAuthorizationStatus
@@ -25,7 +24,6 @@ final class ContactSharingPickerViewModel {
     // MARK: - Dependencies
 
     private let avatarBuilder: AvatarBuilder
-    private let blockedRecipientIdentifiersProvider: BlockedRecipientIdentifiersProvider
     private let comparableValueConfigProvider: ComparableValueConfigProvider
     private let contactManager: any ContactManager
     private let contactsAccessRequester: ContactsAccessRequester
@@ -104,7 +102,6 @@ final class ContactSharingPickerViewModel {
 
     init(
         avatarBuilder: AvatarBuilder = SSKEnvironment.shared.avatarBuilderRef,
-        blockedRecipientIdentifiersProvider: BlockedRecipientIdentifiersProvider? = nil,
         comparableValueConfigProvider: ComparableValueConfigProvider? = nil,
         contactManager: any ContactManager = SSKEnvironment.shared.contactManagerRef,
         contactsAccessRequester: ContactsAccessRequester? = nil,
@@ -126,9 +123,6 @@ final class ContactSharingPickerViewModel {
         userProfileProvider: UserProfileProvider? = nil,
     ) {
         self.avatarBuilder = avatarBuilder
-        self.blockedRecipientIdentifiersProvider = blockedRecipientIdentifiersProvider ?? { tx in
-            SSKEnvironment.shared.blockingManagerRef.blockedRecipientIds(tx: tx)
-        }
         self.comparableValueConfigProvider = comparableValueConfigProvider ?? { .current() }
         self.contactManager = contactManager
         self.contactsAccessRequester = contactsAccessRequester ?? {
@@ -264,7 +258,7 @@ final class ContactSharingPickerViewModel {
         comparableValueConfig: DisplayName.ComparableValue.Config,
     ) -> SignalContactsData {
         db.read { tx in
-            let excludedRecipients = blockedRecipients(tx: tx) + recipientHidingManager.hiddenRecipients(tx: tx)
+            let hiddenRecipients = recipientHidingManager.hiddenRecipients(tx: tx)
             let localIdentifiers = tsAccountManager.localIdentifiers(tx: tx)
                 .owsFailUnwrap("must have been registered at some point")
 
@@ -280,12 +274,15 @@ final class ContactSharingPickerViewModel {
                 recipientsById[localRecipient.id] = localRecipient
             }
 
-            for excludedRecipient in excludedRecipients {
-                recipientsById.removeValue(forKey: excludedRecipient.id)
+            for hiddenRecipient in hiddenRecipients {
+                recipientsById.removeValue(forKey: hiddenRecipient.id)
             }
 
             let recipients = Array(recipientsById.values)
             let displayNames = displayNamesForRecipientsProvider(recipients, tx)
+
+            let blockedRecipients = recipientDatabaseTable.fetchBlockedRecipients(tx: tx)
+            let excludedRecipients = blockedRecipients + hiddenRecipients
 
             return SignalContactsData(
                 excludedPhoneNumbers: Set(excludedRecipients.lazy.compactMap(Self.canonicalPhoneNumber(of:))),
@@ -300,12 +297,6 @@ final class ContactSharingPickerViewModel {
                     )
                 },
             )
-        }
-    }
-
-    private func blockedRecipients(tx: DBReadTransaction) -> [SignalRecipient] {
-        blockedRecipientIdentifiersProvider(tx).compactMap {
-            recipientDatabaseTable.fetchRecipient(rowId: $0, tx: tx)
         }
     }
 
