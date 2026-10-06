@@ -32,6 +32,13 @@ public class ConversationInternalViewController: OWSTableViewController2 {
         let contents = OWSTableContents()
         let thread = self.thread
 
+        let databaseSection = OWSTableSection()
+        databaseSection.add(.actionItem(withText: "Query Database") { [weak self] in
+            let vc = InternalSQLClientViewController()
+            self?.navigationController?.pushViewController(vc, animated: true)
+        })
+        contents.add(databaseSection)
+
         let infoSection = OWSTableSection()
         SSKEnvironment.shared.databaseStorageRef.read { transaction in
             let section = infoSection
