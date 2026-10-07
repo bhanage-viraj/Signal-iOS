@@ -70,7 +70,7 @@ public class TSRequestOWSURLSessionMock: BaseOWSURLSessionMock {
             )
         }
 
-        private init(
+        public init(
             matcher: @escaping (TSRequest) -> Bool,
             error: Error,
         ) {
@@ -82,14 +82,30 @@ public class TSRequestOWSURLSessionMock: BaseOWSURLSessionMock {
         }
 
         public static func serviceResponseError(
-            matcher: @escaping (TSRequest) -> Bool,
+            url: URL,
+            statusCode: Int,
+            headers: HttpHeaders = HttpHeaders(),
+            bodyJson: (any Encodable)? = nil,
+        ) -> Self {
+            Self(
+                matcher: { $0.url.relativeString.hasSuffix(url.absoluteString) },
+                error: OWSHTTPError.serviceResponse(.init(
+                    requestUrl: url,
+                    responseStatus: statusCode,
+                    responseHeaders: headers,
+                    responseData: failIfThrows { try bodyJson.map { try JSONEncoder().encode($0) } },
+                )),
+            )
+        }
+
+        public static func serviceResponseError(
+            url: URL,
             statusCode: Int,
             headers: HttpHeaders = HttpHeaders(),
             bodyData: Data? = nil,
-            url: URL,
         ) -> Self {
             Self(
-                matcher: matcher,
+                matcher: { $0.url == url },
                 error: OWSHTTPError.serviceResponse(.init(
                     requestUrl: url,
                     responseStatus: statusCode,
@@ -116,6 +132,7 @@ public class TSRequestOWSURLSessionMock: BaseOWSURLSessionMock {
     public var responses = [(Response, Guarantee<Response>)]()
 
     public func addResponse(_ response: Response) {
+        owsAssertDebug(!self.require2xxOr3xx || response.error != nil || (200..<400).contains(response.statusCode))
         responses.append((response, .value(response)))
     }
 

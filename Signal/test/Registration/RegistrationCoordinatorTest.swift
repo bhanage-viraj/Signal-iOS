@@ -620,8 +620,8 @@ public class RegistrationCoordinatorTest {
 
         // Fail the request; the reg recovery pw is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
-        let failResponse = TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest.url.absoluteString,
+        let failResponse = TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.unauthorized.rawValue,
         )
         mockURLSession.addResponse(failResponse)
@@ -732,8 +732,8 @@ public class RegistrationCoordinatorTest {
 
         // Fail the first request; the reglock is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
-        let failResponse = TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest.url.absoluteString,
+        let failResponse = TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.reglockFailed.rawValue,
             bodyJson: EncodableRegistrationLockFailureResponse(
                 timeRemainingMs: 10,
@@ -1015,13 +1015,9 @@ public class RegistrationCoordinatorTest {
 
         // Fail the first request;
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest.url.absoluteString,
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.regRecoveryPasswordRejected.rawValue,
-            bodyJson: EncodableRegistrationLockFailureResponse(
-                timeRemainingMs: 10,
-                svr2AuthCredential: Stubs.svr2AuthCredential,
-            ),
         ))
 
         // Once the first request fails, it should try an start a session.
@@ -1049,8 +1045,8 @@ public class RegistrationCoordinatorTest {
         // Once the request fails, we should try again with the reglock
         // token, this time.
         let expectedRecoveryPwRequest2 = createAccountWithSession(recoveryPassword: aep.getMasterKey().deriveRegistrationRecoveryPassword())
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest2.url.absoluteString,
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest2.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.reglockFailed.rawValue,
             bodyJson: EncodableRegistrationLockFailureResponse(
                 timeRemainingMs: 10000,
@@ -1176,13 +1172,9 @@ public class RegistrationCoordinatorTest {
 
         // Fail the first request; the reglock is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(masterKey.deriveRegistrationRecoveryPassword())
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest.url.absoluteString,
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.regRecoveryPasswordRejected.rawValue,
-            bodyJson: EncodableRegistrationLockFailureResponse(
-                timeRemainingMs: 10,
-                svr2AuthCredential: Stubs.svr2AuthCredential,
-            ),
         ))
 
         // Once the request fails, we should try again with the reglock
@@ -1363,13 +1355,9 @@ public class RegistrationCoordinatorTest {
 
         // Fail the first request; the local key is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(masterKey.deriveRegistrationRecoveryPassword())
-        let failResponse = TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest.url.absoluteString,
+        let failResponse = TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.regRecoveryPasswordRejected.rawValue,
-            bodyJson: EncodableRegistrationLockFailureResponse(
-                timeRemainingMs: 10000,
-                svr2AuthCredential: Stubs.svr2AuthCredential,
-            ),
         )
         mockURLSession.addResponse(failResponse)
         mockURLSession.addResponse(failResponse)
@@ -1389,8 +1377,8 @@ public class RegistrationCoordinatorTest {
         // token, this time.
         // The third attempt should fall back to session using the remote key(?)
         let expectedRecoveryPwRequest3 = createAccountWithSession(recoveryPassword: remoteMasterKey.deriveRegistrationRecoveryPassword())
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            urlSuffix: expectedRecoveryPwRequest3.url.absoluteString,
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRecoveryPwRequest3.url,
             statusCode: RegistrationServiceResponses.AccountCreationResponseCodes.reglockFailed.rawValue,
             bodyJson: EncodableRegistrationLockFailureResponse(
                 timeRemainingMs: 10000,

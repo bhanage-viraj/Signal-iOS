@@ -250,10 +250,10 @@ public class RegistrationSessionManagerTest: XCTestCase {
         responseBody = stubWireSession()
         responseSession = sessionConverter(responseBody)
 
-        mockURLSession.addResponse(
-            forUrlSuffix: fetchSessionRequest.url.relativeString,
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: fetchSessionRequest.url,
             statusCode: RegistrationServiceResponses.FetchSessionResponseCodes.missingSession.rawValue,
-        )
+        ))
         mockURLSession.addResponse(
             forUrlSuffix: beginSessionRequest.url.relativeString,
             bodyJson: responseBody,
@@ -373,11 +373,19 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, false),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            mockURLSession.addResponse(
-                forUrlSuffix: expectedRequest.url.relativeString,
-                statusCode: statusCode.rawValue,
-                bodyJson: sessionInBody ? responseBody : nil,
-            )
+            if statusCode == .success {
+                mockURLSession.addResponse(
+                    forUrlSuffix: expectedRequest.url.relativeString,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody ? responseBody : nil,
+                )
+            } else {
+                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+                    url: expectedRequest.url,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody ? responseBody : nil,
+                ))
+            }
             let result = await registrationSessionManager.fulfillChallenge(
                 for: oldSession,
                 fulfillment: [
@@ -441,11 +449,19 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, false),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            mockURLSession.addResponse(
-                forUrlSuffix: expectedRequest.url.relativeString,
-                statusCode: statusCode.rawValue,
-                bodyJson: sessionInBody ? responseBody : nil,
-            )
+            if statusCode == .success {
+                mockURLSession.addResponse(
+                    forUrlSuffix: expectedRequest.url.relativeString,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody ? responseBody : nil,
+                )
+            } else {
+                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+                    url: expectedRequest.url,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody ? responseBody : nil,
+                ))
+            }
             let result = await registrationSessionManager.requestVerificationCode(
                 for: oldSession,
                 transport: [Registration.CodeTransport.sms, .voice].randomElement()!,
@@ -472,8 +488,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            matcher: { $0.url == expectedRequest.url },
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRequest.url,
             statusCode: RegistrationServiceResponses.RequestVerificationCodeResponseCodes.providerFailure.rawValue,
             bodyData: errorResponseJSON.data(using: .utf8),
         ))
@@ -498,8 +514,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            matcher: { $0.url == expectedRequest.url },
+        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+            url: expectedRequest.url,
             statusCode: RegistrationServiceResponses.RequestVerificationCodeResponseCodes.providerFailure.rawValue,
             bodyData: errorResponseJSON.data(using: .utf8),
         ))
@@ -551,11 +567,19 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, nil),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            mockURLSession.addResponse(
-                forUrlSuffix: expectedRequest.url.relativeString,
-                statusCode: statusCode.rawValue,
-                bodyJson: sessionInBody,
-            )
+            if statusCode == .success {
+                mockURLSession.addResponse(
+                    forUrlSuffix: expectedRequest.url.relativeString,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody,
+                )
+            } else {
+                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
+                    url: expectedRequest.url,
+                    statusCode: statusCode.rawValue,
+                    bodyJson: sessionInBody,
+                ))
+            }
             let result = await registrationSessionManager.submitVerificationCode(
                 for: oldSession,
                 code: code,
