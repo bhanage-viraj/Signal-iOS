@@ -121,6 +121,8 @@ public final class OutgoingCallMessage: TransientOutgoingMessage {
             case .droppable, nil:
                 break
             }
+        case .hangupMessage:
+            return true
         default:
             break
         }
