@@ -912,6 +912,21 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     // Shortcuts for the commonly used ones.
     private var db: any DB { deps.db }
 
+    private func isAutoRetryable(_ error: any Error) -> Bool {
+        return autoRetryableAfter(error) != nil
+    }
+
+    private func autoRetryableAfter(_ error: any Error) -> TimeInterval? {
+        if
+            error.httpStatusCode == 429,
+            let retryAfter = error.httpResponseHeaders?.retryAfterTimeInterval,
+            retryAfter < Constants.autoRetryInterval
+        {
+            return retryAfter
+        }
+        return nil
+    }
+
     // MARK: - In Memory State
 
     /// This is state that only exists for an in-memory registration attempt;
@@ -2102,10 +2117,45 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
 
         // Attempt to register right away with the password.
-        return await registerForRegRecoveryPwPath(
-            regRecoveryPw: regRecoveryPw,
-            e164: e164,
-        )
+        do {
+            return try await Retry.performWithBackoff(
+                maxAttempts: Constants.networkErrorRetries + 1,
+                preferredBackoffBlock: {
+                    return autoRetryableAfter($0)
+                },
+                isRetryable: {
+                    return $0.isNetworkFailureOrTimeout || isAutoRetryable($0)
+                },
+                block: {
+                    return try await registerForRegRecoveryPwPath(regRecoveryPw: regRecoveryPw, e164: e164)
+                },
+            )
+        } catch where error.httpStatusCode == 429 {
+            let timeInterval = error.httpResponseHeaders?.retryAfterTimeInterval
+            if
+                case .manualRestore = persistedState.restoreMode,
+                inMemoryState.accountEntropyPool != nil
+            {
+                inMemoryState.accountEntropyPool = nil
+                return .phoneNumberEntry(phoneNumberEntryState(
+                    validationError: .rateLimited(.init(
+                        expiration: deps.dateProvider().addingTimeInterval(max(timeInterval ?? 15, 15)),
+                        e164: e164,
+                    )),
+                ))
+            } else {
+                // If we get a long/infinite timeout, just give up and fall back to the
+                // session path because reg recovery password-based recovery (for numbered
+                // accounts) is best effort.
+                logger.error("Rate limited when registering via recovery password; falling back to session.")
+                wipeInMemoryStateToPreventSVRPathAttempts()
+                return await startSession(e164: e164, failureCount: 0)
+            }
+        } catch where error.isNetworkFailureOrTimeout {
+            return .showErrorSheet(.networkError)
+        } catch {
+            return .showErrorSheet(.genericError)
+        }
     }
 
     private func askForUserPINIfNeeded() -> RegistrationStep? {
@@ -2142,10 +2192,9 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     private func registerForRegRecoveryPwPath(
         regRecoveryPw: RegistrationRecoveryPassword,
         e164: E164,
-        failureCount: Int = 0,
-    ) async -> RegistrationStep {
+    ) async throws -> RegistrationStep {
         let reglockToken = self.reglockToken(for: e164)
-        return await makeRegisterOrChangeNumberRequest(
+        return try await makeRegisterOrChangeNumberRequest(
             .recoveryPassword(.phoneNumber(e164), regRecoveryPw),
             reglockToken: reglockToken,
             responseHandler: { accountResponse in
@@ -2154,7 +2203,6 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     regRecoveryPw: regRecoveryPw,
                     e164: e164,
                     reglockToken: reglockToken,
-                    failureCount: failureCount,
                 )
             },
         )
@@ -2166,10 +2214,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         regRecoveryPw: RegistrationRecoveryPassword,
         e164: E164,
         reglockToken: RegistrationLock?,
-        failureCount: Int,
     ) async -> RegistrationStep {
-        let maxAutomaticRetries = Constants.networkErrorRetries
-
         // NOTE: it is not possible for our e164 to be rejected here; the entire request
         // may be rejected for being malformed, but if the e164 is invalidly formatted
         // that will just look to the server like our reg recovery password is incorrect.
@@ -2307,57 +2352,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             // we'll implicitly end up in the startSession() state anyway.
             return await nextStep()
 
-        case .retryAfter(let timeInterval):
-            if failureCount < maxAutomaticRetries, let timeInterval, timeInterval < Constants.autoRetryInterval {
-                let minimumBackoff = OWSOperation.retryIntervalForExponentialBackoff(failureCount: failureCount + 1)
-                try? await Task.sleep(nanoseconds: max(timeInterval, minimumBackoff).clampedNanoseconds)
-                return await registerForRegRecoveryPwPath(
-                    regRecoveryPw: regRecoveryPw,
-                    e164: e164,
-                    failureCount: failureCount + 1,
-                )
-            }
-
-            if
-                case .manualRestore = persistedState.restoreMode,
-                inMemoryState.accountEntropyPool != nil
-            {
-                inMemoryState.accountEntropyPool = nil
-                return .phoneNumberEntry(phoneNumberEntryState(
-                    validationError: .rateLimited(.init(
-                        expiration: deps.dateProvider().addingTimeInterval(max(timeInterval ?? 15, 15)),
-                        e164: e164,
-                    )),
-                ))
-            } else {
-                // If we get a long/infinite timeout, just give up and fall back to the
-                // session path. Reg recovery password based recovery is best effort
-                // anyway. Besides since this is always our first attempt at registering,
-                // this lockout should never happen.
-                logger.error("Rate limited when registering via recovery password; falling back to session.")
-                wipeInMemoryStateToPreventSVRPathAttempts()
-                return await startSession(e164: e164, failureCount: 0)
-            }
-
         case .deviceTransferPossible:
             // Device transfer can happen, let the user pick.
             inMemoryState.needsToAskForDeviceTransfer = true
             return await nextStep()
-
-        case .networkError:
-            if failureCount < maxAutomaticRetries {
-                let minimumBackoff = OWSOperation.retryIntervalForExponentialBackoff(failureCount: failureCount + 1)
-                try? await Task.sleep(nanoseconds: minimumBackoff.clampedNanoseconds)
-                return await registerForRegRecoveryPwPath(
-                    regRecoveryPw: regRecoveryPw,
-                    e164: e164,
-                    failureCount: failureCount + 1,
-                )
-            }
-            return .showErrorSheet(.networkError)
-
-        case .genericError:
-            return .showErrorSheet(.genericError)
         }
     }
 
@@ -2669,7 +2667,36 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
         if session.verified {
             // We have to complete registration.
-            return await makeRegisterOrChangeNumberRequestFromSession(session, failureCount: 0)
+            let sessionFromBeforeRequest = session
+            do {
+                return try await Retry.performWithBackoff(
+                    maxAttempts: Constants.networkErrorRetries + 1,
+                    preferredBackoffBlock: {
+                        return autoRetryableAfter($0)
+                    },
+                    isRetryable: {
+                        return $0.isNetworkFailureOrTimeout || isAutoRetryable($0)
+                    },
+                    block: { try await makeRegisterOrChangeNumberRequestFromSession(session) },
+                )
+            } catch where error.httpStatusCode == 429 {
+                let timeInterval = error.httpResponseHeaders?.retryAfterTimeInterval
+                if let timeInterval {
+                    let timeoutDate = self.deps.dateProvider().addingTimeInterval(max(timeInterval, 15))
+                    self.db.write { tx in
+                        self.updatePersistedSessionState(session: sessionFromBeforeRequest, tx) {
+                            $0.createAccountTimeout = timeoutDate
+                        }
+                    }
+                } else {
+                    db.write { self.resetSession($0) }
+                }
+                return await nextStep()
+            } catch where error.isNetworkFailureOrTimeout {
+                return .showErrorSheet(.networkError)
+            } catch {
+                return .showErrorSheet(.genericError)
+            }
         }
 
         // We show the code entry screen if we've ever tried sending
@@ -2851,10 +2878,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     }
 
     @MainActor
-    private func makeRegisterOrChangeNumberRequestFromSession(
-        _ session: RegistrationSession,
-        failureCount: Int,
-    ) async -> RegistrationStep {
+    private func makeRegisterOrChangeNumberRequestFromSession(_ session: RegistrationSession) async throws -> RegistrationStep {
         if
             let timeoutDate = persistedState.sessionState?.createAccountTimeout,
             deps.dateProvider() < timeoutDate
@@ -2867,7 +2891,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             ))
         }
         let reglockToken = reglockToken(for: session.e164)
-        return await makeRegisterOrChangeNumberRequest(
+        return try await makeRegisterOrChangeNumberRequest(
             .sessionId(session.e164, session.id),
             reglockToken: reglockToken,
             responseHandler: { accountResponse in
@@ -2875,7 +2899,6 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     accountResponse,
                     sessionFromBeforeRequest: session,
                     reglockTokenUsedInRequest: reglockToken,
-                    failureCount: failureCount,
                 )
             },
         )
@@ -2886,10 +2909,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         _ response: AccountResponse,
         sessionFromBeforeRequest: RegistrationSession,
         reglockTokenUsedInRequest: RegistrationLock?,
-        failureCount: Int,
     ) async -> RegistrationStep {
-        let maxAutomaticRetries = Constants.networkErrorRetries
-
         switch response {
         case .success(let identityResponse):
             inMemoryState.session = nil
@@ -2977,41 +2997,9 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             // The session is invalid; we have to wipe it and potentially start again.
             db.write { self.resetSession($0) }
             return await nextStep()
-        case .retryAfter(let timeInterval):
-            if failureCount < maxAutomaticRetries, let timeInterval, timeInterval < Constants.autoRetryInterval {
-                let minimumBackoff = OWSOperation.retryIntervalForExponentialBackoff(failureCount: failureCount + 1)
-                try? await Task.sleep(nanoseconds: max(timeInterval, minimumBackoff).clampedNanoseconds)
-                return await self.makeRegisterOrChangeNumberRequestFromSession(
-                    sessionFromBeforeRequest,
-                    failureCount: failureCount + 1,
-                )
-            }
-            if let timeInterval {
-                let timeoutDate = self.deps.dateProvider().addingTimeInterval(max(timeInterval, 15))
-                self.db.write { tx in
-                    self.updatePersistedSessionState(session: sessionFromBeforeRequest, tx) {
-                        $0.createAccountTimeout = timeoutDate
-                    }
-                }
-            } else {
-                db.write { self.resetSession($0) }
-            }
-            return await nextStep()
         case .deviceTransferPossible:
             inMemoryState.needsToAskForDeviceTransfer = true
             return .chooseRestoreMethod(.unspecified)
-        case .networkError:
-            if failureCount < maxAutomaticRetries {
-                let minimumBackoff = OWSOperation.retryIntervalForExponentialBackoff(failureCount: failureCount + 1)
-                try? await Task.sleep(nanoseconds: minimumBackoff.clampedNanoseconds)
-                return await self.makeRegisterOrChangeNumberRequestFromSession(
-                    sessionFromBeforeRequest,
-                    failureCount: failureCount + 1,
-                )
-            }
-            return .showErrorSheet(.networkError)
-        case .genericError:
-            return .showErrorSheet(.genericError)
         }
     }
 
@@ -3815,24 +3803,30 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     owsFailDebug("couldn't present credential: \(error)")
                     return .showErrorSheet(.genericError)
                 }
-                return await makeRegisterOrChangeNumberRequest(
-                    .receiptCredential(receiptCredentialPresentation),
-                    reglockToken: nil,
-                    responseHandler: { response in
-                        switch response {
-                        case .success(let accountIdentity):
-                            deps.db.write { tx in
-                                updatePersistedState(tx) {
-                                    $0.signalLoginState = nil
-                                    $0.accountIdentity = accountIdentity
+                do {
+                    return try await Retry.performWithBackoff(maxAttempts: Constants.networkErrorRetries + 1) {
+                        return try await makeRegisterOrChangeNumberRequest(
+                            .receiptCredential(receiptCredentialPresentation),
+                            reglockToken: nil,
+                            responseHandler: { response in
+                                switch response {
+                                case .success(let accountIdentity):
+                                    deps.db.write { tx in
+                                        updatePersistedState(tx) {
+                                            $0.signalLoginState = nil
+                                            $0.accountIdentity = accountIdentity
+                                        }
+                                    }
+                                    return await nextStep()
+                                default:
+                                    owsFail("couldn't create account: \(response)")
                                 }
-                            }
-                            return await nextStep()
-                        default:
-                            owsFail("couldn't create account: \(response)")
-                        }
-                    },
-                )
+                            },
+                        )
+                    }
+                } catch {
+                    owsFail("couldn't create account: \(error)")
+                }
             }
         }
     }
@@ -4579,7 +4573,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         _ method: RegistrationRequestFactory.VerificationMethod,
         reglockToken: RegistrationLock?,
         responseHandler: @MainActor (AccountResponse) async -> RegistrationStep,
-    ) async -> RegistrationStep {
+    ) async throws -> RegistrationStep {
         logger.info("")
 
         switch mode {
@@ -4639,60 +4633,59 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
             do {
                 try await sendRestoreMethodIfNecessary()
-                return await makeCreateAccountRequestAndFinalizePreKeys(
-                    verificationMethod: method,
-                    authPassword: authToken,
-                    accountAttributes: accountAttributes,
-                    skipDeviceTransfer: shouldSkipDeviceTransfer(),
-                    apnRegistrationId: apnRegistrationId,
-                    responseHandler: responseHandler,
-                )
             } catch {
                 return .showErrorSheet(.genericError)
             }
+            let accountResponse = try await makeCreateAccountRequestAndFinalizePreKeys(
+                verificationMethod: method,
+                authPassword: authToken,
+                accountAttributes: accountAttributes,
+                skipDeviceTransfer: shouldSkipDeviceTransfer(),
+                apnRegistrationId: apnRegistrationId,
+            )
+            return await responseHandler(accountResponse)
 
         case .changingNumber(let changeNumberState):
             if let pniState = changeNumberState.pniState {
                 // We had an in flight change number that was interrupted, recover.
-                return await recoverPendingPniChangeNumberState(
+                try await recoverPendingPniChangeNumberState(
                     changeNumberState: changeNumberState,
                     pniState: pniState,
                 )
+                return await nextStep()
             }
-            let changeNumberResult = await generatePniStateAndMakeChangeNumberRequest(
-                verificationMethod: method,
-                reglockToken: reglockToken,
-                changeNumberState: changeNumberState,
-            )
-            switch changeNumberResult {
-            case .pniStateError:
-                return .showErrorSheet(.genericError)
-            case .serviceResponse(let accountResponse):
-                switch accountResponse {
-                case .success:
-                    // Pni state will get finalized and cleaned up later in
-                    // the normal course of action.
-                    break
-                case .reglockFailure, .rejectedVerificationMethod, .retryAfter:
-                    // Explicit rejection by the server, we can safely
-                    // wipe our local PNI state and regenerate when we retry.
-                    db.write { tx in
-                        self._unsafeToModify_mode = .changingNumber(loader.savePendingChangeNumber(
-                            oldState: changeNumberState,
-                            pniState: nil,
-                            transaction: tx,
-                        ))
-                    }
-                case .deviceTransferPossible:
-                    owsFailBeta("Should't get device transfer response on change number request.")
-                case .networkError, .genericError:
-                    // We don't know what went wrong, so PNI state
-                    // may be set server side. Don't wipe PNI state
-                    // so we try and recover.
-                    logger.error("Unknown error when changing number; preserving pni state")
+            let accountResponse = await Result(catching: {
+                return try await generatePniStateAndMakeChangeNumberRequest(
+                    verificationMethod: method,
+                    reglockToken: reglockToken,
+                    changeNumberState: changeNumberState,
+                )
+            })
+            switch accountResponse {
+            case .success(.success):
+                // Pni state will get finalized and cleaned up later in the normal course
+                // of action.
+                break
+            case .failure(let error) where error.httpStatusCode == 429:
+                fallthrough
+            case .success(.reglockFailure), .success(.rejectedVerificationMethod):
+                // Explicit rejection by the server, we can safely wipe our local PNI state
+                // and regenerate when we retry.
+                db.write { tx in
+                    self._unsafeToModify_mode = .changingNumber(loader.savePendingChangeNumber(
+                        oldState: changeNumberState,
+                        pniState: nil,
+                        transaction: tx,
+                    ))
                 }
-                return await responseHandler(accountResponse)
+            case .success(.deviceTransferPossible):
+                owsFail("can't get device transfer response on change number request")
+            case .failure:
+                // We don't know what went wrong, so PNI state may be set server side.
+                // Don't wipe PNI state so we try and recover.
+                break
             }
+            return await responseHandler(try accountResponse.get())
         }
     }
 
@@ -4746,8 +4739,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         accountAttributes: AccountAttributes,
         skipDeviceTransfer: Bool,
         apnRegistrationId: RegistrationRequestFactory.ApnRegistrationId?,
-        responseHandler: (AccountResponse) async -> RegistrationStep,
-    ) async -> RegistrationStep {
+    ) async throws -> AccountResponse {
         // If there are identity keys, we have to persist them before generating prekeys
         if let registrationMessage = inMemoryState.registrationMessage {
             persistRegistrationMessage(registrationMessage)
@@ -4761,26 +4753,25 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
         let shouldSkipDeviceTransfer = self.shouldSkipDeviceTransfer()
         let signalService = self.deps.signalService
-        let accountResponse = await Service.makeCreateAccountRequest(
-            verificationMethod,
-            authPassword: authPassword,
-            accountAttributes: accountAttributes,
-            skipDeviceTransfer: shouldSkipDeviceTransfer,
-            apnRegistrationId: apnRegistrationId,
-            aciPreKeyBundle: aciPreKeyBundle,
-            pniPreKeyBundle: pniPreKeyBundle,
-            signalService: signalService,
-            logger: logger,
-        )
+        let accountResponse = await Result(catching: {
+            return try await Service.makeCreateAccountRequest(
+                verificationMethod,
+                authPassword: authPassword,
+                accountAttributes: accountAttributes,
+                skipDeviceTransfer: shouldSkipDeviceTransfer,
+                apnRegistrationId: apnRegistrationId,
+                aciPreKeyBundle: aciPreKeyBundle,
+                pniPreKeyBundle: pniPreKeyBundle,
+                signalService: signalService,
+                logger: logger,
+            )
+        })
         let isPrekeyUploadSuccess = switch accountResponse {
-        case .success: true
-        case
-            .retryAfter,
-            .rejectedVerificationMethod,
-            .reglockFailure,
-            .networkError,
-            .genericError,
-            .deviceTransferPossible: false
+        case .success(.success): true
+        case .success(.rejectedVerificationMethod): false
+        case .success(.reglockFailure): false
+        case .success(.deviceTransferPossible): false
+        case .failure: false
         }
         await deps.preKeyManager.finalizeRegistrationPreKeyBundle(
             aciPreKeyBundle,
@@ -4792,19 +4783,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 uploadDidSucceed: isPrekeyUploadSuccess,
             )
         }
-        return await responseHandler(accountResponse)
-    }
-
-    private enum ChangeNumberResult {
-        case serviceResponse(AccountResponse)
-        case pniStateError
+        return try accountResponse.get()
     }
 
     private func generatePniStateAndMakeChangeNumberRequest(
         verificationMethod: RegistrationRequestFactory.VerificationMethod,
         reglockToken: RegistrationLock?,
         changeNumberState: RegistrationCoordinatorLoaderImpl.Mode.ChangeNumberState,
-    ) async -> ChangeNumberResult {
+    ) async throws -> AccountResponse {
         logger.info("")
 
         let newPhoneNumber: E164
@@ -4817,24 +4803,19 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             owsFail("not supported")
         }
 
-        let pniResult = await deps.changeNumberPniManager.generatePniIdentity(
+        let (pniParams, pniPendingState) = try await deps.changeNumberPniManager.generatePniIdentity(
             forNewE164: newPhoneNumber,
             localAci: changeNumberState.localAci,
             localDeviceId: changeNumberState.localDeviceId,
         )
 
-        switch pniResult {
-        case .failure:
-            return .pniStateError
-        case .success(let pniParams, let pniPendingState):
-            return .serviceResponse(await makeChangeNumberRequest(
-                verificationMethod: verificationMethod,
-                reglockToken: reglockToken,
-                changeNumberState: changeNumberState,
-                pniPendingState: pniPendingState,
-                pniParams: pniParams,
-            ))
-        }
+        return try await makeChangeNumberRequest(
+            verificationMethod: verificationMethod,
+            reglockToken: reglockToken,
+            changeNumberState: changeNumberState,
+            pniPendingState: pniPendingState,
+            pniParams: pniParams,
+        )
     }
 
     @MainActor
@@ -4844,7 +4825,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         changeNumberState: RegistrationCoordinatorLoaderImpl.Mode.ChangeNumberState,
         pniPendingState: ChangePhoneNumberPni.PendingState,
         pniParams: PniDistribution.Parameters,
-    ) async -> AccountResponse {
+    ) async throws -> AccountResponse {
         logger.info("")
 
         // Process all messages first. The caller doesn't invoke this method when
@@ -4860,7 +4841,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             ))
         }
 
-        return await Service.makeChangeNumberRequest(
+        return try await Service.makeChangeNumberRequest(
             verificationMethod,
             reglockToken: reglockToken,
             authPassword: changeNumberState.oldAuthToken,
@@ -4874,10 +4855,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     private func recoverPendingPniChangeNumberState(
         changeNumberState: Mode.ChangeNumberState,
         pniState: Mode.ChangeNumberState.PendingPniState,
-    ) async -> RegistrationStep {
+    ) async throws {
         logger.info("")
 
-        let whoAmIResult = await Service.makeWhoAmIRequest(
+        let whoAmIResponse = try await Service.makeWhoAmIRequest(
             auth: ChatServiceAuth.explicit(
                 aci: changeNumberState.localAci,
                 deviceId: .primary,
@@ -4886,34 +4867,27 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             networkManager: deps.networkManager,
         )
 
-        switch whoAmIResult {
-        case .networkError, .genericError:
-            return .showErrorSheet(.genericError)
-        case .success(let whoAmIResponse):
-            if whoAmIResponse.localIdentifiers.phoneNumber == pniState.newE164.stringValue {
-                // Success! Fake us getting the success response.
-                db.write { tx in
-                    handleSuccessfulAccountResponse(
-                        identity: AccountIdentity(
-                            localIdentifiers: whoAmIResponse.localIdentifiers,
-                            authPassword: changeNumberState.oldAuthToken,
-                            hasPreviouslyUsedSVR: inMemoryState.didHaveSVRBackupsPriorToReg,
-                        ),
-                        tx,
-                    )
-                }
-                return await nextStep()
-            } else {
-                // We had an in progress change number, but we arent on that number now.
-                // pretend it never happened.
-                db.write { tx in
-                    _unsafeToModify_mode = .changingNumber(loader.savePendingChangeNumber(
-                        oldState: changeNumberState,
-                        pniState: nil,
-                        transaction: tx,
-                    ))
-                }
-                return await nextStep()
+        if whoAmIResponse.localIdentifiers.phoneNumber == pniState.newE164.stringValue {
+            // Success! Fake us getting the success response.
+            db.write { tx in
+                handleSuccessfulAccountResponse(
+                    identity: AccountIdentity(
+                        localIdentifiers: whoAmIResponse.localIdentifiers,
+                        authPassword: changeNumberState.oldAuthToken,
+                        hasPreviouslyUsedSVR: inMemoryState.didHaveSVRBackupsPriorToReg,
+                    ),
+                    tx,
+                )
+            }
+        } else {
+            // We had an in progress change number, but we aren't on that number now.
+            // Pretend it never happened.
+            db.write { tx in
+                _unsafeToModify_mode = .changingNumber(loader.savePendingChangeNumber(
+                    oldState: changeNumberState,
+                    pniState: nil,
+                    transaction: tx,
+                ))
             }
         }
     }
@@ -5088,9 +5062,6 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         /// Either the session was invalid/expired or the registration recovery password was wrong.
         case rejectedVerificationMethod
         case deviceTransferPossible
-        case retryAfter(TimeInterval?)
-        case networkError
-        case genericError
     }
 
     // MARK: - Step State Generation Helpers

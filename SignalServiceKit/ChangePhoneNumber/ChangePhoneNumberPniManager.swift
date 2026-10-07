@@ -38,7 +38,7 @@ public protocol ChangePhoneNumberPniManager {
         forNewE164 newE164: E164,
         localAci: Aci,
         localDeviceId: DeviceId,
-    ) async -> ChangePhoneNumberPni.GeneratePniIdentityResult
+    ) async throws -> (PniDistribution.Parameters, ChangePhoneNumberPni.PendingState)
 
     /// Commits an identity generated for a change number request.
     ///
@@ -80,14 +80,6 @@ public enum ChangePhoneNumberPni {
             self.localDevicePniPqLastResortPreKeyRecord = localDevicePniPqLastResortPreKeyRecord
             self.localDevicePniRegistrationId = localDevicePniRegistrationId
         }
-    }
-
-    public enum GeneratePniIdentityResult {
-        /// Successful generation of PNI change-number parameters and state.
-        case success(parameters: PniDistribution.Parameters, pendingState: PendingState)
-
-        /// An error occurred.
-        case failure
     }
 }
 
@@ -134,7 +126,7 @@ class ChangePhoneNumberPniManagerImpl: ChangePhoneNumberPniManager {
         forNewE164 newE164: E164,
         localAci: Aci,
         localDeviceId: DeviceId,
-    ) async -> ChangePhoneNumberPni.GeneratePniIdentityResult {
+    ) async throws -> (PniDistribution.Parameters, ChangePhoneNumberPni.PendingState) {
         logger.info("Generating PNI identity!")
 
         let pniIdentityKeyPair = identityManager.generateNewIdentityKeyPair()
@@ -150,20 +142,16 @@ class ChangePhoneNumberPniManagerImpl: ChangePhoneNumberPniManager {
             localDevicePniRegistrationId: registrationIdGenerator.generate(),
         )
 
-        do {
-            let parameters = try await self.pniDistributionParameterBuilder.buildPniDistributionParameters(
-                localAci: localAci,
-                localDeviceId: localDeviceId,
-                localNewPhoneNumber: newE164,
-                localPniIdentityKeyPair: pniIdentityKeyPair,
-                localDevicePniSignedPreKey: localDevicePniSignedPreKeyRecord,
-                localDevicePniPqLastResortPreKey: localDevicePniPqLastResortPreKeyRecord,
-                localDevicePniRegistrationId: pendingState.localDevicePniRegistrationId,
-            )
-            return .success(parameters: parameters, pendingState: pendingState)
-        } catch {
-            return .failure
-        }
+        let parameters = try await self.pniDistributionParameterBuilder.buildPniDistributionParameters(
+            localAci: localAci,
+            localDeviceId: localDeviceId,
+            localNewPhoneNumber: newE164,
+            localPniIdentityKeyPair: pniIdentityKeyPair,
+            localDevicePniSignedPreKey: localDevicePniSignedPreKeyRecord,
+            localDevicePniPqLastResortPreKey: localDevicePniPqLastResortPreKeyRecord,
+            localDevicePniRegistrationId: pendingState.localDevicePniRegistrationId,
+        )
+        return (parameters, pendingState)
     }
 
     // MARK: - Saving the New Identity

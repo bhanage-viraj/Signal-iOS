@@ -19,22 +19,22 @@ public class ChangePhoneNumberPniManagerMock: ChangePhoneNumberPniManager {
         forNewE164 newE164: E164,
         localAci: Aci,
         localDeviceId: DeviceId,
-    ) async -> ChangePhoneNumberPni.GeneratePniIdentityResult {
+    ) async -> (PniDistribution.Parameters, ChangePhoneNumberPni.PendingState) {
         let keyPair = ECKeyPair.generateKeyPair()
         let registrationId = UInt32.random(in: 1...0x3fff)
 
         let localPqKey1 = self.mockKyberStore.generateLastResortKyberPreKeyForChangeNumber(signedBy: keyPair.keyPair.privateKey)
         let localPqKey2 = self.mockKyberStore.generateLastResortKyberPreKeyForChangeNumber(signedBy: keyPair.keyPair.privateKey)
 
-        return .success(
-            parameters: PniDistribution.Parameters.mock(
+        return (
+            PniDistribution.Parameters.mock(
                 pniIdentityKeyPair: keyPair,
                 localDeviceId: localDeviceId,
                 localDevicePniSignedPreKey: SignedPreKeyStoreImpl.generateSignedPreKey(keyId: PreKeyId.random(), signedBy: keyPair.keyPair.privateKey),
                 localDevicePniPqLastResortPreKey: localPqKey1,
                 localDevicePniRegistrationId: registrationId,
             ),
-            pendingState: ChangePhoneNumberPni.PendingState(
+            ChangePhoneNumberPni.PendingState(
                 newE164: newE164,
                 pniIdentityKeyPair: keyPair,
                 localDevicePniSignedPreKeyRecord: SignedPreKeyStoreImpl.generateSignedPreKey(keyId: PreKeyId.random(), signedBy: keyPair.keyPair.privateKey),

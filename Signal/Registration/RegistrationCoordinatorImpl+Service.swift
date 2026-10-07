@@ -73,7 +73,7 @@ extension RegistrationCoordinatorImpl {
             pniPreKeyBundle: RegistrationPreKeyUploadBundle?,
             signalService: OWSSignalServiceProtocol,
             logger: PrefixedLogger,
-        ) async -> AccountResponse {
+        ) async throws -> AccountResponse {
             let request = RegistrationRequestFactory.createAccountRequest(
                 verificationMethod: verificationMethod,
                 authPassword: authPassword,
@@ -84,88 +84,47 @@ extension RegistrationCoordinatorImpl {
                 pniPreKeyBundle: pniPreKeyBundle,
                 logger: logger,
             )
-            return await makeRequest(
-                { try await signalService.urlSessionForMainSignalService().performRequest(request) },
-                handler: {
-                    self.handleCreateAccountResponse(
-                        authPassword: authPassword,
-                        statusCode: $0,
-                        retryAfterHeader: $1,
-                        bodyData: $2,
-                        logger: $3,
-                    )
-                },
-                fallbackError: .genericError,
-                networkFailureError: .networkError,
-                logger: logger,
-            )
-        }
-
-        private static func handleCreateAccountResponse(
-            authPassword: String,
-            statusCode: Int,
-            retryAfterHeader: TimeInterval?,
-            bodyData: Data?,
-            logger: PrefixedLogger,
-        ) -> AccountResponse {
-            let statusCode = RegistrationServiceResponses.AccountCreationResponseCodes(rawValue: statusCode)
-            switch statusCode {
-            case .success:
-                let response: AccountIdentityResponse
-                do {
-                    response = try JSONDecoder().decode(AccountIdentityResponse.self, from: bodyData ?? Data())
-                } catch {
-                    owsFailDebug("couldn't parse account identity response: \(error)")
-                    return .genericError
-
-                }
-                return .success(AccountIdentity(
-                    localIdentifiers: response.localIdentifiers,
-                    authPassword: authPassword,
-                    hasPreviouslyUsedSVR: response.storageCapable,
-                ))
-
-            case .deviceTransferPossible:
+            let response: HTTPResponse
+            do {
+                response = try await signalService.urlSessionForMainSignalService().performRequest(request)
+            } catch where error.httpStatusCode == 401 {
+                /// The Authorization header was invalid or the provided credentials were
+                /// insufficient to verify ownership of the given phone number. Response
+                /// body has an optional string error message.
+                return .rejectedVerificationMethod
+            } catch where error.httpStatusCode == 403 {
+                /// The provided registration recovery password is either incorrect or
+                /// registration via reg recovery password is impossible for this number.
+                return .rejectedVerificationMethod
+            } catch where error.httpStatusCode == 409 {
+                /// The caller has not explicitly elected to skip transferring data from
+                /// another device, but a device transfer is technically possible.
                 return .deviceTransferPossible
-
-            case .regRecoveryPasswordRejected:
-                Logger.warn("Reg recovery password rejected when creating account.")
-                return .rejectedVerificationMethod
-
-            case .reglockFailed:
-                guard let bodyData else {
-                    Logger.warn("Got empty create account response")
-                    return .genericError
-                }
-                guard
-                    let response = try? JSONDecoder().decode(
-                        RegistrationServiceResponses.RegistrationLockFailureResponse.self,
-                        from: bodyData,
-                    )
-                else {
-                    Logger.warn("Unable to parse ReglockFailure from response")
-                    return .genericError
-                }
-                return .reglockFailure(response)
-
-            case .retry:
-                return .retryAfter(retryAfterHeader)
-
-            case .unauthorized:
-                Logger.warn("Got unauthorized response for create account")
-                return .rejectedVerificationMethod
-
-            case .invalidArgument:
-                Logger.warn("Got invalid argument response for create account")
-                return .genericError
-
-            case .malformedRequest:
-                Logger.warn("Got malformed request response for create account")
-                return .genericError
-
-            case .none, .unexpectedError:
-                return .genericError
+            } catch where error.httpStatusCode == 423 {
+                /// An account with the given phone number already exists and has a
+                /// registration lock, and the client has not provided appropriate reglock
+                /// credentials (either because the user input the wrong PIN (and thus
+                /// couldn't retrieve any credential) or because the client used the wrong
+                /// AEP/SvrKey to generate the credential). Response body has
+                /// `RegistrationLockFailureResponse`.
+                let parsedResponse = try JSONDecoder().decode(
+                    RegistrationServiceResponses.RegistrationLockFailureResponse.self,
+                    from: error.httpResponseData ?? Data(),
+                )
+                return .reglockFailure(parsedResponse)
             }
+            guard response.responseStatusCode == 200 else {
+                throw response.asError()
+            }
+            let parsedResponse = try JSONDecoder().decode(
+                AccountIdentityResponse.self,
+                from: response.responseBodyData ?? Data(),
+            )
+            return .success(AccountIdentity(
+                localIdentifiers: parsedResponse.localIdentifiers,
+                authPassword: authPassword,
+                hasPreviouslyUsedSVR: parsedResponse.storageCapable,
+            ))
         }
 
         static func makeChangeNumberRequest(
@@ -175,113 +134,73 @@ extension RegistrationCoordinatorImpl {
             pniChangeNumberParameters: PniDistribution.Parameters,
             networkManager: any NetworkManagerProtocol,
             logger: PrefixedLogger,
-        ) async -> AccountResponse {
+        ) async throws -> AccountResponse {
             let request = RegistrationRequestFactory.changeNumberRequest(
                 verificationMethod: verificationMethod,
                 reglockToken: reglockToken,
                 pniChangeNumberParameters: pniChangeNumberParameters,
                 logger: logger,
             )
-            return await makeRequest(
-                { try await networkManager.asyncRequest(request) },
-                handler: {
-                    return self.handleChangeNumberResponse(authPassword: authPassword, statusCode: $0, retryAfterHeader: $1, bodyData: $2, logger: $3)
-                },
-                fallbackError: .genericError,
-                networkFailureError: .networkError,
-                logger: logger,
-            )
-        }
-
-        private static func handleChangeNumberResponse(
-            authPassword: String,
-            statusCode: Int,
-            retryAfterHeader: TimeInterval?,
-            bodyData: Data?,
-            logger: PrefixedLogger,
-        ) -> AccountResponse {
-            let statusCode = RegistrationServiceResponses.ChangeNumberResponseCodes(rawValue: statusCode)
-            switch statusCode {
-            case .success:
-                let response: AccountIdentityResponse
-                do {
-                    response = try JSONDecoder().decode(AccountIdentityResponse.self, from: bodyData ?? Data())
-                } catch {
-                    owsFailDebug("couldn't parse account identity response: \(error)")
-                    return .genericError
-                }
-                return .success(AccountIdentity(
-                    localIdentifiers: response.localIdentifiers,
-                    authPassword: authPassword,
-                    hasPreviouslyUsedSVR: response.storageCapable,
-                ))
-
-            case .reglockFailed:
-                guard let bodyData else {
-                    Logger.warn("Got empty create account response")
-                    return .genericError
-                }
-                guard
-                    let response = try? JSONDecoder().decode(
-                        RegistrationServiceResponses.RegistrationLockFailureResponse.self,
-                        from: bodyData,
-                    )
-                else {
-                    Logger.warn("Unable to parse ReglockFailure from response")
-                    return .genericError
-                }
-                return .reglockFailure(response)
-
-            case .retry:
-                return .retryAfter(retryAfterHeader)
-
-            case .unauthorized, .regRecoveryPasswordRejected:
+            let response: HTTPResponse
+            do {
+                response = try await networkManager.asyncRequest(request)
+            } catch where error.httpStatusCode == 401 {
+                /// The provided credentials were insufficient to verify ownership of the
+                /// given phone number.
                 return .rejectedVerificationMethod
-
-            case .malformedRequest:
-                Logger.error("Got malformed request for change number")
-                return .genericError
-
-            case .invalidArgument:
-                Logger.error("Got invalid argument for change number")
-                return .genericError
-
-            case .mismatchedDevicesToNotify, .mismatchedDevicesToNotifyRegistrationIds:
-                // TODO[PNP]: What should be done about this category of error?
+            } catch where error.httpStatusCode == 403 {
+                /// The provided registration recovery password is either incorrect or
+                /// registration via reg recovery password is impossible for this number.
+                return .rejectedVerificationMethod
+            } catch where error.httpStatusCode == 409 {
+                /// The devices to notify in the request did not match the known linked
+                /// devices.
                 Logger.error("Got mismatched device list information for change number")
-                return .genericError
-
-            case .none, .unexpectedError:
-                return .genericError
+                // TODO[PNP]: What should be done about this category of error?
+                throw error
+            } catch where error.httpStatusCode == 410 {
+                /// The devices to notify in the request were correct, but their provided
+                /// registrationIds did not match.
+                Logger.error("Got mismatched device list information for change number")
+                // TODO[PNP]: What should be done about this category of error?
+                throw error
+            } catch where error.httpStatusCode == 423 {
+                /// An account with the given phone number already exists and has a
+                /// registration lock, and the client has not provided appropriate reglock
+                /// credentials (either because the user input the wrong PIN (and thus
+                /// couldn't retrieve any credential) or because the client used the wrong
+                /// AEP/SvrKey to generate the credential). Response body has
+                /// `RegistrationLockFailureResponse`.
+                let parsedResponse = try JSONDecoder().decode(
+                    RegistrationServiceResponses.RegistrationLockFailureResponse.self,
+                    from: error.httpResponseData ?? Data(),
+                )
+                return .reglockFailure(parsedResponse)
             }
-        }
-
-        enum WhoAmIResponse {
-            case success(AccountIdentityResponse)
-            case networkError
-            case genericError
+            guard response.responseStatusCode == 200 else {
+                throw response.asError()
+            }
+            let parsedResponse = try JSONDecoder().decode(
+                AccountIdentityResponse.self,
+                from: response.responseBodyData ?? Data(),
+            )
+            return .success(AccountIdentity(
+                localIdentifiers: parsedResponse.localIdentifiers,
+                authPassword: authPassword,
+                hasPreviouslyUsedSVR: parsedResponse.storageCapable,
+            ))
         }
 
         static func makeWhoAmIRequest(
             auth: ChatServiceAuth,
             networkManager: any NetworkManagerProtocol,
-        ) async -> WhoAmIResponse {
-            do {
-                return try await Retry.performWithBackoff(
-                    maxAttempts: RegistrationCoordinatorImpl.Constants.networkErrorRetries + 1,
-                    isRetryable: { $0.isNetworkFailureOrTimeout },
-                ) {
-                    let request = WhoAmIRequestFactory.whoAmIRequest(auth: auth)
-                    let response = try await networkManager.asyncRequest(request)
-                    guard response.responseStatusCode >= 200, response.responseStatusCode < 300 else {
-                        throw response.asError()
-                    }
-                    return .success(try JSONDecoder().decode(AccountIdentityResponse.self, from: response.responseBodyData ?? Data()))
-                }
-            } catch {
-                Logger.warn("couldn't make whoami request: \(error)")
-                return error.isNetworkFailureOrTimeout ? .networkError : .genericError
+        ) async throws -> AccountIdentityResponse {
+            let request = WhoAmIRequestFactory.whoAmIRequest(auth: auth)
+            let response = try await networkManager.asyncRequest(request)
+            guard response.responseStatusCode >= 200, response.responseStatusCode < 300 else {
+                throw response.asError()
             }
+            return try JSONDecoder().decode(AccountIdentityResponse.self, from: response.responseBodyData ?? Data())
         }
 
         private static func makeRequest<ResponseType>(
