@@ -194,12 +194,9 @@ public class PreKeyManagerImpl: PreKeyManager {
         return await taskManager.createForProvisioning(forIdentity: identity, keyPair: keyPair)
     }
 
-    public func finalizeRegistrationPreKeyBundle(
-        _ bundle: RegistrationPreKeyUploadBundle,
-        uploadDidSucceed: Bool,
-    ) async {
+    public func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle) async {
         logger.info("Finalize registration prekeys")
-        await taskManager.persistRegistrationBundle(bundle, uploadDidSucceed: uploadDidSucceed)
+        await taskManager.persistRegistrationBundle(bundle)
     }
 
     public func rotateSignedPreKeysIfNeeded() async throws {

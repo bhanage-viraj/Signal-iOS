@@ -346,12 +346,8 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         // And will finalize prekeys after success.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         let identityResponse = Stubs.accountIdentityResponse()
         var authPassword: String!
@@ -477,12 +473,8 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         // And we finalize them after.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         let identityResponse = Stubs.accountIdentityResponse()
         var authPassword: String!
@@ -605,18 +597,8 @@ public class RegistrationCoordinatorTest {
 
         // And we finalize them after.
         // Set up a list of mocks that should be returned in order
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // Fail the request; the reg recovery pw is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
@@ -717,19 +699,6 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
 
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-
         // Fail the first request; the reglock is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
         let failResponse = TSRequestOWSURLSessionMock.Response.serviceResponseError(
@@ -821,18 +790,8 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
 
         // And we finalize them after.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // Fail the request with a network error.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(initialMasterKey.deriveRegistrationRecoveryPassword())
@@ -938,8 +897,6 @@ public class RegistrationCoordinatorTest {
             .createPreKeys,
             .createPreKeys,
             .failedRequest,
-            .finalizePreKeys,
-            .finalizePreKeys,
             .requestPushToken,
             .createPreKeys,
             .createPreKeys,
@@ -1007,11 +964,6 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
-
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
 
         // Fail the first request;
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(aep.getMasterKey().deriveRegistrationRecoveryPassword())
@@ -1157,18 +1109,8 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
 
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(!didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // Fail the first request; the reglock is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(masterKey.deriveRegistrationRecoveryPassword())
@@ -1346,13 +1288,6 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
 
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, _ in }
-
         // Fail the first request; the local key is invalid.
         let expectedRecoveryPwRequest = createAccountWithRecoveryPw(masterKey.deriveRegistrationRecoveryPassword())
         let failResponse = TSRequestOWSURLSessionMock.Response.serviceResponseError(
@@ -1481,12 +1416,8 @@ public class RegistrationCoordinatorTest {
         preKeyManagerMock.addCreatePreKeysMock(Stubs.preKeyBundle(identity:))
 
         // And we finalize them after.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // Now still at it should make a reg recovery pw request
         let accountIdentityResponse = Stubs.accountIdentityResponse()
@@ -1774,12 +1705,8 @@ public class RegistrationCoordinatorTest {
         }
 
         // Once we are registered, we should finalize prekeys.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // Finish the validation.
         var didMarkPinEnabled = false
@@ -2805,12 +2732,8 @@ public class RegistrationCoordinatorTest {
         }
 
         // Once we are registered, we should finalize prekeys.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // When we skip the pin, it should skip any SVR backups.
         ows2FAManagerMock.didMarkPinEnabled = { _ in
@@ -2916,12 +2839,8 @@ public class RegistrationCoordinatorTest {
         }
 
         // Once we are registered, we should finalize prekeys.
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
-        preKeyManagerMock.addFinalizePreKeyBundleMock { _, didSucceed in
-            #expect(didSucceed)
-        }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
+        preKeyManagerMock.addFinalizePreKeyBundleMock { _ in }
 
         // When we skip the pin, it should skip any SVR backups.
         ows2FAManagerMock.didMarkPinEnabled = { _ in

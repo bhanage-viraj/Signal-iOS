@@ -265,18 +265,7 @@ class ProvisioningCoordinatorImpl: ProvisioningCoordinator {
             deviceName: deviceName,
             aciPreKeyBundle: aciPreKeyBundle,
             pniPreKeyBundle: pniPreKeyBundle,
-        ).withUndoOnFailureStep {
-            await self.preKeyManager.finalizeRegistrationPreKeyBundle(
-                aciPreKeyBundle,
-                uploadDidSucceed: false,
-            )
-            if let pniPreKeyBundle {
-                await self.preKeyManager.finalizeRegistrationPreKeyBundle(
-                    pniPreKeyBundle,
-                    uploadDidSucceed: false,
-                )
-            }
-        }
+        )
     }
 
     private func completeProvisioning_createRegistrationIds(
@@ -439,9 +428,9 @@ class ProvisioningCoordinatorImpl: ProvisioningCoordinator {
         pniPreKeyBundle: RegistrationPreKeyUploadBundle?,
         authedAccount: AuthedAccount.Explicit,
     ) async -> CompleteProvisioningStepResult {
-        await self.preKeyManager.finalizeRegistrationPreKeyBundle(aciPreKeyBundle, uploadDidSucceed: true)
+        await self.preKeyManager.finalizeRegistrationPreKeyBundle(aciPreKeyBundle)
         if let pniPreKeyBundle {
-            await self.preKeyManager.finalizeRegistrationPreKeyBundle(pniPreKeyBundle, uploadDidSucceed: true)
+            await self.preKeyManager.finalizeRegistrationPreKeyBundle(pniPreKeyBundle)
         }
         return CompleteProvisioningStepResult(
             authedAccount: authedAccount,

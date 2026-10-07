@@ -98,18 +98,10 @@ struct PreKeyTaskManager {
         }
     }
 
-    func persistRegistrationBundle(
-        _ bundle: RegistrationPreKeyUploadBundle,
-        uploadDidSucceed: Bool,
-    ) async {
+    func persistRegistrationBundle(_ bundle: RegistrationPreKeyUploadBundle) async {
         logger.info("Persist after provisioning")
         await db.awaitableWrite { tx in
-            if uploadDidSucceed {
-                self.persistStateAfterUpload(bundle: bundle, tx: tx)
-            } else {
-                // Wipe the keys.
-                self.wipeKeysAfterFailedRegistration(bundle: bundle, tx: tx)
-            }
+            self.persistStateAfterUpload(bundle: bundle, tx: tx)
         }
     }
 
@@ -430,15 +422,6 @@ struct PreKeyTaskManager {
     /// the "grace period".
     private func cullStateAfterMessageProcessing(tx: DBWriteTransaction) {
         protocolStoreManager.preKeyStore.cullPreKeys(gracePeriod: 0, tx: tx)
-    }
-
-    private func wipeKeysAfterFailedRegistration(
-        bundle: RegistrationPreKeyUploadBundle,
-        tx: DBWriteTransaction,
-    ) {
-        let preKeyStore = protocolStoreManager.preKeyStore.forIdentity(bundle.identity)
-        preKeyStore.removePreKey(in: .signed, keyId: bundle.signedPreKey.id, tx: tx)
-        preKeyStore.removePreKey(in: .kyber, keyId: bundle.lastResortPreKey.id, tx: tx)
     }
 
     // MARK: Upload

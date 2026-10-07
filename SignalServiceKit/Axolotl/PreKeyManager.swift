@@ -30,13 +30,10 @@ public protocol PreKeyManager {
         keyPair: IdentityKeyPair,
     ) async -> RegistrationPreKeyUploadBundle
 
-    /// Called on a best-effort basis. Consequences of not calling this is that
-    /// the keys are still persisted (from prior to uploading) but they aren't
-    /// marked current and accepted.
-    func finalizeRegistrationPreKeyBundle(
-        _ bundle: RegistrationPreKeyUploadBundle,
-        uploadDidSucceed: Bool,
-    ) async
+    /// Must be called after successfully completing registration. If errors
+    /// occur (or the app terminates unexpectedly), unused keys are cleaned up
+    /// via the normal pruning mechanism.
+    func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle) async
 
     func rotateSignedPreKeysIfNeeded() async throws
 

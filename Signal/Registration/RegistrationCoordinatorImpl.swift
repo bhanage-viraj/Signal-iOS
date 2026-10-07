@@ -4753,37 +4753,24 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
         let shouldSkipDeviceTransfer = self.shouldSkipDeviceTransfer()
         let signalService = self.deps.signalService
-        let accountResponse = await Result(catching: {
-            return try await Service.makeCreateAccountRequest(
-                verificationMethod,
-                authPassword: authPassword,
-                accountAttributes: accountAttributes,
-                skipDeviceTransfer: shouldSkipDeviceTransfer,
-                apnRegistrationId: apnRegistrationId,
-                aciPreKeyBundle: aciPreKeyBundle,
-                pniPreKeyBundle: pniPreKeyBundle,
-                signalService: signalService,
-                logger: logger,
-            )
-        })
-        let isPrekeyUploadSuccess = switch accountResponse {
-        case .success(.success): true
-        case .success(.rejectedVerificationMethod): false
-        case .success(.reglockFailure): false
-        case .success(.deviceTransferPossible): false
-        case .failure: false
-        }
-        await deps.preKeyManager.finalizeRegistrationPreKeyBundle(
-            aciPreKeyBundle,
-            uploadDidSucceed: isPrekeyUploadSuccess,
+        let accountResponse = try await Service.makeCreateAccountRequest(
+            verificationMethod,
+            authPassword: authPassword,
+            accountAttributes: accountAttributes,
+            skipDeviceTransfer: shouldSkipDeviceTransfer,
+            apnRegistrationId: apnRegistrationId,
+            aciPreKeyBundle: aciPreKeyBundle,
+            pniPreKeyBundle: pniPreKeyBundle,
+            signalService: signalService,
+            logger: logger,
         )
-        if let pniPreKeyBundle {
-            await deps.preKeyManager.finalizeRegistrationPreKeyBundle(
-                pniPreKeyBundle,
-                uploadDidSucceed: isPrekeyUploadSuccess,
-            )
+        if case .success = accountResponse {
+            await deps.preKeyManager.finalizeRegistrationPreKeyBundle(aciPreKeyBundle)
+            if let pniPreKeyBundle {
+                await deps.preKeyManager.finalizeRegistrationPreKeyBundle(pniPreKeyBundle)
+            }
         }
-        return try accountResponse.get()
+        return accountResponse
     }
 
     private func generatePniStateAndMakeChangeNumberRequest(

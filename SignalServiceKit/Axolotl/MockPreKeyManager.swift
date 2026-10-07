@@ -39,7 +39,7 @@ class MockPreKeyManager: PreKeyManager {
 
     var didFinalizeRegistrationPrekeys = false
 
-    func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle, uploadDidSucceed: Bool) async {
+    func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle) async {
         didFinalizeRegistrationPrekeys = true
     }
 

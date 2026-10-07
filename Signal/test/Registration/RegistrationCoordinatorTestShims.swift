@@ -182,12 +182,12 @@ public class _RegistrationCoordinator_PreKeyManagerMock: PreKeyManager {
         return await createPreKeysMocks.removeFirst()(identity)
     }
 
-    public typealias FinalizePreKeyBundleMock = (OWSIdentity, Bool) async -> Void
+    public typealias FinalizePreKeyBundleMock = (OWSIdentity) async -> Void
     private var finalizePreKeyBundleMocks = [FinalizePreKeyBundleMock]()
     public func addFinalizePreKeyBundleMock(_ mock: @escaping FinalizePreKeyBundleMock) { finalizePreKeyBundleMocks.append(mock) }
-    public func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle, uploadDidSucceed: Bool) async {
+    public func finalizeRegistrationPreKeyBundle(_ bundle: RegistrationPreKeyUploadBundle) async {
         run.addObservedStep(.finalizePreKeys)
-        await finalizePreKeyBundleMocks.removeFirst()(bundle.identity, uploadDidSucceed)
+        await finalizePreKeyBundleMocks.removeFirst()(bundle.identity)
     }
 
     public func setIsChangingNumber(_ isChangingNumber: Bool) {
