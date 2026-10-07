@@ -414,6 +414,7 @@ public class GRDBSchemaMigrator {
         case dataMigration_indexSearchableNames
         case dataMigration_clearLaunchScreenCache2
         case dataMigration_resetLinkedDeviceAuthorMergeBuilder
+        case dataMigration_scheduleStorageServiceUpdateForLegacyMentionNotifications
 
 // We must ensure that we never re-use a MigrationId. It's unlikely that
 // we'll happen to pick the same name twice, but it's possible. We keep old
@@ -5998,6 +5999,11 @@ public class GRDBSchemaMigrator {
             return .success(())
         }
 
+        migrator.registerMigration(.dataMigration_scheduleStorageServiceUpdateForLegacyMentionNotifications) { tx in
+            scheduleStorageServiceUpdateForLegacyMentionNotifications(tx: tx)
+            return .success(())
+        }
+
         // MARK: - Data Migration Insertion Point
     }
 
@@ -8742,6 +8748,43 @@ public class GRDBSchemaMigrator {
         WHERE mentionNotificationMode = 2
         AND shouldNotifyForRepliesWhenMuted IS NULL
         """)
+    }
+
+    // Record pending updates so the Storage Service Manager writes the migrated fields
+    static func scheduleStorageServiceUpdateForLegacyMentionNotifications(tx: DBWriteTransaction) {
+        var masterKeys = [GroupMasterKey]()
+
+        TSThread.anyEnumerate(
+            transaction: tx,
+            sql: """
+                SELECT *
+                FROM \(TSThread.databaseTableName)
+                WHERE \(threadColumn: .recordType) = ?
+                AND \(threadColumn: .mentionNotificationMode) = ?
+            """,
+            arguments: [
+                TSThreadType.groupThread.rawValue,
+                TSThread.MentionNotificationMode.doNotNotifyWhenMuted.rawValue,
+            ],
+        ) { thread, _ in
+            guard
+                let groupThread = thread as? TSGroupThread,
+                let groupModel = groupThread.groupModel as? TSGroupModelV2
+            else {
+                return
+            }
+            do {
+                masterKeys.append(try groupModel.masterKey())
+            } catch {
+                owsFailDebug("Missing master key: \(error)")
+            }
+        }
+
+        guard !masterKeys.isEmpty else {
+            return
+        }
+
+        StorageServiceOperation.recordPendingUpdates(updatedGroupV2MasterKeys: masterKeys, tx: tx)
     }
 
     static func dedupeSignalRecipients(tx: DBWriteTransaction) throws {

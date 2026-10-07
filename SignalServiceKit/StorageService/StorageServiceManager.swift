@@ -879,6 +879,12 @@ class StorageServiceOperation {
         return { await SSKEnvironment.shared.databaseStorageRef.awaitableWrite { recordPendingMutations(pendingMutations, transaction: $0) } }
     }
 
+    static func recordPendingUpdates(updatedGroupV2MasterKeys: [GroupMasterKey], tx: DBWriteTransaction) {
+        var pendingMutations = PendingMutations()
+        pendingMutations.updatedGroupV2MasterKeys.formUnion(updatedGroupV2MasterKeys.lazy.map { $0.serialize() })
+        recordPendingMutations(pendingMutations, transaction: tx)
+    }
+
     private static func recordPendingMutations(
         _ pendingMutations: PendingMutations,
         transaction: DBWriteTransaction,
