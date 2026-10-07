@@ -89,4 +89,6 @@ public final class ProfileKeyMessage: TransientOutgoingMessage {
     }
 
     override public var contentHint: SealedSenderContentHint { .implicit }
+
+    override public var isUrgent: Bool { false }
 }
