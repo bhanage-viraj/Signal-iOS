@@ -176,8 +176,8 @@ public class GzipStreamTransform: StreamTransform, FinalizableStreamTransform {
             // Then move the pointer forward the amount of data that's aready been passed to deflate()
             stream.next_in = UnsafeMutablePointer<Bytef>(mutating: ptr.bindMemory(to: Bytef.self).baseAddress!)
 
-            repeat {
-                guard let proposedStep = operationQueue.popFirst() else { break }
+            while !operationQueue.isEmpty, status != Z_STREAM_END {
+                let proposedStep = operationQueue.removeFirst()
 
                 // Check if the currently proposed step needs to be split into multiple steps
                 // The method returns the step to be run, along with any followup steps that
@@ -292,7 +292,7 @@ public class GzipStreamTransform: StreamTransform, FinalizableStreamTransform {
                 default:
                     throw GzipError.transformFailed
                 }
-            } while !operationQueue.isEmpty && status != Z_STREAM_END
+            }
         }
 
         let returnData = buffer.prefix(currentOffset)
