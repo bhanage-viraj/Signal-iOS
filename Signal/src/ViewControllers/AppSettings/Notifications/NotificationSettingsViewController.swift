@@ -177,7 +177,11 @@ class NotificationSettingsViewController: OWSTableViewController2 {
             },
             actionBlock: { uiSwitch in
                 db.write { tx in
-                    notificationPreferencesManager.setAreReactionNotificationsEnabled(uiSwitch.isOn, tx: tx)
+                    notificationPreferencesManager.setAreReactionNotificationsEnabled(
+                        uiSwitch.isOn,
+                        updateStorageService: true,
+                        tx: tx,
+                    )
                 }
             },
         ))

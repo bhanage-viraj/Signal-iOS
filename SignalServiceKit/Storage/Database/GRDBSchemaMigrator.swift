@@ -372,6 +372,7 @@ public class GRDBSchemaMigrator {
         case disableUnreadRemindersForExistingUsers
         case migrateBlocked
         case addBlockedAt
+        case migrateLegacyMentionNotificationMode
 
         // NOTE: Every time we add a migration id, consider
         // incrementing grdbSchemaVersionLatest.
@@ -5712,6 +5713,11 @@ public class GRDBSchemaMigrator {
             return .success(())
         }
 
+        migrator.registerMigration(.migrateLegacyMentionNotificationMode) { tx in
+            try migrateLegacyMentionNotificationMode(tx: tx)
+            return .success(())
+        }
+
         // MARK: - Schema Migration Insertion Point
     }
 
@@ -8715,6 +8721,27 @@ public class GRDBSchemaMigrator {
 
     static func removeBlockedGroups(tx: DBWriteTransaction) throws {
         try tx.database.drop(table: "BlockedGroup")
+    }
+
+    // The default is to have @ mentions and replies go through (even
+    // though the setting only said mentions). If the user turned that
+    // off for a chat (set mentionNotificationMode = 2), turn the new
+    // shouldNotifyForMentionsWhenMuted and shouldNotifyForRepliesWhenMuted
+    // off, otherwise inherit the app default.
+    static func migrateLegacyMentionNotificationMode(tx: DBWriteTransaction) throws {
+        try tx.database.execute(sql: """
+        UPDATE model_TSThread
+        SET shouldNotifyForMentionsWhenMuted = 0
+        WHERE mentionNotificationMode = 2
+        AND shouldNotifyForMentionsWhenMuted IS NULL
+        """)
+
+        try tx.database.execute(sql: """
+        UPDATE model_TSThread
+        SET shouldNotifyForRepliesWhenMuted = 0
+        WHERE mentionNotificationMode = 2
+        AND shouldNotifyForRepliesWhenMuted IS NULL
+        """)
     }
 
     static func dedupeSignalRecipients(tx: DBWriteTransaction) throws {

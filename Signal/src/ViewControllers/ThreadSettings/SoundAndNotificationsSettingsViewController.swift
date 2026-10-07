@@ -274,7 +274,11 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
 
     private func setShouldNotifyForMentionsWhenMuted(_ value: Bool) {
         db.write { transaction in
-            self.threadViewModel.threadRecord.updateWithShouldNotifyForMentionsWhenMutedLegacy(value, wasLocallyInitiated: true, transaction: transaction)
+            DependenciesBridge.shared.notificationPreferencesManager.setNotifyForMentionsWhenMutedFromLegacyUI(
+                value,
+                thread: self.threadViewModel.threadRecord,
+                tx: transaction,
+            )
         }
 
         updateTableContents()

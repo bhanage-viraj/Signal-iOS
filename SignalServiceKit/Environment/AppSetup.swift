@@ -347,7 +347,9 @@ extension AppSetup.GlobalsContinuation {
             searchableNameIndexer: searchableNameIndexer,
             storageServiceManager: storageServiceManager,
         )
-        let notificationPreferencesManager = NotificationPreferencesManager()
+        let notificationPreferencesManager = NotificationPreferencesManager(
+            storageServiceManager: storageServiceManager,
+        )
 
         let aciContactShareNameManager = AciContactShareNameManagerImpl(
             aciContactShareNameStore: aciContactShareNameStore,

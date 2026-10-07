@@ -375,6 +375,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
             builder.setArchived(thread.isArchived)
             builder.setMarkedUnread(thread.isMarkedUnread)
             builder.setMutedUntilTimestamp(thread.mutedUntilTimestamp)
+            builder.setNotifyForCallsIfMuted(StorageServiceProtoOptionalBool(thread.shouldNotifyForCallsWhenMuted))
         }
 
         if let aci = contact.aci, let associatedData = StoryFinder.getAssociatedData(forAci: aci, tx: tx) {
@@ -659,6 +660,13 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
 
         if record.mutedUntilTimestamp != localThread.mutedUntilTimestamp {
             threadMuteManager.setMutedUntilTimestamp(record.mutedUntilTimestamp, for: localThread, updateStorageService: false, tx: tx)
+        }
+
+        if
+            !record.notifyForCallsIfMuted.isUnrecognized,
+            record.notifyForCallsIfMuted.boolValue != localThread.shouldNotifyForCallsWhenMuted
+        {
+            localThread.updateWithShouldNotifyForCallsWhenMuted(record.notifyForCallsIfMuted.boolValue, transaction: tx)
         }
 
         if let aci = serviceIds.aci {
@@ -1045,7 +1053,10 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             if let lastVerifiedGroupNameHash = groupRecord.lastVerifiedGroupNameHash {
                 builder.setVerifiedNameHash(lastVerifiedGroupNameHash)
             }
-            builder.setDontNotifyForMentionsIfMuted(!groupThread.shouldNotifyForMentionsWhenMutedLegacy)
+            builder.setNotifyForCallsIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForCallsWhenMuted))
+            builder.setNotifyForMentionsIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForMentionsWhenMuted))
+            builder.setNotifyForRepliesIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForRepliesWhenMuted))
+            builder.setDontNotifyForMentionsIfMuted(groupThread.shouldNotifyForMentionsWhenMuted == false)
             builder.setStorySendMode(groupThread.storyViewMode.storageServiceMode)
         } else if
             let enqueuedRecord = groupsV2.groupRecordPendingStorageServiceRestore(
@@ -1063,6 +1074,9 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
                 builder.setVerifiedNameHash(verifiedNameHash)
             }
             builder.setDontNotifyForMentionsIfMuted(enqueuedRecord.dontNotifyForMentionsIfMuted)
+            builder.setNotifyForCallsIfMuted(enqueuedRecord.notifyForCallsIfMuted)
+            builder.setNotifyForMentionsIfMuted(enqueuedRecord.notifyForMentionsIfMuted)
+            builder.setNotifyForRepliesIfMuted(enqueuedRecord.notifyForRepliesIfMuted)
             builder.setStorySendMode(enqueuedRecord.storySendMode)
         }
 
@@ -1110,12 +1124,59 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
                 groupThread.updateWithStoryViewMode(.init(storageServiceMode: record.storySendMode), transaction: transaction)
             }
 
-            let localShouldNotifyForMentionsWhenMuted = groupThread.shouldNotifyForMentionsWhenMutedLegacy
-            let remoteShouldNotifyForMentionsWhenMuted = !record.dontNotifyForMentionsIfMuted
-            if localShouldNotifyForMentionsWhenMuted != remoteShouldNotifyForMentionsWhenMuted {
-                groupThread.updateWithShouldNotifyForMentionsWhenMutedLegacy(
-                    remoteShouldNotifyForMentionsWhenMuted,
-                    wasLocallyInitiated: false,
+            if
+                !record.notifyForCallsIfMuted.isUnrecognized,
+                record.notifyForCallsIfMuted.boolValue != groupThread.shouldNotifyForCallsWhenMuted
+            {
+                groupThread.updateWithShouldNotifyForCallsWhenMuted(record.notifyForCallsIfMuted.boolValue, transaction: transaction)
+            }
+
+            let remoteNotifyForRepliesWhenMuted: Bool?
+            switch record.notifyForRepliesIfMuted {
+            case .unset:
+                remoteNotifyForRepliesWhenMuted = nil
+            case .true:
+                remoteNotifyForRepliesWhenMuted = true
+            case .false:
+                remoteNotifyForRepliesWhenMuted = false
+            case .UNRECOGNIZED:
+                // Make it fail the != check to skip it
+                remoteNotifyForRepliesWhenMuted = groupThread.shouldNotifyForRepliesWhenMuted
+            }
+
+            if remoteNotifyForRepliesWhenMuted != groupThread.shouldNotifyForRepliesWhenMuted {
+                groupThread.updateWithShouldNotifyForRepliesWhenMuted(
+                    remoteNotifyForRepliesWhenMuted,
+                    transaction: transaction,
+                )
+            }
+
+            let remoteNotifyForMentionsWhenMuted: Bool?
+            if record.dontNotifyForMentionsIfMuted {
+                // The legacy field wins when the fields disagree: an old client
+                // edited it and round-tripped a stale value for the new field.
+                remoteNotifyForMentionsWhenMuted = false
+                if record.notifyForMentionsIfMuted != .false {
+                    needsUpdate = true
+                }
+            } else {
+                // Note that the legacy setting is false here, or "do notify".
+                switch record.notifyForMentionsIfMuted {
+                case .unset, .UNRECOGNIZED:
+                    remoteNotifyForMentionsWhenMuted = nil
+                case .true:
+                    remoteNotifyForMentionsWhenMuted = true
+                case .false:
+                    // An old client re-enabled mentions, and round-tripped a stale
+                    // value for the new setting.
+                    remoteNotifyForMentionsWhenMuted = true
+                    needsUpdate = true
+                }
+            }
+
+            if remoteNotifyForMentionsWhenMuted != groupThread.shouldNotifyForMentionsWhenMuted {
+                groupThread.updateWithShouldNotifyForMentionsWhenMuted(
+                    remoteNotifyForMentionsWhenMuted,
                     transaction: transaction,
                 )
             }
@@ -1245,6 +1306,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
     private let dmConfigurationStore: DisappearingMessagesConfigurationStore
     private let linkPreviewSettingStore: LinkPreviewSettingStore
     private let localUsernameManager: LocalUsernameManager
+    private let notificationPreferencesManager: NotificationPreferencesManager
     private let keyTransparencyManager: KeyTransparencyManager
     private let paymentsHelper: PaymentsHelperSwift
     private let phoneNumberDiscoverabilityManager: PhoneNumberDiscoverabilityManager
@@ -1278,6 +1340,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         dmConfigurationStore: DisappearingMessagesConfigurationStore,
         linkPreviewSettingStore: LinkPreviewSettingStore,
         localUsernameManager: LocalUsernameManager,
+        notificationPreferencesManager: NotificationPreferencesManager,
         keyTransparencyManager: KeyTransparencyManager,
         paymentsHelper: PaymentsHelperSwift,
         phoneNumberDiscoverabilityManager: PhoneNumberDiscoverabilityManager,
@@ -1311,6 +1374,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         self.dmConfigurationStore = dmConfigurationStore
         self.linkPreviewSettingStore = linkPreviewSettingStore
         self.localUsernameManager = localUsernameManager
+        self.notificationPreferencesManager = notificationPreferencesManager
         self.keyTransparencyManager = keyTransparencyManager
         self.paymentsHelper = paymentsHelper
         self.phoneNumberDiscoverabilityManager = phoneNumberDiscoverabilityManager
@@ -1345,6 +1409,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         unknownFields: UnknownStorage?,
         transaction: DBReadTransaction,
     ) -> StorageServiceProtoAccountRecord? {
+        let tx = transaction
         var builder = StorageServiceProtoAccountRecord.builder()
 
         let localAddress = localIdentifiers.aciAddress
@@ -1477,6 +1542,26 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
             !usernameEducationManager.shouldShowUsernameEducation(tx: transaction),
         )
 
+        // While-muted notifications
+        builder.setNotifyForCallsIfMuted(StorageServiceProtoOptionalBool(notificationPreferencesManager.globalNotifyForCallsWhenMuted(tx: tx)))
+        builder.setNotifyForMentionsIfMuted(StorageServiceProtoOptionalBool(notificationPreferencesManager.globalNotifyForMentionsWhenMuted(tx: tx)))
+        builder.setNotifyForRepliesIfMuted(StorageServiceProtoOptionalBool(notificationPreferencesManager.globalNotifyForRepliesWhenMuted(tx: tx)))
+
+        builder.setReactionNotifications(StorageServiceProtoOptionalBool(notificationPreferencesManager.areReactionNotificationsEnabled(tx: tx)))
+
+        // [Notifications] TODO: Unread reminders here
+
+        builder.setNotifyWhenContactJoins(StorageServiceProtoOptionalBool(notificationPreferencesManager.shouldNotifyOfNewAccounts(tx: tx)))
+
+        // Badge
+        builder.setUnreadBadgeType({
+            switch notificationPreferencesManager.badgeCountType(tx: tx) {
+            case .unreadMessages: .unreadMessages
+            case .unreadChats: .unreadChats
+            }
+        }())
+        builder.setIncludeMutedChatsInBadge(StorageServiceProtoOptionalBool(notificationPreferencesManager.includeMutedThreadsInBadgeCount(tx: tx)))
+
         if
             let localRecipient = recipientDatabaseTable.fetchRecipient(
                 serviceId: localIdentifiers.aci,
@@ -1523,6 +1608,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         _ record: StorageServiceProtoAccountRecord,
         transaction: DBWriteTransaction,
     ) -> StorageServiceMergeResult<Void> {
+        let tx = transaction
         var needsUpdate = false
 
         let localAddress = localIdentifiers.aciAddress
@@ -1848,6 +1934,90 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
                 false,
                 tx: transaction,
             )
+        }
+
+        // MARK: Notifications
+
+        func setIfMismatched(
+            localValue: Bool,
+            recordValue: StorageServiceProtoOptionalBool,
+            setter: (_ newValue: Bool, _ updateStorageService: Bool, _ tx: DBWriteTransaction) -> Void,
+        ) {
+            switch recordValue {
+            case .unset:
+                needsUpdate = true
+            case .true:
+                if !localValue {
+                    setter(true, false, tx)
+                }
+            case .false:
+                if localValue {
+                    setter(false, false, tx)
+                }
+            case .UNRECOGNIZED:
+                break
+            }
+        }
+
+        // While-muted notifications
+        setIfMismatched(
+            localValue: notificationPreferencesManager.globalNotifyForCallsWhenMuted(tx: tx),
+            recordValue: record.notifyForCallsIfMuted,
+            setter: notificationPreferencesManager.setGlobalNotifyForCallsWhenMuted(_:updateStorageService:tx:),
+        )
+        setIfMismatched(
+            localValue: notificationPreferencesManager.globalNotifyForMentionsWhenMuted(tx: tx),
+            recordValue: record.notifyForMentionsIfMuted,
+            setter: notificationPreferencesManager.setGlobalNotifyForMentionsWhenMuted(_:updateStorageService:tx:),
+        )
+        setIfMismatched(
+            localValue: notificationPreferencesManager.globalNotifyForRepliesWhenMuted(tx: tx),
+            recordValue: record.notifyForRepliesIfMuted,
+            setter: notificationPreferencesManager.setGlobalNotifyForRepliesWhenMuted(_:updateStorageService:tx:),
+        )
+
+        setIfMismatched(
+            localValue: notificationPreferencesManager.areReactionNotificationsEnabled(tx: tx),
+            recordValue: record.reactionNotifications,
+            setter: notificationPreferencesManager.setAreReactionNotificationsEnabled(_:updateStorageService:tx:),
+        )
+
+        // [Notifications] TODO: Unread reminders here
+
+        setIfMismatched(
+            localValue: notificationPreferencesManager.shouldNotifyOfNewAccounts(tx: tx),
+            recordValue: record.notifyWhenContactJoins,
+            setter: notificationPreferencesManager.setShouldNotifyOfNewAccounts(_:updateStorageService:tx:),
+        )
+
+        // Badge
+        setIfMismatched(
+            localValue: notificationPreferencesManager.includeMutedThreadsInBadgeCount(tx: tx),
+            recordValue: record.includeMutedChatsInBadge,
+            setter: notificationPreferencesManager.setIncludeMutedThreadsInBadgeCount(_:updateStorageService:tx:),
+        )
+        let localBadgeCountType = notificationPreferencesManager.badgeCountType(tx: tx)
+        switch record.unreadBadgeType {
+        case .unknownBadgeType:
+            needsUpdate = true
+        case .unreadMessages:
+            if localBadgeCountType != .unreadMessages {
+                notificationPreferencesManager.setBadgeCountType(
+                    .unreadMessages,
+                    updateStorageService: false,
+                    tx: tx,
+                )
+            }
+        case .unreadChats:
+            if localBadgeCountType != .unreadChats {
+                notificationPreferencesManager.setBadgeCountType(
+                    .unreadChats,
+                    updateStorageService: false,
+                    tx: tx,
+                )
+            }
+        case .UNRECOGNIZED:
+            break
         }
 
         mergeBackupPlan(in: record, tx: transaction)
@@ -2420,8 +2590,16 @@ extension StorageServiceProtoOptionalBool {
         }
     }
 
-    init(_ boolValue: Bool) {
-        self = boolValue ? .true : .false
+    var isUnrecognized: Bool {
+        if case .UNRECOGNIZED = self { true } else { false }
+    }
+
+    init(_ boolValue: Bool?) {
+        switch boolValue {
+        case nil: self = .unset
+        case true: self = .true
+        case false: self = .false
+        }
     }
 }
 

@@ -142,6 +142,7 @@ message ContactRecord {
   bytes aciBinary = 25; // 16-byte UUID
   bytes pniBinary = 26; // 16-byte UUID
   uint64 blockedAtTimestamp = 27; // if `blocked` is true, 0 means unknown block time
+  OptionalBool notifyForCallsIfMuted = 28; // If unset, use the default settings
   Name sharedName = 30; // Name shared from a third party
 }
 
@@ -169,15 +170,24 @@ message GroupV2Record {
   bool archived = 4;
   bool markedUnread = 5;
   uint64 mutedUntilTimestamp = 6;
-  bool dontNotifyForMentionsIfMuted = 7;
+  bool dontNotifyForMentionsIfMuted = 7; // will be deprecated in favor of [notifyForMentionsIfMuted]
   bool hideStory = 8;
   StorySendMode storySendMode = 10;
   optional AvatarColor avatarColor = 11;
   bytes verifiedNameHash = 12; // SHA-256 of last verified group name
   uint64 blockedAtTimestamp = 13; // if `blocked` is true, 0 means unknown block time
+  OptionalBool notifyForCallsIfMuted = 14; // If unset, use the default settings
+  OptionalBool notifyForMentionsIfMuted = 15; // If unset, use the default settings. If [dontNotifyForMentionsIfMuted] is true, this should be initialized to false.
+  OptionalBool notifyForRepliesIfMuted = 16; // If unset, use the default settings
 }
 
 message AccountRecord {
+  enum UnreadBadgeType {
+    UNKNOWN_BADGE_TYPE = 0; // Interpret as "Unread messages"
+    UNREAD_MESSAGES = 1;
+    UNREAD_CHATS = 2;
+  }
+
   enum PhoneNumberSharingMode {
     UNKNOWN = 0;
     EVERYBODY = 1;
@@ -286,6 +296,13 @@ message AccountRecord {
   optional uint64 releaseNotesChatMutedUntilTimestamp = 49;
   optional bool releaseNotesChatBlocked = 50;
   optional bool releaseNotesChatMarkedUnread = 51;
+  UnreadBadgeType unreadBadgeType = 53;
+  OptionalBool includeMutedChatsInBadge = 54; // If unset, consider this off
+  OptionalBool reactionNotifications = 55; // If unset, consider this on
+  OptionalBool notifyForCallsIfMuted = 56; // If unset, consider this off
+  OptionalBool notifyForMentionsIfMuted = 57; // If unset, consider this on
+  OptionalBool notifyForRepliesIfMuted = 58; // If unset, consider this on
+  OptionalBool notifyWhenContactJoins = 60; // If unset, consider this off
 }
 
 message StoryDistributionListRecord {

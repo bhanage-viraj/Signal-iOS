@@ -42,7 +42,9 @@ class OWSContactsManagerTest: SignalBaseTest {
             aciContactShareNameManager: mockAciContactShareNameManager,
             appReadiness: AppReadinessMock(),
             nicknameManager: mockNicknameManager,
-            notificationPreferencesManager: NotificationPreferencesManager(),
+            notificationPreferencesManager: NotificationPreferencesManager(
+                storageServiceManager: FakeStorageServiceManager(),
+            ),
             recipientDatabaseTable: mockRecipientDatabaseTable,
             usernameLookupManager: mockUsernameLookupMananger,
         )

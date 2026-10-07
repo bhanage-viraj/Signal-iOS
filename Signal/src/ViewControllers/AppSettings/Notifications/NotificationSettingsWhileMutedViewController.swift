@@ -40,7 +40,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                     if let thread {
                         notificationPreferencesManager.notifyForCallsWhenMuted(thread: thread, tx: tx)
                     } else {
-                        notificationPreferencesManager.defaultNotifyForCallsWhenMuted(tx: tx)
+                        notificationPreferencesManager.globalNotifyForCallsWhenMuted(tx: tx)
                     }
                 }
             },
@@ -49,7 +49,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                     if let thread {
                         notificationPreferencesManager.setNotifyForCallsWhenMuted(value, thread: thread, tx: tx)
                     } else {
-                        notificationPreferencesManager.setDefaultNotifyForCallsWhenMuted(value, tx: tx)
+                        notificationPreferencesManager.setGlobalNotifyForCallsWhenMuted(value, tx: tx)
                     }
                 }
             },
@@ -65,7 +65,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                         if let thread {
                             notificationPreferencesManager.notifyForMentionsWhenMuted(thread: thread, tx: tx)
                         } else {
-                            notificationPreferencesManager.defaultNotifyForMentionsWhenMuted(tx: tx)
+                            notificationPreferencesManager.globalNotifyForMentionsWhenMuted(tx: tx)
                         }
                     }
                 },
@@ -74,7 +74,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                         if let thread {
                             notificationPreferencesManager.setNotifyForMentionsWhenMuted(value, thread: thread, tx: tx)
                         } else {
-                            notificationPreferencesManager.setDefaultNotifyForMentionsWhenMuted(value, tx: tx)
+                            notificationPreferencesManager.setGlobalNotifyForMentionsWhenMuted(value, tx: tx)
                         }
                     }
                 },
@@ -89,7 +89,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                         if let thread {
                             notificationPreferencesManager.notifyForRepliesWhenMuted(thread: thread, tx: tx)
                         } else {
-                            notificationPreferencesManager.defaultNotifyForRepliesWhenMuted(tx: tx)
+                            notificationPreferencesManager.globalNotifyForRepliesWhenMuted(tx: tx)
                         }
                     }
                 },
@@ -98,7 +98,7 @@ class NotificationSettingsWhileMutedViewController: OWSTableViewController2 {
                         if let thread {
                             notificationPreferencesManager.setNotifyForRepliesWhenMuted(value, thread: thread, tx: tx)
                         } else {
-                            notificationPreferencesManager.setDefaultNotifyForRepliesWhenMuted(value, tx: tx)
+                            notificationPreferencesManager.setGlobalNotifyForRepliesWhenMuted(value, tx: tx)
                         }
                     }
                 },

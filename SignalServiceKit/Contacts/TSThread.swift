@@ -491,26 +491,6 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
         }
     }
 
-    public func updateWithShouldNotifyForMentionsWhenMutedLegacy(
-        _ shouldNotifyForMentionsWhenMutedLegacy: Bool,
-        wasLocallyInitiated: Bool,
-        transaction tx: DBWriteTransaction,
-    ) {
-        anyUpdate(transaction: tx) { thread in
-            thread.shouldNotifyForMentionsWhenMutedLegacy = shouldNotifyForMentionsWhenMutedLegacy
-        }
-
-        if
-            wasLocallyInitiated,
-            let groupThread = self as? TSGroupThread,
-            groupThread.isGroupV2Thread
-        {
-            SSKEnvironment.shared.storageServiceManagerRef.recordPendingUpdates(
-                groupModel: groupThread.groupModel,
-            )
-        }
-    }
-
     func updateWithShouldNotifyForRepliesWhenMuted(
         _ shouldNotifyForRepliesWhenMuted: Bool?,
         transaction tx: DBWriteTransaction,
@@ -526,6 +506,7 @@ open class TSThread: NSObject, SDSCodableModel, InheritableRecord {
     ) {
         anyUpdate(transaction: tx) { thread in
             thread.shouldNotifyForMentionsWhenMuted = shouldNotifyForMentionsWhenMuted
+            thread.shouldNotifyForMentionsWhenMutedLegacy = shouldNotifyForMentionsWhenMuted != false
         }
     }
 

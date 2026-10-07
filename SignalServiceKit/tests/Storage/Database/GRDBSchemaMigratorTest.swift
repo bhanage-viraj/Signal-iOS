@@ -2865,6 +2865,64 @@ struct GRDBSchemaMigratorTest {
         }
     }
 
+    @Test
+    func testMigrateLegacyMentionNotificationMode() throws {
+        let databaseQueue = DatabaseQueue()
+        try databaseQueue.write { db in
+            try db.execute(sql: """
+            CREATE TABLE "model_TSThread" (
+              "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+              "mentionNotificationMode" INTEGER,
+              "shouldNotifyForMentionsWhenMuted" BOOLEAN,
+              "shouldNotifyForRepliesWhenMuted" BOOLEAN
+            );
+            """)
+
+            let rows: [(mentionNotificationMode: Int?, mentions: Bool?, replies: Bool?)] = [
+                (nil, nil, nil),
+                (0, nil, nil),
+                (1, nil, nil),
+                (2, nil, nil),
+                (2, true, nil),
+                (2, nil, true),
+            ]
+            for (index, row) in rows.enumerated() {
+                try db.execute(
+                    sql: """
+                    INSERT INTO "model_TSThread" (
+                        "id", "mentionNotificationMode", "shouldNotifyForMentionsWhenMuted", "shouldNotifyForRepliesWhenMuted"
+                    ) VALUES (?, ?, ?, ?)
+                    """,
+                    arguments: [index + 1, row.mentionNotificationMode, row.mentions, row.replies],
+                )
+            }
+
+            do {
+                let tx = DBWriteTransaction(database: db)
+                defer { tx.finalizeTransaction() }
+                try GRDBSchemaMigrator.migrateLegacyMentionNotificationMode(tx: tx)
+            }
+
+            let results = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT "shouldNotifyForMentionsWhenMuted", "shouldNotifyForRepliesWhenMuted" FROM "model_TSThread" ORDER BY "id"
+                """,
+            ).map { row -> [Bool?] in
+                [row["shouldNotifyForMentionsWhenMuted"], row["shouldNotifyForRepliesWhenMuted"]]
+            }
+            let expectedResults: [[Bool?]] = [
+                [nil, nil],
+                [nil, nil],
+                [nil, nil],
+                [false, false],
+                [true, false],
+                [false, true],
+            ]
+            #expect(results == expectedResults)
+        }
+    }
+
     @Test(arguments: [
         (isRecipientBlockedAndWhitelisted: false, isGroupBlockedAndWhitelisted: false, shouldRotate: false),
         (isRecipientBlockedAndWhitelisted: true, isGroupBlockedAndWhitelisted: false, shouldRotate: true),

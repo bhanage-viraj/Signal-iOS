@@ -72,8 +72,11 @@ public struct NotificationPreferencesManager {
     }
 
     private let kvStore = NewKeyValueStore(collection: "NotificationPreferences")
+    private let storageServiceManager: any StorageServiceManager
 
-    public init() {}
+    public init(storageServiceManager: any StorageServiceManager) {
+        self.storageServiceManager = storageServiceManager
+    }
 
     // MARK: - Preview type
 
@@ -110,8 +113,15 @@ public struct NotificationPreferencesManager {
         kvStore.fetchValue(Bool.self, forKey: Key.areReactionNotificationsEnabled, tx: tx) ?? Defaults.areReactionNotificationsEnabled
     }
 
-    public func setAreReactionNotificationsEnabled(_ value: Bool, tx: DBWriteTransaction) {
+    public func setAreReactionNotificationsEnabled(
+        _ value: Bool,
+        updateStorageService: Bool,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.areReactionNotificationsEnabled, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     // MARK: - New accounts
@@ -120,8 +130,15 @@ public struct NotificationPreferencesManager {
         kvStore.fetchValue(Bool.self, forKey: Key.shouldNotifyOfNewAccounts, tx: tx) ?? Defaults.shouldNotifyOfNewAccounts
     }
 
-    public func setShouldNotifyOfNewAccounts(_ value: Bool, tx: DBWriteTransaction) {
+    public func setShouldNotifyOfNewAccounts(
+        _ value: Bool,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.shouldNotifyOfNewAccounts, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     // MARK: - Badge count
@@ -130,8 +147,15 @@ public struct NotificationPreferencesManager {
         return kvStore.fetchValue(Bool.self, forKey: Key.includeMutedThreadsInBadgeCount, tx: tx) ?? Defaults.includeMutedThreadsInBadgeCount
     }
 
-    public func setIncludeMutedThreadsInBadgeCount(_ value: Bool, tx: DBWriteTransaction) {
+    public func setIncludeMutedThreadsInBadgeCount(
+        _ value: Bool,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.includeMutedThreadsInBadgeCount, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     public func badgeCountType(tx: DBReadTransaction) -> BadgeCountType {
@@ -139,8 +163,15 @@ public struct NotificationPreferencesManager {
         return rawValue.flatMap(BadgeCountType.init(rawValue:)) ?? Defaults.badgeCountType
     }
 
-    public func setBadgeCountType(_ value: BadgeCountType, tx: DBWriteTransaction) {
+    public func setBadgeCountType(
+        _ value: BadgeCountType,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value.rawValue, forKey: Key.badgeCountType, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     // MARK: - Notification sound
@@ -163,62 +194,113 @@ public struct NotificationPreferencesManager {
 
     // MARK: - While muted
 
-    public func defaultNotifyForCallsWhenMuted(tx: DBReadTransaction) -> Bool {
+    public func globalNotifyForCallsWhenMuted(tx: DBReadTransaction) -> Bool {
         kvStore.fetchValue(Bool.self, forKey: Key.notifyForCallsWhenMuted, tx: tx) ?? Defaults.notifyForCallsWhenMuted
     }
 
-    public func setDefaultNotifyForCallsWhenMuted(_ value: Bool, tx: DBWriteTransaction) {
+    public func setGlobalNotifyForCallsWhenMuted(
+        _ value: Bool,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.notifyForCallsWhenMuted, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     public func notifyForCallsWhenMuted(thread: TSThread, tx: DBReadTransaction) -> Bool {
-        thread.shouldNotifyForCallsWhenMuted ?? defaultNotifyForCallsWhenMuted(tx: tx)
+        thread.shouldNotifyForCallsWhenMuted ?? globalNotifyForCallsWhenMuted(tx: tx)
     }
 
-    /// `nil` inherits the default
-    public func setNotifyForCallsWhenMuted(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+    /// `nil` inherits the global setting
+    public func setNotifyForCallsWhenMuted(
+        _ value: Bool?,
+        thread: TSThread,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         thread.updateWithShouldNotifyForCallsWhenMuted(value, transaction: tx)
-        // [Notifications] TODO: Storage Service sync
+        if updateStorageService {
+            thread.recordPendingUpdates(storageServiceManager: storageServiceManager)
+        }
     }
 
     // MARK: -
 
-    public func defaultNotifyForMentionsWhenMuted(tx: DBReadTransaction) -> Bool {
+    public func globalNotifyForMentionsWhenMuted(tx: DBReadTransaction) -> Bool {
         kvStore.fetchValue(Bool.self, forKey: Key.notifyForMentionsWhenMuted, tx: tx) ?? Defaults.shouldNotifyForMentionsWhenMuted
     }
 
-    public func setDefaultNotifyForMentionsWhenMuted(_ value: Bool, tx: DBWriteTransaction) {
+    public func setGlobalNotifyForMentionsWhenMuted(
+        _ value: Bool,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.notifyForMentionsWhenMuted, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     public func notifyForMentionsWhenMuted(thread: TSThread, tx: DBReadTransaction) -> Bool {
-        thread.shouldNotifyForMentionsWhenMuted ?? defaultNotifyForMentionsWhenMuted(tx: tx)
+        thread.shouldNotifyForMentionsWhenMuted ?? globalNotifyForMentionsWhenMuted(tx: tx)
     }
 
-    /// `nil` inherits the default
-    public func setNotifyForMentionsWhenMuted(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+    public func setNotifyForMentionsWhenMutedFromLegacyUI(
+        _ value: Bool,
+        thread: TSThread,
+        tx: DBWriteTransaction,
+    ) {
+        setNotifyForMentionsWhenMuted(value, thread: thread, updateStorageService: false, tx: tx)
+        setNotifyForRepliesWhenMuted(value, thread: thread, updateStorageService: true, tx: tx)
+    }
+
+    /// `nil` inherits the global setting
+    public func setNotifyForMentionsWhenMuted(
+        _ value: Bool?,
+        thread: TSThread,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         thread.updateWithShouldNotifyForMentionsWhenMuted(value, transaction: tx)
-        // [Notifications] TODO: Storage Service sync
+        if updateStorageService {
+            thread.recordPendingUpdates(storageServiceManager: storageServiceManager)
+        }
     }
 
     // MARK: -
 
-    public func defaultNotifyForRepliesWhenMuted(tx: DBReadTransaction) -> Bool {
+    public func globalNotifyForRepliesWhenMuted(tx: DBReadTransaction) -> Bool {
         kvStore.fetchValue(Bool.self, forKey: Key.notifyForRepliesWhenMuted, tx: tx) ?? Defaults.notifyForRepliesWhenMuted
     }
 
-    public func setDefaultNotifyForRepliesWhenMuted(_ value: Bool, tx: DBWriteTransaction) {
+    public func setGlobalNotifyForRepliesWhenMuted(
+        _ value: Bool,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.notifyForRepliesWhenMuted, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     public func notifyForRepliesWhenMuted(thread: TSThread, tx: DBReadTransaction) -> Bool {
-        thread.shouldNotifyForRepliesWhenMuted ?? defaultNotifyForRepliesWhenMuted(tx: tx)
+        thread.shouldNotifyForRepliesWhenMuted ?? globalNotifyForRepliesWhenMuted(tx: tx)
     }
 
-    /// `nil` inherits the default
-    public func setNotifyForRepliesWhenMuted(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+    /// `nil` inherits the global setting
+    public func setNotifyForRepliesWhenMuted(
+        _ value: Bool?,
+        thread: TSThread,
+        updateStorageService: Bool = true,
+        tx: DBWriteTransaction,
+    ) {
         thread.updateWithShouldNotifyForRepliesWhenMuted(value, transaction: tx)
-        // [Notifications] TODO: Storage Service sync
+        if updateStorageService {
+            thread.recordPendingUpdates(storageServiceManager: storageServiceManager)
+        }
     }
 
     // MARK: - Unread reminders
@@ -267,17 +349,17 @@ public struct NotificationPreferencesManager {
         let notifyForCalls = if let thread {
             notifyForCallsWhenMuted(thread: thread, tx: tx)
         } else {
-            defaultNotifyForCallsWhenMuted(tx: tx)
+            globalNotifyForCallsWhenMuted(tx: tx)
         }
         let notifyForMentions = if let thread {
             notifyForMentionsWhenMuted(thread: thread, tx: tx)
         } else {
-            defaultNotifyForMentionsWhenMuted(tx: tx)
+            globalNotifyForMentionsWhenMuted(tx: tx)
         }
         let notifyForReplies = if let thread {
             notifyForRepliesWhenMuted(thread: thread, tx: tx)
         } else {
-            defaultNotifyForRepliesWhenMuted(tx: tx)
+            globalNotifyForRepliesWhenMuted(tx: tx)
         }
 
         var enabledSettingNames = [String]()
@@ -307,6 +389,7 @@ public struct NotificationPreferencesManager {
         Sounds.resetThreadNotificationSounds(tx: tx)
         setGlobalNotificationSound(Defaults.globalNotificationSound, tx: tx)
         resetPerChatNotificationPreferences(tx: tx)
+        storageServiceManager.recordPendingLocalAccountUpdates()
     }
 
     private func resetPerChatNotificationPreferences(tx: DBWriteTransaction) {
@@ -326,14 +409,10 @@ public struct NotificationPreferencesManager {
         }
 
         for thread in threads {
-            if thread.shouldNotifyForMentionsWhenMutedLegacy != Defaults.shouldNotifyForMentionsWhenMuted {
-                thread.updateWithShouldNotifyForMentionsWhenMutedLegacy(
-                    Defaults.shouldNotifyForMentionsWhenMuted,
-                    wasLocallyInitiated: true,
-                    transaction: tx,
-                )
-            }
-            if thread.shouldNotifyForMentionsWhenMuted != nil {
+            if
+                thread.shouldNotifyForMentionsWhenMutedLegacy != Defaults.shouldNotifyForMentionsWhenMuted
+                || thread.shouldNotifyForMentionsWhenMuted != nil
+            {
                 setNotifyForMentionsWhenMuted(nil, thread: thread, tx: tx)
             }
             if thread.shouldNotifyForRepliesWhenMuted != nil {

@@ -116,7 +116,8 @@ public final class BackupArchiveThreadStore {
             sql: """
             UPDATE \(TSThread.databaseTableName)
             SET
-                \(threadColumn: .mentionNotificationMode) = ?
+                \(threadColumn: .mentionNotificationMode) = ?,
+                \(threadColumn: .shouldNotifyForMentionsWhenMuted) = 0
             WHERE
                 \(threadColumn: .id) = ?;
             """,
