@@ -35,11 +35,13 @@ public struct UsernameLink: Equatable {
     public let entropy: Entropy
 
     public struct Entropy: Equatable {
+        public static let length = 32
+
         public let rawValue: Data
 
         init(rawValue: Data) throws {
-            guard rawValue.count == 32 else {
-                throw OWSGenericError("entropy must be 32 bytes")
+            guard rawValue.count == Self.length else {
+                throw OWSGenericError("entropy must be \(Self.length) bytes")
             }
             self.rawValue = rawValue
         }
@@ -79,11 +81,15 @@ public struct UsernameLink: Equatable {
 
         let linkData = try Data.data(fromBase64Url: fragment.dropFirst(fragmentPrefix.count))
 
-        guard let (handle, handleCount) = UUID.from(data: linkData) else {
-            throw OWSGenericError("not enough bytes for username link handle")
-        }
+        let entropy = try Entropy(rawValue: Data(linkData.prefix(Entropy.length)))
 
-        let entropy = try Entropy(rawValue: linkData.dropFirst(handleCount))
+        let handleData = linkData.dropFirst(Entropy.length)
+        guard
+            let (handle, handleCount) = UUID.from(data: Data(handleData)),
+            handleCount == handleData.count
+        else {
+            throw OWSGenericError("invalid username link handle")
+        }
 
         self.init(handle: handle, entropy: entropy)
     }
