@@ -149,6 +149,7 @@ public class EditContactShareNameViewController: OWSTableViewController2, Contac
         let tableItems: [OWSTableItem] = allNameFieldViews().map { nameFieldView in
             return OWSTableItem(customCellBlock: {
                 let cell = OWSTableItem.newCell()
+                cell.contentView.autoSetDimension(.height, toSize: 52, relation: .greaterThanOrEqual)
                 cell.contentView.addSubview(nameFieldView)
                 nameFieldView.autoPinHeightToSuperview(withMargin: 10)
                 nameFieldView.autoPinWidthToSuperviewMargins()

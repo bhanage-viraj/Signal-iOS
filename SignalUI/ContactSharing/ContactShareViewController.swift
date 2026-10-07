@@ -228,13 +228,15 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
                 "CONTACT_SHARE_SIGNAL_ACCOUNT_NOTICE_FORMAT",
                 comment: "Notice at the top of the 'Share Contact' view when the shared contact includes their Signal account. Embeds {{ contact name }}.",
             )
-            section.headerAttributedTitle = NSAttributedString(
-                string: String(format: format, contactShareDraft.displayName),
-            )
-            .styled(
-                with: .font(Self.defaultFooterFont),
-                .color(Self.defaultFooterTextColor),
-            )
+            var configuration = UIListContentConfiguration.groupedHeader()
+            configuration.text = String(format: format, contactShareDraft.displayName)
+            configuration.textProperties.font = Self.defaultFooterFont
+            configuration.textProperties.color = Self.defaultFooterTextColor
+            configuration.textProperties.transform = .none
+            configuration.directionalLayoutMargins.top = 16
+            let headerView = UITableViewHeaderFooterView()
+            headerView.contentConfiguration = configuration
+            section.customHeaderView = headerView
         }
 
         contents = OWSTableContents(sections: [section])
