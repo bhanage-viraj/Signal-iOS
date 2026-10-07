@@ -1262,8 +1262,28 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             case redeemTransaction(
                 transactionId: StoreKit.Transaction.ID,
                 purchaseDate: Date,
+                receiptLevel: CodableLoginReceiptLevel,
                 receiptCredentialRequestContext: ByteArrayCodable<ReceiptCredentialRequestContext>,
             )
+
+            enum CodableLoginReceiptLevel: Int64, Codable {
+                case normal = 0
+                case sandbox = 1
+
+                init(wrappedValue: LoginReceiptLevel) {
+                    switch wrappedValue {
+                    case .normal: self = .normal
+                    case .sandbox: self = .sandbox
+                    }
+                }
+
+                var wrappedValue: LoginReceiptLevel {
+                    switch self {
+                    case .normal: .normal
+                    case .sandbox: .sandbox
+                    }
+                }
+            }
 
             /// We have a receipt credential, and we need to redeem it for an account.
             /// This state transitions to the account setup process (i.e., it sets
@@ -3742,13 +3762,15 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 let receiptSerial = failIfThrows { try ReceiptSerial(contents: Randomness.generateRandomBytes(UInt(ReceiptSerial.SIZE))) }
                 let receiptOperations = ClientZkReceiptOperations(serverPublicParams: serverParams)
                 let requestContext = failIfThrows { try receiptOperations.createReceiptCredentialRequestContext(receiptSerial: receiptSerial) }
+                let receiptLevel = fetchReceiptLevel(forTransaction: verificationResult.unsafePayloadValue)
                 setSignalLoginState(.redeemTransaction(
                     transactionId: verificationResult.unsafePayloadValue.id,
                     purchaseDate: verificationResult.unsafePayloadValue.purchaseDate,
+                    receiptLevel: PersistedState.SignalLoginState.CodableLoginReceiptLevel(wrappedValue: receiptLevel),
                     receiptCredentialRequestContext: ByteArrayCodable(requestContext),
                 ), in: &currentState)
 
-            case .redeemTransaction(let transactionId, let purchaseDate, let receiptCredentialRequestContext):
+            case .redeemTransaction(let transactionId, let purchaseDate, let receiptLevel, let receiptCredentialRequestContext):
                 let product: StoreKit.Product
                 do {
                     product = try await fetchSignalLoginProduct()
@@ -3763,6 +3785,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 if let latestTransaction = await product.latestTransaction, latestTransaction.unsafePayloadValue.id == transactionId {
                     await latestTransaction.unsafePayloadValue.finish()
                 }
+                let receiptLevel = receiptLevel.wrappedValue
                 let receiptCredentialRequestContext = receiptCredentialRequestContext.wrappedValue
                 let receiptCredential: ReceiptCredential
                 do {
@@ -3773,6 +3796,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                             receiptCredentialRequestContext: receiptCredentialRequestContext,
                             serverParams: TSConstants.serverPublicParams(),
                             purchaseTime: purchaseDate,
+                            expectedLevel: receiptLevel,
                         )
                     }
                 } catch {
@@ -3841,6 +3865,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
         inMemoryState.signalLoginProduct = result
         return result
+    }
+
+    private func fetchReceiptLevel(forTransaction transaction: StoreKit.Transaction) -> LoginReceiptLevel {
+        if #available(iOS 16, *) {
+            return transaction.environment == .sandbox ? .sandbox : .normal
+        } else {
+            return transaction.environmentStringRepresentation == "Sandbox" ? .sandbox : .normal
+        }
     }
 
     // MARK: - Profile Setup Pathway
