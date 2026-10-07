@@ -6,7 +6,7 @@
 import Foundation
 public import LibSignalClient
 
-public enum AnyGroupIdentifier {
+public enum AnyGroupIdentifier: Equatable, Hashable {
     public typealias GroupIdentifierV2 = LibSignalClient.GroupIdentifier
 
     case V1(GroupIdentifierV1)
@@ -27,7 +27,7 @@ public enum AnyGroupIdentifier {
     }
 }
 
-public struct GroupIdentifierV1 {
+public struct GroupIdentifierV1: Equatable, Hashable {
     let rawValue: Data
     init(rawValue: Data) throws {
         guard rawValue.count == kGroupIdLengthV1 else {

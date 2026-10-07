@@ -107,6 +107,7 @@ public class BlockingManager {
 
     public func addBlockedRecipient(
         _ recipient: inout SignalRecipient,
+        blockedAt: BlockedTimestamp,
         blockMode: BlockMode,
         tx: DBWriteTransaction,
     ) {
@@ -118,7 +119,11 @@ public class BlockingManager {
         let threadStore = DependenciesBridge.shared.threadStore
 
         let isBlocked = recipient.isBlocked
-        guard !isBlocked else {
+        if isBlocked {
+            if !blockMode.isLocallyInitiated, blockedAt != .unspecified, recipient.blockedAt != blockedAt {
+                recipient.blockedAt = blockedAt
+                recipientStore.updateRecipient(recipient, transaction: tx)
+            }
             return
         }
         let wasRemoved = profileManager.removeRecipientFromProfileWhitelist(
@@ -128,6 +133,7 @@ public class BlockingManager {
         )
         owsAssertDebug(recipient.status == .unspecified)
         recipient.status = .blocked
+        recipient.blockedAt = blockedAt
         recipientStore.updateRecipient(recipient, transaction: tx)
         if wasRemoved {
             profileManager.setNeedsProfileKeyRotation(tx: tx)
@@ -183,6 +189,7 @@ public class BlockingManager {
             return
         }
         recipient.status = .unspecified
+        recipient.blockedAt = .unspecified
         recipientStore.updateRecipient(recipient, transaction: tx)
 
         Logger.info("unblocked address: \(recipient.address)")
@@ -202,13 +209,21 @@ public class BlockingManager {
         didUpdate(wasLocallyInitiated: wasLocallyInitiated, tx: tx)
     }
 
-    public func addBlockedGroup(_ record: inout GroupRecord, blockMode: BlockMode, tx: DBWriteTransaction) {
+    public func addBlockedGroup(
+        _ record: inout GroupRecord,
+        blockedAt: BlockedTimestamp,
+        blockMode: BlockMode,
+        tx: DBWriteTransaction,
+    ) {
         let interactionStore = DependenciesBridge.shared.interactionStore
         let profileManager = SSKEnvironment.shared.profileManagerRef
         let storageServiceManager = SSKEnvironment.shared.storageServiceManagerRef
 
         let isBlocked = record.isBlocked
-        guard !isBlocked else {
+        if isBlocked {
+            if !blockMode.isLocallyInitiated, blockedAt != .unspecified, record.blockedAt != blockedAt {
+                record.setBlockedAt(blockedAt, tx: tx)
+            }
             return
         }
         let didRemove = profileManager.removeGroupFromProfileWhitelist(
@@ -217,6 +232,7 @@ public class BlockingManager {
             tx: tx,
         )
         record.setBlocked(true, tx: tx)
+        record.setBlockedAt(blockedAt, tx: tx)
         if didRemove {
             profileManager.setNeedsProfileKeyRotation(tx: tx)
         }
@@ -367,9 +383,9 @@ public class BlockingManager {
     // MARK: - Syncing
 
     public func processIncomingSync(
-        blockedPhoneNumbers: Set<String>,
-        blockedAcis: Set<Aci>,
-        blockedGroupIds: Set<Data>,
+        blockedPhoneNumbers: [E164: BlockedTimestamp],
+        blockedAcis: [Aci: BlockedTimestamp],
+        blockedGroups: [AnyGroupIdentifier: BlockedTimestamp],
         localIdentifiers: LocalIdentifiers,
         tx transaction: DBWriteTransaction,
     ) {
@@ -387,23 +403,22 @@ public class BlockingManager {
         var shouldRotateProfileKey = false
 
         let oldBlockedGroups = GroupStore().fetchBlockedGroups(tx: transaction)
-        var newBlockedGroupIds = blockedGroupIds
+        var newBlockedGroups = blockedGroups
         for var blockedGroup in oldBlockedGroups {
-            if newBlockedGroupIds.remove(blockedGroup.groupId) != nil {
+            if
+                let groupId = try? blockedGroup.groupIdObj,
+                let newBlockedAt = newBlockedGroups.removeValue(forKey: groupId)
+            {
                 // It was already blocked and should remain blocked.
+                if newBlockedAt != .unspecified, blockedGroup.blockedAt != newBlockedAt {
+                    blockedGroup.setBlockedAt(newBlockedAt, tx: transaction)
+                }
                 continue
             }
             blockedGroup.setBlocked(false, tx: transaction)
             didChange = true
         }
-        for groupIdData in newBlockedGroupIds {
-            let groupId: AnyGroupIdentifier
-            do {
-                groupId = try AnyGroupIdentifier.parseFrom(groupIdData)
-            } catch {
-                Logger.warn("ignoring malformed group id: \(error)")
-                continue
-            }
+        for (groupId, blockedAt) in newBlockedGroups {
             var record = GroupStore().fetchGroupOrInsert(groupId: groupId, tx: transaction)
             let didRemove = profileManager.removeGroupFromProfileWhitelist(
                 &record,
@@ -411,33 +426,40 @@ public class BlockingManager {
                 tx: transaction,
             )
             record.setBlocked(true, tx: transaction)
+            record.setBlockedAt(blockedAt, tx: transaction)
             didChange = true
             if didRemove {
                 shouldRotateProfileKey = true
             }
         }
 
-        var newBlockedRecipients = [SignalRecipient.RowId: SignalRecipient]()
-        for blockedAci in blockedAcis {
-            let blockedRecipient = recipientFetcher.fetchOrCreate(serviceId: blockedAci, tx: transaction)
-            newBlockedRecipients[blockedRecipient.id] = blockedRecipient
-        }
-        for blockedPhoneNumber in blockedPhoneNumbers.compactMap(E164.init) {
+        var newBlockedRecipients = [SignalRecipient.RowId: (SignalRecipient, blockedAt: BlockedTimestamp)]()
+        for (blockedPhoneNumber, blockedAt) in blockedPhoneNumbers {
             let blockedRecipient = recipientFetcher.fetchOrCreate(phoneNumber: blockedPhoneNumber, tx: transaction)
-            newBlockedRecipients[blockedRecipient.id] = blockedRecipient
+            newBlockedRecipients[blockedRecipient.id] = (blockedRecipient, blockedAt)
+        }
+        for (blockedAci, blockedAt) in blockedAcis {
+            let blockedRecipient = recipientFetcher.fetchOrCreate(serviceId: blockedAci, tx: transaction)
+            newBlockedRecipients[blockedRecipient.id] = (blockedRecipient, blockedAt)
         }
 
         let oldBlockedRecipients = recipientStore.fetchBlockedRecipients(tx: transaction)
         for var blockedRecipient in oldBlockedRecipients {
-            if newBlockedRecipients.removeValue(forKey: blockedRecipient.id) != nil {
+            if let (_, blockedAt) = newBlockedRecipients.removeValue(forKey: blockedRecipient.id) {
                 // It was already blocked and should remain blocked.
+                if blockedAt != .unspecified, blockedRecipient.blockedAt != blockedAt {
+                    blockedRecipient.blockedAt = blockedAt
+                    recipientStore.updateRecipient(blockedRecipient, transaction: transaction)
+                }
                 continue
             }
             blockedRecipient.status = .unspecified
+            blockedRecipient.blockedAt = .unspecified
             recipientStore.updateRecipient(blockedRecipient, transaction: transaction)
             didChange = true
         }
-        for var blockedRecipient in newBlockedRecipients.values {
+        for (blockedRecipient, blockedAt) in newBlockedRecipients.values {
+            var blockedRecipient = blockedRecipient
             let isLocalRecipient = localIdentifiers.containsAnyOf(
                 aci: blockedRecipient.aci,
                 phoneNumber: blockedRecipient.phoneNumber?.stringValue,
@@ -453,6 +475,7 @@ public class BlockingManager {
                 tx: transaction,
             )
             blockedRecipient.status = .blocked
+            blockedRecipient.blockedAt = blockedAt
             recipientStore.updateRecipient(blockedRecipient, transaction: transaction)
             didChange = true
             if didRemove {
@@ -498,9 +521,28 @@ public class BlockingManager {
 
             let message = OutgoingBlockedSyncMessage(
                 localThread: localThread,
-                phoneNumbers: blockedRecipients.compactMap { $0.phoneNumber?.stringValue },
-                acis: blockedRecipients.compactMap { $0.aci },
-                groupIds: blockedGroups.map(\.groupId),
+                phoneNumbers: blockedRecipients.compactMap { recipient in
+                    return recipient.phoneNumber.map {
+                        return OutgoingBlockedSyncMessage.BlockedItem(
+                            rawValue: $0.stringValue,
+                            blockedAt: recipient.blockedAt,
+                        )
+                    }
+                },
+                acis: blockedRecipients.compactMap { recipient in
+                    return recipient.aci.map {
+                        return OutgoingBlockedSyncMessage.BlockedItem(
+                            rawValue: $0,
+                            blockedAt: recipient.blockedAt,
+                        )
+                    }
+                },
+                groupIds: blockedGroups.map {
+                    return OutgoingBlockedSyncMessage.BlockedItem(
+                        rawValue: $0.groupId,
+                        blockedAt: $0.blockedAt,
+                    )
+                },
                 tx: tx,
             )
 

@@ -307,6 +307,7 @@ public class SSKEnvironment: NSObject {
             )
             if localRecipient.isBlocked {
                 localRecipient.status = .unspecified
+                localRecipient.blockedAt = .unspecified
                 recipientStore.updateRecipient(localRecipient, transaction: tx)
             }
         }

@@ -28,13 +28,13 @@ class BlockingManagerTests: SSKBaseTest {
     private func addBlockedAci(_ aci: Aci, tx: DBWriteTransaction) {
         let recipientFetcher = DependenciesBridge.shared.recipientFetcher
         var recipient = recipientFetcher.fetchOrCreate(serviceId: aci, tx: tx)
-        blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+        blockingManager.addBlockedRecipient(&recipient, blockedAt: .now(), blockMode: .localUser, tx: tx)
     }
 
     private func addBlockedPhoneNumber(_ phoneNumber: E164, tx: DBWriteTransaction) {
         let recipientFetcher = DependenciesBridge.shared.recipientFetcher
         var recipient = recipientFetcher.fetchOrCreate(phoneNumber: phoneNumber, tx: tx)
-        blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+        blockingManager.addBlockedRecipient(&recipient, blockedAt: .now(), blockMode: .localUser, tx: tx)
     }
 
     private func removeBlockedAci(_ aci: Aci, tx: DBWriteTransaction) {
@@ -109,7 +109,7 @@ class BlockingManagerTests: SSKBaseTest {
         let stillBlockedGroupParams = try GroupSecretParams.generate()
 
         let newlyBlockedAci = Aci.randomForTesting()
-        let newlyBlockedPhoneNumber = E164("+17635550101")!
+        let newlyBlockedPhoneNumber = E164("+17635550102")!
         let newlyBlockedGroupParams = try GroupSecretParams.generate()
 
         try SSKEnvironment.shared.databaseStorageRef.write { tx in
@@ -127,6 +127,7 @@ class BlockingManagerTests: SSKBaseTest {
                 )
                 blockingManager.addBlockedGroup(
                     &groupRecord,
+                    blockedAt: .now(),
                     blockMode: .localUser,
                     tx: tx,
                 )
@@ -146,6 +147,7 @@ class BlockingManagerTests: SSKBaseTest {
                 )
                 blockingManager.addBlockedGroup(
                     &groupRecord,
+                    blockedAt: .now(),
                     blockMode: .localUser,
                     tx: tx,
                 )
@@ -155,11 +157,17 @@ class BlockingManagerTests: SSKBaseTest {
         // Test
         try SSKEnvironment.shared.databaseStorageRef.write { tx in
             blockingManager.processIncomingSync(
-                blockedPhoneNumbers: Set([stillBlockedPhoneNumber, newlyBlockedPhoneNumber].map(\.stringValue)),
-                blockedAcis: [stillBlockedAci, newlyBlockedAci],
-                blockedGroupIds: [
-                    try stillBlockedGroupParams.getPublicParams().getGroupIdentifier().serialize(),
-                    try newlyBlockedGroupParams.getPublicParams().getGroupIdentifier().serialize(),
+                blockedPhoneNumbers: [
+                    stillBlockedPhoneNumber: .unspecified,
+                    newlyBlockedPhoneNumber: .unspecified,
+                ],
+                blockedAcis: [
+                    stillBlockedAci: .unspecified,
+                    newlyBlockedAci: .unspecified,
+                ],
+                blockedGroups: [
+                    .V2(try stillBlockedGroupParams.getPublicParams().getGroupIdentifier()): .unspecified,
+                    .V2(try newlyBlockedGroupParams.getPublicParams().getGroupIdentifier()): .unspecified,
                 ],
                 localIdentifiers: .forUnitTests,
                 tx: tx,

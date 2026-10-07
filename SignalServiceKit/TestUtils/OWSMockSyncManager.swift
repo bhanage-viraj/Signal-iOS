@@ -72,13 +72,19 @@ public class OWSMockSyncManager: SyncManagerProtocol {
 
     public func processIncomingMessageRequestResponseSyncMessage(
         _ syncMessage: SSKProtoSyncMessageMessageRequestResponse,
+        timestamp: UInt64,
         localIdentifiers: LocalIdentifiers,
-        transaction: DBWriteTransaction,
+        tx: DBWriteTransaction,
     ) {
         Logger.info("")
     }
 
-    public func sendMessageRequestResponseSyncMessage(thread: TSThread, responseType: OutgoingMessageRequestResponseSyncMessage.ResponseType, transaction: DBWriteTransaction) {
+    public func sendMessageRequestResponseSyncMessage(
+        forThread thread: TSThread,
+        timestamp: UInt64,
+        responseType: OutgoingMessageRequestResponseSyncMessage.ResponseType,
+        tx: DBWriteTransaction,
+    ) {
         Logger.info("")
     }
 

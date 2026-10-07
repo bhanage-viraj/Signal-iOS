@@ -211,6 +211,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
                     tx: context.tx,
                 ),
                 isBlocked: recipient.isBlocked,
+                blockedAt: recipient.blockedAt,
                 isWhitelisted: recipient.isWhitelisted,
                 isStoryHidden: isStoryHidden,
                 visibility: { () -> BackupProto_Contact.Visibility in
@@ -352,6 +353,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
                     nicknameRecord: nil, // Only contacts with SignalRecipients can have nicknames.
                     aciContactShareName: nil, // Only contacts with SignalRecipients can have shared names.
                     isBlocked: false, // Only contacts with SignalRecipients can be blocked.
+                    blockedAt: .unspecified,
                     isWhitelisted: false, // Only contacts with SignalRecipients can be whitelisted.
                     isStoryHidden: false, // Can't have a story if there's no recipient.
                     visibility: .visible, // Can't have hidden if there's no recipient.
@@ -429,6 +431,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
             nicknameRecord: nil, // Only contacts with SignalRecipients can have nicknames.
             aciContactShareName: nil, // Only contacts with SignalRecipients can have shared names.
             isBlocked: false, // only contacts with SignalRecipients can be blocked.
+            blockedAt: .unspecified,
             isWhitelisted: false, // only contacts with SignalRecipients can be whitelisted.
             // If there's no recipient, neither can be hidden
             isStoryHidden: false,
@@ -477,6 +480,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         nicknameRecord: NicknameRecord?,
         aciContactShareName: AciContactShareName?,
         isBlocked: Bool,
+        blockedAt: BlockedTimestamp,
         isWhitelisted: Bool,
         isStoryHidden: Bool,
         visibility: BackupProto_Contact.Visibility,
@@ -489,6 +493,7 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
     ) -> BackupProto_Contact {
         var contact = BackupProto_Contact()
         contact.blocked = isBlocked
+        contact.blockedAtTimestamp = blockedAt.asMilliseconds
         contact.profileSharing = isWhitelisted
         contact.hideStory = isStoryHidden
         contact.visibility = visibility
@@ -788,7 +793,11 @@ public class BackupArchiveContactRecipientArchiver: BackupArchiveProtoStreamWrit
         }
 
         if contactProto.blocked {
-            blockingManager.addBlockedRecipient(&recipient, tx: context.tx)
+            blockingManager.addBlockedRecipient(
+                &recipient,
+                blockedAt: BlockedTimestamp(clamping: contactProto.blockedAtTimestamp),
+                tx: context.tx,
+            )
         }
 
         func addHiddenRecipient(isHiddenInKnownMessageRequestState: Bool) {

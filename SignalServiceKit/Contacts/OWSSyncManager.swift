@@ -297,8 +297,9 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
 
     public func processIncomingMessageRequestResponseSyncMessage(
         _ syncMessage: SSKProtoSyncMessageMessageRequestResponse,
+        timestamp: UInt64,
         localIdentifiers: LocalIdentifiers,
-        transaction: DBWriteTransaction,
+        tx transaction: DBWriteTransaction,
     ) {
         enum MessageRequestResponseThread {
             case groupThread(TSGroupThread)
@@ -374,7 +375,12 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
                 )
             }
             if shouldBlock {
-                blockingManager.addBlockedGroup(&groupRecord, blockMode: .syncMessage, tx: transaction)
+                blockingManager.addBlockedGroup(
+                    &groupRecord,
+                    blockedAt: BlockedTimestamp(clamping: timestamp),
+                    blockMode: .syncMessage,
+                    tx: transaction,
+                )
             }
             if shouldSpam {
                 TSInfoMessage(thread: thread, messageType: .reportedSpam).anyInsert(transaction: transaction)
@@ -404,7 +410,12 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
                 if localIdentifiers.contains(serviceId: aci) {
                     owsFailDebug("ignoring request to block note to self from sync message")
                 } else {
-                    blockingManager.addBlockedRecipient(&recipient, blockMode: .syncMessage, tx: transaction)
+                    blockingManager.addBlockedRecipient(
+                        &recipient,
+                        blockedAt: BlockedTimestamp(clamping: timestamp),
+                        blockMode: .syncMessage,
+                        tx: transaction,
+                    )
                 }
             }
             if shouldSpam {
@@ -423,9 +434,10 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
     }
 
     public func sendMessageRequestResponseSyncMessage(
-        thread: TSThread,
+        forThread thread: TSThread,
+        timestamp: UInt64,
         responseType: OutgoingMessageRequestResponseSyncMessage.ResponseType,
-        transaction: DBWriteTransaction,
+        tx transaction: DBWriteTransaction,
     ) {
         Logger.info("")
 
@@ -443,6 +455,7 @@ extension OWSSyncManager: SyncManagerProtocol, SyncManagerProtocolSwift {
         let syncMessageRequestResponse = OutgoingMessageRequestResponseSyncMessage(
             localThread: localThread,
             messageRequestThread: thread,
+            timestamp: timestamp,
             responseType: responseType,
             tx: transaction,
         )

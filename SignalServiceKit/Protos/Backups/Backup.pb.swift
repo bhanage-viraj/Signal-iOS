@@ -1281,6 +1281,12 @@ public nonisolated struct BackupProto_Contact: @unchecked Sendable {
   /// Clears the value of `keyTransparencyData`. Subsequent reads from it will return its default value.
   public mutating func clearKeyTransparencyData() {_uniqueStorage()._keyTransparencyData = nil}
 
+  /// if `blocked` is true, 0 means unknown block time
+  public var blockedAtTimestamp: UInt64 {
+    get {_storage._blockedAtTimestamp}
+    set {_uniqueStorage()._blockedAtTimestamp = newValue}
+  }
+
   /// absent iff both `given` and `family` are empty, name provided by third party
   public var sharedName: BackupProto_Contact.Name {
     get {_storage._sharedName ?? BackupProto_Contact.Name()}
@@ -1470,6 +1476,12 @@ public nonisolated struct BackupProto_Group: @unchecked Sendable {
   public var hasAvatarColor: Bool {_storage._avatarColor != nil}
   /// Clears the value of `avatarColor`. Subsequent reads from it will return its default value.
   public mutating func clearAvatarColor() {_uniqueStorage()._avatarColor = nil}
+
+  /// if `blocked` is true, 0 means unknown block time
+  public var blockedAtTimestamp: UInt64 {
+    get {_storage._blockedAtTimestamp}
+    set {_uniqueStorage()._blockedAtTimestamp = newValue}
+  }
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -7726,7 +7738,7 @@ nonisolated extension BackupProto_Recipient: SwiftProtobuf.Message, SwiftProtobu
 
 nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Contact"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}aci\0\u{1}pni\0\u{1}username\0\u{1}e164\0\u{1}blocked\0\u{1}visibility\0\u{1}registered\0\u{1}notRegistered\0\u{1}profileKey\0\u{1}profileSharing\0\u{1}profileGivenName\0\u{1}profileFamilyName\0\u{1}hideStory\0\u{1}identityKey\0\u{1}identityState\0\u{1}nickname\0\u{1}note\0\u{1}systemGivenName\0\u{1}systemFamilyName\0\u{1}systemNickname\0\u{1}avatarColor\0\u{1}keyTransparencyData\0\u{2}\u{2}sharedName\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}aci\0\u{1}pni\0\u{1}username\0\u{1}e164\0\u{1}blocked\0\u{1}visibility\0\u{1}registered\0\u{1}notRegistered\0\u{1}profileKey\0\u{1}profileSharing\0\u{1}profileGivenName\0\u{1}profileFamilyName\0\u{1}hideStory\0\u{1}identityKey\0\u{1}identityState\0\u{1}nickname\0\u{1}note\0\u{1}systemGivenName\0\u{1}systemFamilyName\0\u{1}systemNickname\0\u{1}avatarColor\0\u{1}keyTransparencyData\0\u{1}blockedAtTimestamp\0\u{1}sharedName\0")
 
   fileprivate class _StorageClass {
     var _aci: Data? = nil
@@ -7750,6 +7762,7 @@ nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf.
     var _systemNickname: String = String()
     var _avatarColor: BackupProto_AvatarColor? = nil
     var _keyTransparencyData: Data? = nil
+    var _blockedAtTimestamp: UInt64 = 0
     var _sharedName: BackupProto_Contact.Name? = nil
 
       // This property is used as the initial default value for new instances of the type.
@@ -7782,6 +7795,7 @@ nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf.
       _systemNickname = source._systemNickname
       _avatarColor = source._avatarColor
       _keyTransparencyData = source._keyTransparencyData
+      _blockedAtTimestamp = source._blockedAtTimestamp
       _sharedName = source._sharedName
     }
   }
@@ -7847,6 +7861,7 @@ nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf.
         case 20: try { try decoder.decodeSingularStringField(value: &_storage._systemNickname) }()
         case 21: try { try decoder.decodeSingularEnumField(value: &_storage._avatarColor) }()
         case 22: try { try decoder.decodeSingularBytesField(value: &_storage._keyTransparencyData) }()
+        case 23: try { try decoder.decodeSingularUInt64Field(value: &_storage._blockedAtTimestamp) }()
         case 24: try { try decoder.decodeSingularMessageField(value: &_storage._sharedName) }()
         default: break
         }
@@ -7931,6 +7946,9 @@ nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf.
       try { if let v = _storage._keyTransparencyData {
         try visitor.visitSingularBytesField(value: v, fieldNumber: 22)
       } }()
+      if _storage._blockedAtTimestamp != 0 {
+        try visitor.visitSingularUInt64Field(value: _storage._blockedAtTimestamp, fieldNumber: 23)
+      }
       try { if let v = _storage._sharedName {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 24)
       } }()
@@ -7964,6 +7982,7 @@ nonisolated extension BackupProto_Contact: SwiftProtobuf.Message, SwiftProtobuf.
         if _storage._systemNickname != rhs_storage._systemNickname {return false}
         if _storage._avatarColor != rhs_storage._avatarColor {return false}
         if _storage._keyTransparencyData != rhs_storage._keyTransparencyData {return false}
+        if _storage._blockedAtTimestamp != rhs_storage._blockedAtTimestamp {return false}
         if _storage._sharedName != rhs_storage._sharedName {return false}
         return true
       }
@@ -8068,7 +8087,7 @@ nonisolated extension BackupProto_Contact.Name: SwiftProtobuf.Message, SwiftProt
 
 nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".Group"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}masterKey\0\u{1}whitelisted\0\u{1}hideStory\0\u{1}storySendMode\0\u{1}snapshot\0\u{1}blocked\0\u{1}avatarColor\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}masterKey\0\u{1}whitelisted\0\u{1}hideStory\0\u{1}storySendMode\0\u{1}snapshot\0\u{1}blocked\0\u{1}avatarColor\0\u{1}blockedAtTimestamp\0")
 
   fileprivate class _StorageClass {
     var _masterKey: Data = Data()
@@ -8078,6 +8097,7 @@ nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._M
     var _snapshot: BackupProto_Group.GroupSnapshot? = nil
     var _blocked: Bool = false
     var _avatarColor: BackupProto_AvatarColor? = nil
+    var _blockedAtTimestamp: UInt64 = 0
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -8095,6 +8115,7 @@ nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._M
       _snapshot = source._snapshot
       _blocked = source._blocked
       _avatarColor = source._avatarColor
+      _blockedAtTimestamp = source._blockedAtTimestamp
     }
   }
 
@@ -8120,6 +8141,7 @@ nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._M
         case 5: try { try decoder.decodeSingularMessageField(value: &_storage._snapshot) }()
         case 6: try { try decoder.decodeSingularBoolField(value: &_storage._blocked) }()
         case 7: try { try decoder.decodeSingularEnumField(value: &_storage._avatarColor) }()
+        case 8: try { try decoder.decodeSingularUInt64Field(value: &_storage._blockedAtTimestamp) }()
         default: break
         }
       }
@@ -8153,6 +8175,9 @@ nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._M
       try { if let v = _storage._avatarColor {
         try visitor.visitSingularEnumField(value: v, fieldNumber: 7)
       } }()
+      if _storage._blockedAtTimestamp != 0 {
+        try visitor.visitSingularUInt64Field(value: _storage._blockedAtTimestamp, fieldNumber: 8)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -8169,6 +8194,7 @@ nonisolated extension BackupProto_Group: SwiftProtobuf.Message, SwiftProtobuf._M
         if _storage._snapshot != rhs_storage._snapshot {return false}
         if _storage._blocked != rhs_storage._blocked {return false}
         if _storage._avatarColor != rhs_storage._avatarColor {return false}
+        if _storage._blockedAtTimestamp != rhs_storage._blockedAtTimestamp {return false}
         return true
       }
       if !storagesAreEqual {return false}

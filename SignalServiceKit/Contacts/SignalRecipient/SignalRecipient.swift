@@ -61,6 +61,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
     public fileprivate(set) var deviceIds: [DeviceId]
     public fileprivate(set) var unregisteredAtTimestamp: UInt64?
     public var status: Status
+    public var blockedAt: BlockedTimestamp
 
     public var aci: Aci? {
         get { Aci.parseFrom(aciString: aciString) }
@@ -93,6 +94,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
         deviceIds: [DeviceId] = [],
         unregisteredAtTimestamp: UInt64?? = nil,
         status: Status = .unspecified,
+        blockedAt: BlockedTimestamp = .unspecified,
         tx: DBWriteTransaction,
     ) throws(GRDB.DatabaseError) -> Self {
         do {
@@ -107,8 +109,9 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
                     \(signalRecipientColumn: .pni),
                     \(signalRecipientColumn: .deviceIds),
                     \(signalRecipientColumn: .unregisteredAtTimestamp),
-                    \(signalRecipientColumn: .status)
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
+                    \(signalRecipientColumn: .status),
+                    \(signalRecipientColumn: .blockedAt)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *
                 """,
                 arguments: [
                     Self.recordType,
@@ -119,6 +122,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
                     Data(deviceIds.map(\.uint8Value)),
                     unregisteredAtTimestamp ?? (deviceIds.isEmpty ? Constants.distantPastUnregisteredTimestamp : nil),
                     status.rawValue,
+                    blockedAt.rawValue,
                 ],
             )!
         } catch {
@@ -137,6 +141,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
         case unregisteredAtTimestamp
         case isPhoneNumberDiscoverable
         case status
+        case blockedAt = "blockedAtMs"
     }
 
     public init(from decoder: Decoder) throws {
@@ -157,6 +162,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
         deviceIds = encodedDeviceIds.compactMap(DeviceId.init(validating:))
         unregisteredAtTimestamp = try container.decodeIfPresent(UInt64.self, forKey: .unregisteredAtTimestamp)
         status = try container.decode(Status.self, forKey: .status)
+        blockedAt = try container.decode(BlockedTimestamp.self, forKey: .blockedAt)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -171,6 +177,7 @@ public struct SignalRecipient: FetchableRecord, PersistableRecord, Codable {
         try container.encode(Data(deviceIds.map(\.uint8Value)), forKey: .deviceIds)
         try container.encodeIfPresent(unregisteredAtTimestamp, forKey: .unregisteredAtTimestamp)
         try container.encode(status, forKey: .status)
+        try container.encode(blockedAt, forKey: .blockedAt)
     }
 
     // MARK: - Fetching

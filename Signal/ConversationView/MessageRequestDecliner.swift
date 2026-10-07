@@ -26,11 +26,13 @@ enum MessageRequestDecliner {
 
         databaseStorage.write { tx in
             let localIdentifiers = tsAccountManager.localIdentifiers(tx: tx).owsFailUnwrap("never registered")
+            let timestamp = MessageTimestampGenerator.sharedInstance.generateTimestamp()
 
             syncManager.sendMessageRequestResponseSyncMessage(
-                thread: thread,
+                forThread: thread,
+                timestamp: timestamp,
                 responseType: responseType,
-                transaction: tx,
+                tx: tx,
             )
             if responseType.shouldBlockThread {
                 switch thread {
@@ -38,13 +40,23 @@ enum MessageRequestDecliner {
                     if localIdentifiers.contains(address: thread.contactAddress) {
                         owsFailDebug("can't block note to self")
                     } else if var recipient = recipientFetcher.fetchOrCreate(address: thread.contactAddress, tx: tx) {
-                        blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+                        blockingManager.addBlockedRecipient(
+                            &recipient,
+                            blockedAt: BlockedTimestamp(clamping: timestamp),
+                            blockMode: .localUser,
+                            tx: tx,
+                        )
                     } else {
                         owsFailDebug("can't block contact thread with invalid address")
                     }
                 case let thread as TSGroupThread:
                     if var groupRecord = GroupStore().fetchGroup(forGroupIdData: thread.groupId, tx: tx) {
-                        blockingManager.addBlockedGroup(&groupRecord, blockMode: .localUser, tx: tx)
+                        blockingManager.addBlockedGroup(
+                            &groupRecord,
+                            blockedAt: BlockedTimestamp(clamping: timestamp),
+                            blockMode: .localUser,
+                            tx: tx,
+                        )
                     } else {
                         owsFailDebug("can't block group thread that's somehow missing its GroupRecord")
                     }

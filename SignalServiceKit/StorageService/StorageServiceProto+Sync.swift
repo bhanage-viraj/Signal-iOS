@@ -296,6 +296,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         builder.setHidden(isHidden)
         builder.setWhitelisted(recipient.isWhitelisted && !isHidden)
         builder.setBlocked(recipient.isBlocked)
+        builder.setBlockedAtTimestamp(recipient.blockedAt.asMilliseconds)
 
         // Identity
 
@@ -597,13 +598,21 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
             needsUpdate = true
         }
 
-        // If our local blocked state differs from the service state, use the service's value.
-        if record.blocked != recipient.isBlocked {
-            if record.blocked {
-                blockingManager.addBlockedRecipient(&recipient, blockMode: .storageService, tx: tx)
-            } else {
-                blockingManager.removeBlockedRecipient(&recipient, wasLocallyInitiated: false, tx: tx)
-            }
+        // Set our local blocked state to match the remote state. (We do this
+        // unconditionally because BlockingManager will ignore redundant requests.)
+        if record.blocked {
+            blockingManager.addBlockedRecipient(
+                &recipient,
+                blockedAt: BlockedTimestamp(clamping: record.blockedAtTimestamp),
+                blockMode: .storageService,
+                tx: tx,
+            )
+        } else {
+            blockingManager.removeBlockedRecipient(
+                &recipient,
+                wasLocallyInitiated: false,
+                tx: tx,
+            )
         }
 
         // If our local hidden state differs from the service state, use the service's value.
@@ -1018,6 +1027,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
 
         builder.setWhitelisted(groupRecord.isWhitelisted)
         builder.setBlocked(groupRecord.isBlocked)
+        builder.setBlockedAtTimestamp(groupRecord.blockedAt.asMilliseconds)
 
         if let storyContextAssociatedData = StoryFinder.getAssociatedData(forContext: .group(groupId: groupId.serialize()), transaction: transaction) {
             builder.setHideStory(storyContextAssociatedData.isHidden)
@@ -1130,13 +1140,21 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             localRecord.setLastVerifiedGroupNameHash(verifiedHash, tx: transaction)
         }
 
-        // If our local blocked state differs from the service state, use the service's value.
-        if record.blocked != localRecord.isBlocked {
-            if record.blocked {
-                blockingManager.addBlockedGroup(&localRecord, blockMode: .storageService, tx: transaction)
-            } else {
-                blockingManager.removeBlockedGroup(&localRecord, wasLocallyInitiated: false, tx: transaction)
-            }
+        // Set our local blocked state to match the remote state. (We do this
+        // unconditionally because BlockingManager will ignore redundant requests.)
+        if record.blocked {
+            blockingManager.addBlockedGroup(
+                &localRecord,
+                blockedAt: BlockedTimestamp(clamping: record.blockedAtTimestamp),
+                blockMode: .storageService,
+                tx: transaction,
+            )
+        } else {
+            blockingManager.removeBlockedGroup(
+                &localRecord,
+                wasLocallyInitiated: false,
+                tx: transaction,
+            )
         }
 
         // Note: It's important to set "blocked" first so that blocked ->

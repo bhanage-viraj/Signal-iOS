@@ -157,6 +157,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
         var group = BackupProto_Group()
         group.masterKey = masterKey.serialize()
         group.blocked = groupRecord.isBlocked
+        group.blockedAtTimestamp = groupRecord.blockedAt.asMilliseconds
         if let groupPair {
             group.whitelisted = profileManager.isGroupId(
                 inProfileWhitelist: groupId.serialize(),
@@ -507,7 +508,11 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
         }
 
         if groupProto.blocked {
-            blockingManager.addBlockedGroup(&groupRecord, tx: context.tx)
+            blockingManager.addBlockedGroup(
+                &groupRecord,
+                blockedAt: BlockedTimestamp(clamping: groupProto.blockedAtTimestamp),
+                tx: context.tx,
+            )
         }
 
         // MARK: Return successfully!

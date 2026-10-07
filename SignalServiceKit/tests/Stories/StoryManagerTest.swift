@@ -99,6 +99,7 @@ class StoryManagerTest: SSKBaseTest {
 
             SSKEnvironment.shared.blockingManagerRef.addBlockedRecipient(
                 &recipient,
+                blockedAt: .now(),
                 blockMode: .localUser,
                 tx: $0,
             )
@@ -156,6 +157,7 @@ class StoryManagerTest: SSKBaseTest {
             )
             SSKEnvironment.shared.blockingManagerRef.addBlockedGroup(
                 &groupRecord,
+                blockedAt: .now(),
                 blockMode: .localUser,
                 tx: $0,
             )

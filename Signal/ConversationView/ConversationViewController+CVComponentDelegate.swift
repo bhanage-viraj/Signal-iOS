@@ -992,7 +992,7 @@ extension ConversationViewController: CVComponentDelegate {
                     if address.isLocalAddress {
                         owsFailDebug("can't block local address")
                     } else if var recipient = recipientFetcher.fetchOrCreate(address: address, tx: tx) {
-                        blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+                        blockingManager.addBlockedRecipient(&recipient, blockedAt: .now(), blockMode: .localUser, tx: tx)
                     } else {
                         owsFailDebug("can't block invalid address")
                     }

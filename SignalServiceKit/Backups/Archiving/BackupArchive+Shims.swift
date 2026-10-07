@@ -51,8 +51,8 @@ extension BackupArchive {
 
 public protocol _MessageBackup_BlockingManagerShim {
 
-    func addBlockedRecipient(_ recipient: inout SignalRecipient, tx: DBWriteTransaction)
-    func addBlockedGroup(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction)
+    func addBlockedRecipient(_ recipient: inout SignalRecipient, blockedAt: BlockedTimestamp, tx: DBWriteTransaction)
+    func addBlockedGroup(_ groupRecord: inout GroupRecord, blockedAt: BlockedTimestamp, tx: DBWriteTransaction)
 }
 
 public class _MessageBackup_BlockingManagerWrapper: _MessageBackup_BlockingManagerShim {
@@ -63,12 +63,12 @@ public class _MessageBackup_BlockingManagerWrapper: _MessageBackup_BlockingManag
         self.blockingManager = blockingManager
     }
 
-    public func addBlockedRecipient(_ recipient: inout SignalRecipient, tx: DBWriteTransaction) {
-        blockingManager.addBlockedRecipient(&recipient, blockMode: .backupRestore, tx: tx)
+    public func addBlockedRecipient(_ recipient: inout SignalRecipient, blockedAt: BlockedTimestamp, tx: DBWriteTransaction) {
+        blockingManager.addBlockedRecipient(&recipient, blockedAt: blockedAt, blockMode: .backupRestore, tx: tx)
     }
 
-    public func addBlockedGroup(_ groupRecord: inout GroupRecord, tx: DBWriteTransaction) {
-        blockingManager.addBlockedGroup(&groupRecord, blockMode: .backupRestore, tx: tx)
+    public func addBlockedGroup(_ groupRecord: inout GroupRecord, blockedAt: BlockedTimestamp, tx: DBWriteTransaction) {
+        blockingManager.addBlockedGroup(&groupRecord, blockedAt: blockedAt, blockMode: .backupRestore, tx: tx)
     }
 }
 

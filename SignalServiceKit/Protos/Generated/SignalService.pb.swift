@@ -2984,16 +2984,118 @@ nonisolated struct SignalServiceProtos_SyncMessage: @unchecked Sendable {
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
+    /// deprecated: this field will be removed in a future release.
     var numbers: [String] = []
 
     var acis: [String] = []
 
+    /// deprecated: this field will be removed in a future release.
     var groupIds: [Data] = []
 
-    /// 16-byte UUID
+    /// deprecated: this field will be removed in a future release.
     var acisBinary: [Data] = []
 
+    var blockedE164S: [SignalServiceProtos_SyncMessage.Blocked.BlockedE164] = []
+
+    var blockedAcis: [SignalServiceProtos_SyncMessage.Blocked.BlockedAci] = []
+
+    var blockedGroups: [SignalServiceProtos_SyncMessage.Blocked.BlockedGroup] = []
+
     var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    nonisolated struct BlockedE164: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      var e164: String {
+        get {_e164 ?? String()}
+        set {_e164 = newValue}
+      }
+      /// Returns true if `e164` has been explicitly set.
+      var hasE164: Bool {self._e164 != nil}
+      /// Clears the value of `e164`. Subsequent reads from it will return its default value.
+      mutating func clearE164() {self._e164 = nil}
+
+      var timestamp: UInt64 {
+        get {_timestamp ?? 0}
+        set {_timestamp = newValue}
+      }
+      /// Returns true if `timestamp` has been explicitly set.
+      var hasTimestamp: Bool {self._timestamp != nil}
+      /// Clears the value of `timestamp`. Subsequent reads from it will return its default value.
+      mutating func clearTimestamp() {self._timestamp = nil}
+
+      var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      init() {}
+
+      fileprivate var _e164: String? = nil
+      fileprivate var _timestamp: UInt64? = nil
+    }
+
+    nonisolated struct BlockedAci: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      /// 16-byte UUID
+      var aciBinary: Data {
+        get {_aciBinary ?? Data()}
+        set {_aciBinary = newValue}
+      }
+      /// Returns true if `aciBinary` has been explicitly set.
+      var hasAciBinary: Bool {self._aciBinary != nil}
+      /// Clears the value of `aciBinary`. Subsequent reads from it will return its default value.
+      mutating func clearAciBinary() {self._aciBinary = nil}
+
+      var timestamp: UInt64 {
+        get {_timestamp ?? 0}
+        set {_timestamp = newValue}
+      }
+      /// Returns true if `timestamp` has been explicitly set.
+      var hasTimestamp: Bool {self._timestamp != nil}
+      /// Clears the value of `timestamp`. Subsequent reads from it will return its default value.
+      mutating func clearTimestamp() {self._timestamp = nil}
+
+      var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      init() {}
+
+      fileprivate var _aciBinary: Data? = nil
+      fileprivate var _timestamp: UInt64? = nil
+    }
+
+    nonisolated struct BlockedGroup: Sendable {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      var groupID: Data {
+        get {_groupID ?? Data()}
+        set {_groupID = newValue}
+      }
+      /// Returns true if `groupID` has been explicitly set.
+      var hasGroupID: Bool {self._groupID != nil}
+      /// Clears the value of `groupID`. Subsequent reads from it will return its default value.
+      mutating func clearGroupID() {self._groupID = nil}
+
+      var timestamp: UInt64 {
+        get {_timestamp ?? 0}
+        set {_timestamp = newValue}
+      }
+      /// Returns true if `timestamp` has been explicitly set.
+      var hasTimestamp: Bool {self._timestamp != nil}
+      /// Clears the value of `timestamp`. Subsequent reads from it will return its default value.
+      mutating func clearTimestamp() {self._timestamp = nil}
+
+      var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      init() {}
+
+      fileprivate var _groupID: Data? = nil
+      fileprivate var _timestamp: UInt64? = nil
+    }
 
     init() {}
   }
@@ -7940,7 +8042,7 @@ nonisolated extension SignalServiceProtos_SyncMessage.Contacts: SwiftProtobuf.Me
 
 nonisolated extension SignalServiceProtos_SyncMessage.Blocked: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = SignalServiceProtos_SyncMessage.protoMessageName + ".Blocked"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}numbers\0\u{1}groupIds\0\u{1}acis\0\u{1}acisBinary\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}numbers\0\u{1}groupIds\0\u{1}acis\0\u{1}acisBinary\0\u{1}blockedE164s\0\u{1}blockedAcis\0\u{1}blockedGroups\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -7952,6 +8054,9 @@ nonisolated extension SignalServiceProtos_SyncMessage.Blocked: SwiftProtobuf.Mes
       case 2: try { try decoder.decodeRepeatedBytesField(value: &self.groupIds) }()
       case 3: try { try decoder.decodeRepeatedStringField(value: &self.acis) }()
       case 4: try { try decoder.decodeRepeatedBytesField(value: &self.acisBinary) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.blockedE164S) }()
+      case 6: try { try decoder.decodeRepeatedMessageField(value: &self.blockedAcis) }()
+      case 7: try { try decoder.decodeRepeatedMessageField(value: &self.blockedGroups) }()
       default: break
       }
     }
@@ -7970,6 +8075,15 @@ nonisolated extension SignalServiceProtos_SyncMessage.Blocked: SwiftProtobuf.Mes
     if !self.acisBinary.isEmpty {
       try visitor.visitRepeatedBytesField(value: self.acisBinary, fieldNumber: 4)
     }
+    if !self.blockedE164S.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.blockedE164S, fieldNumber: 5)
+    }
+    if !self.blockedAcis.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.blockedAcis, fieldNumber: 6)
+    }
+    if !self.blockedGroups.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.blockedGroups, fieldNumber: 7)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -7978,6 +8092,126 @@ nonisolated extension SignalServiceProtos_SyncMessage.Blocked: SwiftProtobuf.Mes
     if lhs.acis != rhs.acis {return false}
     if lhs.groupIds != rhs.groupIds {return false}
     if lhs.acisBinary != rhs.acisBinary {return false}
+    if lhs.blockedE164S != rhs.blockedE164S {return false}
+    if lhs.blockedAcis != rhs.blockedAcis {return false}
+    if lhs.blockedGroups != rhs.blockedGroups {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension SignalServiceProtos_SyncMessage.Blocked.BlockedE164: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = SignalServiceProtos_SyncMessage.Blocked.protoMessageName + ".BlockedE164"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}e164\0\u{1}timestamp\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self._e164) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self._timestamp) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._e164 {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._timestamp {
+      try visitor.visitSingularUInt64Field(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: SignalServiceProtos_SyncMessage.Blocked.BlockedE164, rhs: SignalServiceProtos_SyncMessage.Blocked.BlockedE164) -> Bool {
+    if lhs._e164 != rhs._e164 {return false}
+    if lhs._timestamp != rhs._timestamp {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension SignalServiceProtos_SyncMessage.Blocked.BlockedAci: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = SignalServiceProtos_SyncMessage.Blocked.protoMessageName + ".BlockedAci"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}aciBinary\0\u{1}timestamp\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self._aciBinary) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self._timestamp) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._aciBinary {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._timestamp {
+      try visitor.visitSingularUInt64Field(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: SignalServiceProtos_SyncMessage.Blocked.BlockedAci, rhs: SignalServiceProtos_SyncMessage.Blocked.BlockedAci) -> Bool {
+    if lhs._aciBinary != rhs._aciBinary {return false}
+    if lhs._timestamp != rhs._timestamp {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension SignalServiceProtos_SyncMessage.Blocked.BlockedGroup: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = SignalServiceProtos_SyncMessage.Blocked.protoMessageName + ".BlockedGroup"
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}groupId\0\u{1}timestamp\0")
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self._groupID) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self._timestamp) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._groupID {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._timestamp {
+      try visitor.visitSingularUInt64Field(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: SignalServiceProtos_SyncMessage.Blocked.BlockedGroup, rhs: SignalServiceProtos_SyncMessage.Blocked.BlockedGroup) -> Bool {
+    if lhs._groupID != rhs._groupID {return false}
+    if lhs._timestamp != rhs._timestamp {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

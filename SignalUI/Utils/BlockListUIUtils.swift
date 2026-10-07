@@ -195,7 +195,7 @@ public class BlockListUIUtils {
 
         databaseStorage.write { tx in
             if var recipient = recipientFetcher.fetchOrCreate(address: address, tx: tx) {
-                blockingManager.addBlockedRecipient(&recipient, blockMode: .localUser, tx: tx)
+                blockingManager.addBlockedRecipient(&recipient, blockedAt: .now(), blockMode: .localUser, tx: tx)
             } else {
                 owsFailDebug("couldn't block invalid address")
             }
@@ -240,6 +240,7 @@ public class BlockListUIUtils {
             var groupRecord = GroupStore().fetchGroupOrInsert(groupId: groupId, tx: tx)
             blockingManager.addBlockedGroup(
                 &groupRecord,
+                blockedAt: .now(),
                 blockMode: .localUser,
                 tx: tx,
             )

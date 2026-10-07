@@ -827,6 +827,7 @@ class RecipientMergerImpl: RecipientMerger {
                 identityManager.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
                 if affectedRecipient.isBlocked, !mergedRecipient.isBlocked {
                     mergedRecipient.status = .blocked
+                    mergedRecipient.blockedAt = affectedRecipient.blockedAt
                 }
                 storyRecipientStore.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
                 pinnedThreadMerger.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, updateStorageService: shouldUpdateStorageService, tx: tx)

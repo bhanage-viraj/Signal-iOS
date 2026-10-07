@@ -758,8 +758,9 @@ public final class MessageReceiver {
         } else if let messageRequestResponse = syncMessage.messageRequestResponse {
             SSKEnvironment.shared.syncManagerRef.processIncomingMessageRequestResponseSyncMessage(
                 messageRequestResponse,
+                timestamp: decryptedEnvelope.timestamp,
                 localIdentifiers: registeredState.localIdentifiers,
-                transaction: tx,
+                tx: tx,
             )
         } else if let outgoingPayment = syncMessage.outgoingPayment {
             // An "incoming" sync message notifies us of an "outgoing" payment.
@@ -935,14 +936,42 @@ public final class MessageReceiver {
         tx: DBWriteTransaction,
     ) {
         let blockingManager = SSKEnvironment.shared.blockingManagerRef
-        var blockedAcis = Set<Aci>()
-        if !blocked.acisBinary.isEmpty {
+
+        var blockedPhoneNumbers = [E164: BlockedTimestamp]()
+        if !blocked.blockedE164s.isEmpty {
+            for blockedE164 in blocked.blockedE164s {
+                guard let phoneNumber = E164(blockedE164.e164) else {
+                    owsFailDebug("couldn't parse blocked phone number")
+                    continue
+                }
+                blockedPhoneNumbers[phoneNumber] = BlockedTimestamp(clamping: blockedE164.timestamp)
+            }
+        } else {
+            for phoneNumber in blocked.numbers {
+                guard let phoneNumber = E164(phoneNumber) else {
+                    owsFailDebug("couldn't parse blocked phone number")
+                    continue
+                }
+                blockedPhoneNumbers[phoneNumber] = .unspecified
+            }
+        }
+
+        var blockedAcis = [Aci: BlockedTimestamp]()
+        if !blocked.blockedAcis.isEmpty {
+            for blockedAci in blocked.blockedAcis {
+                guard let aci = try? Aci.parseFrom(serviceIdBinary: blockedAci.aciBinary ?? Data()) else {
+                    owsFailDebug("couldn't parse blocked aci")
+                    continue
+                }
+                blockedAcis[aci] = BlockedTimestamp(clamping: blockedAci.timestamp)
+            }
+        } else if !blocked.acisBinary.isEmpty {
             for aciBinary in blocked.acisBinary {
                 guard let aci = try? Aci.parseFrom(serviceIdBinary: aciBinary) else {
                     owsFailDebug("Blocked ACI binary was nil")
                     continue
                 }
-                blockedAcis.insert(aci)
+                blockedAcis[aci] = .unspecified
             }
         } else {
             for aciString in blocked.acis {
@@ -950,13 +979,33 @@ public final class MessageReceiver {
                     owsFailDebug("Blocked ACI was nil.")
                     continue
                 }
-                blockedAcis.insert(aci)
+                blockedAcis[aci] = .unspecified
             }
         }
+
+        var blockedGroups = [AnyGroupIdentifier: BlockedTimestamp]()
+        if !blocked.blockedGroups.isEmpty {
+            for blockedGroup in blocked.blockedGroups {
+                guard let groupId = try? AnyGroupIdentifier.parseFrom(blockedGroup.groupID ?? Data()) else {
+                    owsFailDebug("couldn't parse blocked group")
+                    continue
+                }
+                blockedGroups[groupId] = BlockedTimestamp(clamping: blockedGroup.timestamp)
+            }
+        } else {
+            for groupIdData in blocked.groupIds {
+                guard let groupId = try? AnyGroupIdentifier.parseFrom(groupIdData) else {
+                    owsFailDebug("couldn't parse blocked group")
+                    continue
+                }
+                blockedGroups[groupId] = .unspecified
+            }
+        }
+
         blockingManager.processIncomingSync(
-            blockedPhoneNumbers: Set(blocked.numbers),
+            blockedPhoneNumbers: blockedPhoneNumbers,
             blockedAcis: blockedAcis,
-            blockedGroupIds: Set(blocked.groupIds),
+            blockedGroups: blockedGroups,
             localIdentifiers: localIdentifiers,
             tx: tx,
         )

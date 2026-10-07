@@ -30,6 +30,9 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
 
     /// Might be 16 bytes (GV1) or 32 bytes (GV2).
     public let groupId: Data
+    public var groupIdObj: AnyGroupIdentifier {
+        get throws { try AnyGroupIdentifier.parseFrom(self.groupId) }
+    }
 
     /// Might not exist. Perhaps the group hasn't been restored yet or the
     /// thread has been deleted.
@@ -50,6 +53,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
     private(set) var lastVerifiedGroupNameHash: Data?
 
     private(set) var status: Status
+    public private(set) var blockedAt: BlockedTimestamp
 
     enum CodingKeys: String, CodingKey {
         case rowId
@@ -59,6 +63,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
         case refreshedAt
         case lastVerifiedGroupNameHash
         case status
+        case blockedAt = "blockedAtMs"
     }
 
     enum Columns {
@@ -69,6 +74,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
         static let refreshedAt = Column(CodingKeys.refreshedAt.rawValue)
         static let lastVerifiedGroupNameHash = Column(CodingKeys.lastVerifiedGroupNameHash.rawValue)
         static let status = Column(CodingKeys.status.rawValue)
+        static let blockedAt = Column(CodingKeys.blockedAt.rawValue)
     }
 
     public init(from decoder: any Decoder) throws {
@@ -80,6 +86,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
         self.refreshedAt = try container.decode(Int64.self, forKey: .refreshedAt)
         self.lastVerifiedGroupNameHash = try container.decodeIfPresent(Data.self, forKey: .lastVerifiedGroupNameHash)
         self.status = try container.decode(Status.self, forKey: .status)
+        self.blockedAt = try container.decode(BlockedTimestamp.self, forKey: .blockedAt)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -91,6 +98,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
         try container.encode(self.refreshedAt, forKey: .refreshedAt)
         try container.encode(self.lastVerifiedGroupNameHash, forKey: .lastVerifiedGroupNameHash)
         try container.encode(self.status, forKey: .status)
+        try container.encode(self.blockedAt, forKey: .blockedAt)
     }
 
     static func insertRecord(
@@ -99,6 +107,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
         masterKey: GroupMasterKey?,
         refreshedAt: Date,
         status: Status = .unspecified,
+        blockedAt: BlockedTimestamp = .unspecified,
         tx: DBWriteTransaction,
     ) -> Self {
         return failIfThrows {
@@ -110,8 +119,9 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
                     \(Columns.threadId.name),
                     \(Columns.masterKey.name),
                     \(Columns.refreshedAt.name),
-                    \(Columns.status.name)
-                ) VALUES (?, ?, ?, ?, ?) RETURNING *
+                    \(Columns.status.name),
+                    \(Columns.blockedAt.name)
+                ) VALUES (?, ?, ?, ?, ?, ?) RETURNING *
                 """,
                 arguments: [
                     groupId,
@@ -119,6 +129,7 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
                     masterKey?.serialize(),
                     Int64(refreshedAt.timeIntervalSince1970),
                     status.rawValue,
+                    blockedAt.rawValue,
                 ],
             ).owsFailUnwrap("must return value or error")
         }
@@ -186,7 +197,17 @@ public struct GroupRecord: Codable, FetchableRecord, PersistableRecord {
             self.status = .blocked
         } else if self.status == .blocked {
             self.status = .unspecified
+            self.blockedAt = .unspecified
         }
+        failIfThrows { try self.update(tx.database) }
+    }
+
+    mutating func setBlockedAt(_ blockedAt: BlockedTimestamp, tx: DBWriteTransaction) {
+        guard self.status == .blocked else {
+            owsFailDebug("can't set blockedAt unless blocked")
+            return
+        }
+        self.blockedAt = blockedAt
         failIfThrows { try self.update(tx.database) }
     }
 

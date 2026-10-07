@@ -124,6 +124,7 @@ public final class OutgoingMessageRequestResponseSyncMessage: OutgoingSyncMessag
     init(
         localThread: TSContactThread,
         messageRequestThread: TSThread,
+        timestamp: UInt64,
         responseType: ResponseType,
         tx: DBReadTransaction,
     ) {
@@ -142,7 +143,7 @@ public final class OutgoingMessageRequestResponseSyncMessage: OutgoingSyncMessag
             owsFailDebug("can't response to thread type")
         }
         self.responseType = responseType
-        super.init(localThread: localThread, tx: tx)
+        super.init(timestamp: timestamp, localThread: localThread, tx: tx)
     }
 
     override public func syncMessageBuilder(tx: DBReadTransaction) -> SSKProtoSyncMessageBuilder? {

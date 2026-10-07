@@ -1697,6 +1697,9 @@ public struct StorageServiceProtoContactRecord: Codable, CustomDebugStringConver
         return !proto.pniBinary.isEmpty
     }
 
+    public var blockedAtTimestamp: UInt64 {
+        return proto.blockedAtTimestamp
+    }
     public var hasUnknownFields: Bool {
         return !proto.unknownFields.data.isEmpty
     }
@@ -1818,6 +1821,7 @@ extension StorageServiceProtoContactRecord {
         if let _value = pniBinary {
             builder.setPniBinary(_value)
         }
+        builder.setBlockedAtTimestamp(blockedAtTimestamp)
         if let _value = sharedName {
             builder.setSharedName(_value)
         }
@@ -2022,6 +2026,10 @@ public struct StorageServiceProtoContactRecordBuilder {
 
     public mutating func setPniBinary(_ valueParam: Data) {
         proto.pniBinary = valueParam
+    }
+
+    public mutating func setBlockedAtTimestamp(_ valueParam: UInt64) {
+        proto.blockedAtTimestamp = valueParam
     }
 
     @available(swift, obsoleted: 1.0)
@@ -2291,6 +2299,9 @@ public struct StorageServiceProtoGroupV2Record: Codable, CustomDebugStringConver
         return !proto.verifiedNameHash.isEmpty
     }
 
+    public var blockedAtTimestamp: UInt64 {
+        return proto.blockedAtTimestamp
+    }
     public var hasUnknownFields: Bool {
         return !proto.unknownFields.data.isEmpty
     }
@@ -2358,6 +2369,7 @@ extension StorageServiceProtoGroupV2Record {
         if let _value = verifiedNameHash {
             builder.setVerifiedNameHash(_value)
         }
+        builder.setBlockedAtTimestamp(blockedAtTimestamp)
         if let _value = unknownFields {
             builder.setUnknownFields(_value)
         }
@@ -2430,6 +2442,10 @@ public struct StorageServiceProtoGroupV2RecordBuilder {
 
     public mutating func setVerifiedNameHash(_ valueParam: Data) {
         proto.verifiedNameHash = valueParam
+    }
+
+    public mutating func setBlockedAtTimestamp(_ valueParam: UInt64) {
+        proto.blockedAtTimestamp = valueParam
     }
 
     public mutating func setUnknownFields(_ unknownFields: SwiftProtobuf.UnknownStorage) {

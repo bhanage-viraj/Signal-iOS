@@ -198,9 +198,10 @@ private extension ConversationViewController {
                 /// Send a sync message telling our other devices that we
                 /// accepted.
                 SSKEnvironment.shared.syncManagerRef.sendMessageRequestResponseSyncMessage(
-                    thread: thread,
+                    forThread: thread,
+                    timestamp: MessageTimestampGenerator.sharedInstance.generateTimestamp(),
                     responseType: .accept,
-                    transaction: transaction,
+                    tx: transaction,
                 )
             }
         }

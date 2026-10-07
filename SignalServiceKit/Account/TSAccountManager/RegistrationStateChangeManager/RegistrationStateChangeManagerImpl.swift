@@ -350,6 +350,7 @@ public class RegistrationStateChangeManagerImpl: RegistrationStateChangeManager 
         if recipient.isBlocked {
             owsFailDebug("shouldn't have been able to block note to self")
             recipient.status = .unspecified
+            recipient.blockedAt = .unspecified
             recipientStore.updateRecipient(recipient, transaction: tx)
         }
     }

@@ -371,6 +371,7 @@ public class GRDBSchemaMigrator {
         case addShouldNotifyForUnreadRemindersWhenMutedColumn
         case disableUnreadRemindersForExistingUsers
         case migrateBlocked
+        case addBlockedAt
 
         // NOTE: Every time we add a migration id, consider
         // incrementing grdbSchemaVersionLatest.
@@ -500,7 +501,7 @@ public class GRDBSchemaMigrator {
     }
 
     public static let grdbSchemaVersionDefault: UInt = 0
-    public static let grdbSchemaVersionLatest: UInt = 163
+    public static let grdbSchemaVersionLatest: UInt = 164
 
     private class DatabaseMigratorWrapper {
         // Run with immediate (or disabled) foreign key checks so that pre-existing
@@ -5698,6 +5699,16 @@ public class GRDBSchemaMigrator {
             try migrateBlocked(tx: tx)
             try removeBlockedRecipients(tx: tx)
             try removeBlockedGroups(tx: tx)
+            return .success(())
+        }
+
+        migrator.registerMigration(.addBlockedAt) { tx in
+            try tx.database.alter(table: "model_SignalRecipient") {
+                $0.add(column: "blockedAtMs", .integer).notNull().defaults(to: 0)
+            }
+            try tx.database.alter(table: "GroupRecord") {
+                $0.add(column: "blockedAtMs", .integer).notNull().defaults(to: 0)
+            }
             return .success(())
         }
 

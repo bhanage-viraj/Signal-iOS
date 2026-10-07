@@ -668,6 +668,7 @@
 		500CC1E72F15C20B001A86F7 /* ReceiptMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500CC1E62F15C20B001A86F7 /* ReceiptMessage.swift */; };
 		500CC1E92F15C8A7001A86F7 /* OutgoingCallMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500CC1E82F15C8A7001A86F7 /* OutgoingCallMessage.swift */; };
 		500CC1EB2F15D1E5001A86F7 /* StickerPackSyncMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500CC1EA2F15D1E5001A86F7 /* StickerPackSyncMessage.swift */; };
+		500D7B72303F61AC0097EB74 /* BlockedTimestamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D7B71303F61AC0097EB74 /* BlockedTimestamp.swift */; };
 		500D7B74303F650D0097EB74 /* AnyGroupIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D7B73303F650D0097EB74 /* AnyGroupIdentifier.swift */; };
 		500F35232FFDA1010007B0D1 /* SendMessageResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500F35222FFDA1010007B0D1 /* SendMessageResult.swift */; };
 		500FB6182915B86D00257951 /* UITableView+ReusableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500FB6172915B86D00257951 /* UITableView+ReusableCell.swift */; };
@@ -810,6 +811,7 @@
 		5073EACD2C4F45F2001FBB3E /* CallLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50552C2D2BAC066A00815474 /* CallLink.swift */; };
 		5073EACF2C4F469A001FBB3E /* CallLinkFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5073EACE2C4F469A001FBB3E /* CallLinkFetcher.swift */; };
 		507529172F6494C2000F72F0 /* CipherContextTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507529162F6494C2000F72F0 /* CipherContextTest.swift */; };
+		50753A3C30743299002E1976 /* OutgoingBlockedSyncMessageTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50753A3B30743299002E1976 /* OutgoingBlockedSyncMessageTest.swift */; };
 		5075C21729CA1EE700A260D2 /* GroupMemberUpdaterTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5075C21629CA1EE700A260D2 /* GroupMemberUpdaterTest.swift */; };
 		5077B5B82BBC7FE600EF399E /* ContactTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5077B5B72BBC7FE600EF399E /* ContactTest.swift */; };
 		50791B1D2D037A9800D747F8 /* PhoneNumberCountryTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50791B1C2D037A9800D747F8 /* PhoneNumberCountryTest.swift */; };
@@ -5055,6 +5057,7 @@
 		500CC1E62F15C20B001A86F7 /* ReceiptMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptMessage.swift; sourceTree = "<group>"; };
 		500CC1E82F15C8A7001A86F7 /* OutgoingCallMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutgoingCallMessage.swift; sourceTree = "<group>"; };
 		500CC1EA2F15D1E5001A86F7 /* StickerPackSyncMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerPackSyncMessage.swift; sourceTree = "<group>"; };
+		500D7B71303F61AC0097EB74 /* BlockedTimestamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedTimestamp.swift; sourceTree = "<group>"; };
 		500D7B73303F650D0097EB74 /* AnyGroupIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyGroupIdentifier.swift; sourceTree = "<group>"; };
 		500F35222FFDA1010007B0D1 /* SendMessageResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageResult.swift; sourceTree = "<group>"; };
 		500FB6172915B86D00257951 /* UITableView+ReusableCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITableView+ReusableCell.swift"; sourceTree = "<group>"; };
@@ -5210,6 +5213,7 @@
 		5073EACA2C4F3A16001FBB3E /* LinkPreviewFetcherTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreviewFetcherTest.swift; sourceTree = "<group>"; };
 		5073EACE2C4F469A001FBB3E /* CallLinkFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CallLinkFetcher.swift; path = SignalUI/Calls/CallLinkFetcher.swift; sourceTree = SOURCE_ROOT; };
 		507529162F6494C2000F72F0 /* CipherContextTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CipherContextTest.swift; sourceTree = "<group>"; };
+		50753A3B30743299002E1976 /* OutgoingBlockedSyncMessageTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutgoingBlockedSyncMessageTest.swift; sourceTree = "<group>"; };
 		5075C21629CA1EE700A260D2 /* GroupMemberUpdaterTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupMemberUpdaterTest.swift; sourceTree = "<group>"; };
 		5077B5B72BBC7FE600EF399E /* ContactTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactTest.swift; sourceTree = "<group>"; };
 		50791B1C2D037A9800D747F8 /* PhoneNumberCountryTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneNumberCountryTest.swift; sourceTree = "<group>"; };
@@ -10095,6 +10099,14 @@
 			path = Discovery;
 			sourceTree = "<group>";
 		};
+		50753A3A30743284002E1976 /* SyncMessages */ = {
+			isa = PBXGroup;
+			children = (
+				50753A3B30743299002E1976 /* OutgoingBlockedSyncMessageTest.swift */,
+			);
+			path = SyncMessages;
+			sourceTree = "<group>";
+		};
 		5075C21529CA1ED500A260D2 /* GroupMembers */ = {
 			isa = PBXGroup;
 			children = (
@@ -14745,6 +14757,7 @@
 		F94261C7289B1B5300460798 /* Devices */ = {
 			isa = PBXGroup;
 			children = (
+				50753A3A30743284002E1976 /* SyncMessages */,
 				D9C0AE612BD7102500FCB05E /* InactiveLinkedDeviceFinderTest.swift */,
 				04BBBE932E26F00000E914B1 /* InactivePrimaryDeviceStoreTest.swift */,
 				D9708B5B29E4CCCB004306FA /* OWSDeviceManagerTest.swift */,
@@ -15963,6 +15976,7 @@
 				F9C5CB64289453B200548EEE /* Batching.swift */,
 				F9C5CB40289453B200548EEE /* Bench.swift */,
 				04B2850430223ED200BCF018 /* BGProcessingTaskRescheduleOnCatch.swift */,
+				500D7B71303F61AC0097EB74 /* BlockedTimestamp.swift */,
 				E7D7C93E28B580AC003F043B /* Bundle+OWS.swift */,
 				504CADEC306CE7EF0092BC19 /* ByteArrayCodable.swift */,
 				88D7BA9D266809F50088D1C2 /* CallMessageRelay.swift */,
@@ -19705,6 +19719,7 @@
 				F9C5CE12289453B400548EEE /* Bench.swift in Sources */,
 				04B2850530223EDE00BCF018 /* BGProcessingTaskRescheduleOnCatch.swift in Sources */,
 				044EA2272FC87611005B5A3E /* BlockedReleaseNotesStore.swift in Sources */,
+				500D7B72303F61AC0097EB74 /* BlockedTimestamp.swift in Sources */,
 				F9C5CC31289453B300548EEE /* BlockingManager.swift in Sources */,
 				F9C5CC74289453B300548EEE /* BlurHash.swift in Sources */,
 				505F76332BC45C0700B1B51C /* BuildFlags+Generated.swift in Sources */,
@@ -20870,6 +20885,7 @@
 				D95E149D2E3D22FD00B5B70B /* ObjectRetainerTest.swift in Sources */,
 				663D02DF2C069AB600350632 /* OrphanedAttachmentCleanerTest.swift in Sources */,
 				50DAF7E02FD87BEC00BE7430 /* OrphanedBackupAttachmentTest.swift in Sources */,
+				50753A3C30743299002E1976 /* OutgoingBlockedSyncMessageTest.swift in Sources */,
 				D9AA37A02A86E0910088EFFB /* OutgoingCallEventSyncMessageTest.swift in Sources */,
 				D925C7BB2B7BEC0F00AC73B0 /* OutgoingCallLogEventSyncMessageTest.swift in Sources */,
 				D9D3216A2A8AC9B0004FC110 /* OutgoingGroupCallUpdateMessageTest.swift in Sources */,

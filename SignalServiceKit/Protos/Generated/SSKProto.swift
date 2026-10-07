@@ -11687,12 +11687,534 @@ extension SSKProtoSyncMessageContactsBuilder {
 
 #endif
 
+// MARK: - SSKProtoSyncMessageBlockedBlockedE164
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedE164: NSObject, Codable, NSSecureCoding {
+
+    fileprivate let proto: SignalServiceProtos_SyncMessage.Blocked.BlockedE164
+
+    @objc
+    public var e164: String? {
+        guard hasE164 else {
+            return nil
+        }
+        return proto.e164
+    }
+    @objc
+    public var hasE164: Bool {
+        return proto.hasE164
+    }
+
+    @objc
+    public var timestamp: UInt64 {
+        return proto.timestamp
+    }
+    @objc
+    public var hasTimestamp: Bool {
+        return proto.hasTimestamp
+    }
+
+    public var hasUnknownFields: Bool {
+        return !proto.unknownFields.data.isEmpty
+    }
+    public var unknownFields: SwiftProtobuf.UnknownStorage? {
+        guard hasUnknownFields else { return nil }
+        return proto.unknownFields
+    }
+
+    private init(proto: SignalServiceProtos_SyncMessage.Blocked.BlockedE164) {
+        self.proto = proto
+    }
+
+    @objc
+    public func serializedData() throws -> Data {
+        return try self.proto.serializedData()
+    }
+
+    @objc
+    public required convenience init(serializedData: Data) throws {
+        let proto = try SignalServiceProtos_SyncMessage.Blocked.BlockedE164(serializedBytes: serializedData)
+        self.init(proto)
+    }
+
+    fileprivate convenience init(_ proto: SignalServiceProtos_SyncMessage.Blocked.BlockedE164) {
+        self.init(proto: proto)
+    }
+
+    public required convenience init(from decoder: Swift.Decoder) throws {
+        let singleValueContainer = try decoder.singleValueContainer()
+        let serializedData = try singleValueContainer.decode(Data.self)
+        try self.init(serializedData: serializedData)
+    }
+    public func encode(to encoder: Swift.Encoder) throws {
+        var singleValueContainer = encoder.singleValueContainer()
+        try singleValueContainer.encode(try serializedData())
+    }
+
+    public static var supportsSecureCoding: Bool { true }
+
+    public required convenience init?(coder: NSCoder) {
+        guard let serializedData = coder.decodeData() else { return nil }
+        do {
+            try self.init(serializedData: serializedData)
+        } catch {
+            owsFailDebug("Failed to decode serialized data \(error)")
+            return nil
+        }
+    }
+
+    public func encode(with coder: NSCoder) {
+        do {
+            coder.encode(try serializedData())
+        } catch {
+            owsFailDebug("Failed to encode serialized data \(error)")
+        }
+    }
+
+    @objc
+    public override var debugDescription: String {
+        return "\(proto)"
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedE164 {
+    @objc
+    public static func builder() -> SSKProtoSyncMessageBlockedBlockedE164Builder {
+        return SSKProtoSyncMessageBlockedBlockedE164Builder()
+    }
+
+    // asBuilder() constructs a builder that reflects the proto's contents.
+    @objc
+    public func asBuilder() -> SSKProtoSyncMessageBlockedBlockedE164Builder {
+        let builder = SSKProtoSyncMessageBlockedBlockedE164Builder()
+        if let _value = e164 {
+            builder.setE164(_value)
+        }
+        if hasTimestamp {
+            builder.setTimestamp(timestamp)
+        }
+        if let _value = unknownFields {
+            builder.setUnknownFields(_value)
+        }
+        return builder
+    }
+}
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedE164Builder: NSObject {
+
+    private var proto = SignalServiceProtos_SyncMessage.Blocked.BlockedE164()
+
+    @objc
+    fileprivate override init() {}
+
+    @objc
+    @available(swift, obsoleted: 1.0)
+    public func setE164(_ valueParam: String?) {
+        guard let valueParam = valueParam else { return }
+        proto.e164 = valueParam
+    }
+
+    public func setE164(_ valueParam: String) {
+        proto.e164 = valueParam
+    }
+
+    @objc
+    public func setTimestamp(_ valueParam: UInt64) {
+        proto.timestamp = valueParam
+    }
+
+    public func setUnknownFields(_ unknownFields: SwiftProtobuf.UnknownStorage) {
+        proto.unknownFields = unknownFields
+    }
+
+    @objc
+    public func buildInfallibly() -> SSKProtoSyncMessageBlockedBlockedE164 {
+        return SSKProtoSyncMessageBlockedBlockedE164(proto)
+    }
+
+    @objc
+    public func buildSerializedData() throws -> Data {
+        return try SSKProtoSyncMessageBlockedBlockedE164(proto).serializedData()
+    }
+}
+
+#if TESTABLE_BUILD
+
+extension SSKProtoSyncMessageBlockedBlockedE164 {
+    @objc
+    public func serializedDataIgnoringErrors() -> Data? {
+        return try! self.serializedData()
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedE164Builder {
+    @objc
+    public func buildIgnoringErrors() -> SSKProtoSyncMessageBlockedBlockedE164? {
+        return self.buildInfallibly()
+    }
+}
+
+#endif
+
+// MARK: - SSKProtoSyncMessageBlockedBlockedAci
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedAci: NSObject, Codable, NSSecureCoding {
+
+    fileprivate let proto: SignalServiceProtos_SyncMessage.Blocked.BlockedAci
+
+    @objc
+    public var aciBinary: Data? {
+        guard hasAciBinary else {
+            return nil
+        }
+        return proto.aciBinary
+    }
+    @objc
+    public var hasAciBinary: Bool {
+        return proto.hasAciBinary
+    }
+
+    @objc
+    public var timestamp: UInt64 {
+        return proto.timestamp
+    }
+    @objc
+    public var hasTimestamp: Bool {
+        return proto.hasTimestamp
+    }
+
+    public var hasUnknownFields: Bool {
+        return !proto.unknownFields.data.isEmpty
+    }
+    public var unknownFields: SwiftProtobuf.UnknownStorage? {
+        guard hasUnknownFields else { return nil }
+        return proto.unknownFields
+    }
+
+    private init(proto: SignalServiceProtos_SyncMessage.Blocked.BlockedAci) {
+        self.proto = proto
+    }
+
+    @objc
+    public func serializedData() throws -> Data {
+        return try self.proto.serializedData()
+    }
+
+    @objc
+    public required convenience init(serializedData: Data) throws {
+        let proto = try SignalServiceProtos_SyncMessage.Blocked.BlockedAci(serializedBytes: serializedData)
+        self.init(proto)
+    }
+
+    fileprivate convenience init(_ proto: SignalServiceProtos_SyncMessage.Blocked.BlockedAci) {
+        self.init(proto: proto)
+    }
+
+    public required convenience init(from decoder: Swift.Decoder) throws {
+        let singleValueContainer = try decoder.singleValueContainer()
+        let serializedData = try singleValueContainer.decode(Data.self)
+        try self.init(serializedData: serializedData)
+    }
+    public func encode(to encoder: Swift.Encoder) throws {
+        var singleValueContainer = encoder.singleValueContainer()
+        try singleValueContainer.encode(try serializedData())
+    }
+
+    public static var supportsSecureCoding: Bool { true }
+
+    public required convenience init?(coder: NSCoder) {
+        guard let serializedData = coder.decodeData() else { return nil }
+        do {
+            try self.init(serializedData: serializedData)
+        } catch {
+            owsFailDebug("Failed to decode serialized data \(error)")
+            return nil
+        }
+    }
+
+    public func encode(with coder: NSCoder) {
+        do {
+            coder.encode(try serializedData())
+        } catch {
+            owsFailDebug("Failed to encode serialized data \(error)")
+        }
+    }
+
+    @objc
+    public override var debugDescription: String {
+        return "\(proto)"
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedAci {
+    @objc
+    public static func builder() -> SSKProtoSyncMessageBlockedBlockedAciBuilder {
+        return SSKProtoSyncMessageBlockedBlockedAciBuilder()
+    }
+
+    // asBuilder() constructs a builder that reflects the proto's contents.
+    @objc
+    public func asBuilder() -> SSKProtoSyncMessageBlockedBlockedAciBuilder {
+        let builder = SSKProtoSyncMessageBlockedBlockedAciBuilder()
+        if let _value = aciBinary {
+            builder.setAciBinary(_value)
+        }
+        if hasTimestamp {
+            builder.setTimestamp(timestamp)
+        }
+        if let _value = unknownFields {
+            builder.setUnknownFields(_value)
+        }
+        return builder
+    }
+}
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedAciBuilder: NSObject {
+
+    private var proto = SignalServiceProtos_SyncMessage.Blocked.BlockedAci()
+
+    @objc
+    fileprivate override init() {}
+
+    @objc
+    @available(swift, obsoleted: 1.0)
+    public func setAciBinary(_ valueParam: Data?) {
+        guard let valueParam = valueParam else { return }
+        proto.aciBinary = valueParam
+    }
+
+    public func setAciBinary(_ valueParam: Data) {
+        proto.aciBinary = valueParam
+    }
+
+    @objc
+    public func setTimestamp(_ valueParam: UInt64) {
+        proto.timestamp = valueParam
+    }
+
+    public func setUnknownFields(_ unknownFields: SwiftProtobuf.UnknownStorage) {
+        proto.unknownFields = unknownFields
+    }
+
+    @objc
+    public func buildInfallibly() -> SSKProtoSyncMessageBlockedBlockedAci {
+        return SSKProtoSyncMessageBlockedBlockedAci(proto)
+    }
+
+    @objc
+    public func buildSerializedData() throws -> Data {
+        return try SSKProtoSyncMessageBlockedBlockedAci(proto).serializedData()
+    }
+}
+
+#if TESTABLE_BUILD
+
+extension SSKProtoSyncMessageBlockedBlockedAci {
+    @objc
+    public func serializedDataIgnoringErrors() -> Data? {
+        return try! self.serializedData()
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedAciBuilder {
+    @objc
+    public func buildIgnoringErrors() -> SSKProtoSyncMessageBlockedBlockedAci? {
+        return self.buildInfallibly()
+    }
+}
+
+#endif
+
+// MARK: - SSKProtoSyncMessageBlockedBlockedGroup
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedGroup: NSObject, Codable, NSSecureCoding {
+
+    fileprivate let proto: SignalServiceProtos_SyncMessage.Blocked.BlockedGroup
+
+    @objc
+    public var groupID: Data? {
+        guard hasGroupID else {
+            return nil
+        }
+        return proto.groupID
+    }
+    @objc
+    public var hasGroupID: Bool {
+        return proto.hasGroupID
+    }
+
+    @objc
+    public var timestamp: UInt64 {
+        return proto.timestamp
+    }
+    @objc
+    public var hasTimestamp: Bool {
+        return proto.hasTimestamp
+    }
+
+    public var hasUnknownFields: Bool {
+        return !proto.unknownFields.data.isEmpty
+    }
+    public var unknownFields: SwiftProtobuf.UnknownStorage? {
+        guard hasUnknownFields else { return nil }
+        return proto.unknownFields
+    }
+
+    private init(proto: SignalServiceProtos_SyncMessage.Blocked.BlockedGroup) {
+        self.proto = proto
+    }
+
+    @objc
+    public func serializedData() throws -> Data {
+        return try self.proto.serializedData()
+    }
+
+    @objc
+    public required convenience init(serializedData: Data) throws {
+        let proto = try SignalServiceProtos_SyncMessage.Blocked.BlockedGroup(serializedBytes: serializedData)
+        self.init(proto)
+    }
+
+    fileprivate convenience init(_ proto: SignalServiceProtos_SyncMessage.Blocked.BlockedGroup) {
+        self.init(proto: proto)
+    }
+
+    public required convenience init(from decoder: Swift.Decoder) throws {
+        let singleValueContainer = try decoder.singleValueContainer()
+        let serializedData = try singleValueContainer.decode(Data.self)
+        try self.init(serializedData: serializedData)
+    }
+    public func encode(to encoder: Swift.Encoder) throws {
+        var singleValueContainer = encoder.singleValueContainer()
+        try singleValueContainer.encode(try serializedData())
+    }
+
+    public static var supportsSecureCoding: Bool { true }
+
+    public required convenience init?(coder: NSCoder) {
+        guard let serializedData = coder.decodeData() else { return nil }
+        do {
+            try self.init(serializedData: serializedData)
+        } catch {
+            owsFailDebug("Failed to decode serialized data \(error)")
+            return nil
+        }
+    }
+
+    public func encode(with coder: NSCoder) {
+        do {
+            coder.encode(try serializedData())
+        } catch {
+            owsFailDebug("Failed to encode serialized data \(error)")
+        }
+    }
+
+    @objc
+    public override var debugDescription: String {
+        return "\(proto)"
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedGroup {
+    @objc
+    public static func builder() -> SSKProtoSyncMessageBlockedBlockedGroupBuilder {
+        return SSKProtoSyncMessageBlockedBlockedGroupBuilder()
+    }
+
+    // asBuilder() constructs a builder that reflects the proto's contents.
+    @objc
+    public func asBuilder() -> SSKProtoSyncMessageBlockedBlockedGroupBuilder {
+        let builder = SSKProtoSyncMessageBlockedBlockedGroupBuilder()
+        if let _value = groupID {
+            builder.setGroupID(_value)
+        }
+        if hasTimestamp {
+            builder.setTimestamp(timestamp)
+        }
+        if let _value = unknownFields {
+            builder.setUnknownFields(_value)
+        }
+        return builder
+    }
+}
+
+@objc
+public class SSKProtoSyncMessageBlockedBlockedGroupBuilder: NSObject {
+
+    private var proto = SignalServiceProtos_SyncMessage.Blocked.BlockedGroup()
+
+    @objc
+    fileprivate override init() {}
+
+    @objc
+    @available(swift, obsoleted: 1.0)
+    public func setGroupID(_ valueParam: Data?) {
+        guard let valueParam = valueParam else { return }
+        proto.groupID = valueParam
+    }
+
+    public func setGroupID(_ valueParam: Data) {
+        proto.groupID = valueParam
+    }
+
+    @objc
+    public func setTimestamp(_ valueParam: UInt64) {
+        proto.timestamp = valueParam
+    }
+
+    public func setUnknownFields(_ unknownFields: SwiftProtobuf.UnknownStorage) {
+        proto.unknownFields = unknownFields
+    }
+
+    @objc
+    public func buildInfallibly() -> SSKProtoSyncMessageBlockedBlockedGroup {
+        return SSKProtoSyncMessageBlockedBlockedGroup(proto)
+    }
+
+    @objc
+    public func buildSerializedData() throws -> Data {
+        return try SSKProtoSyncMessageBlockedBlockedGroup(proto).serializedData()
+    }
+}
+
+#if TESTABLE_BUILD
+
+extension SSKProtoSyncMessageBlockedBlockedGroup {
+    @objc
+    public func serializedDataIgnoringErrors() -> Data? {
+        return try! self.serializedData()
+    }
+}
+
+extension SSKProtoSyncMessageBlockedBlockedGroupBuilder {
+    @objc
+    public func buildIgnoringErrors() -> SSKProtoSyncMessageBlockedBlockedGroup? {
+        return self.buildInfallibly()
+    }
+}
+
+#endif
+
 // MARK: - SSKProtoSyncMessageBlocked
 
 @objc
 public class SSKProtoSyncMessageBlocked: NSObject, Codable, NSSecureCoding {
 
     fileprivate let proto: SignalServiceProtos_SyncMessage.Blocked
+
+    @objc
+    public let blockedE164s: [SSKProtoSyncMessageBlockedBlockedE164]
+
+    @objc
+    public let blockedAcis: [SSKProtoSyncMessageBlockedBlockedAci]
+
+    @objc
+    public let blockedGroups: [SSKProtoSyncMessageBlockedBlockedGroup]
 
     @objc
     public var numbers: [String] {
@@ -11722,8 +12244,14 @@ public class SSKProtoSyncMessageBlocked: NSObject, Codable, NSSecureCoding {
         return proto.unknownFields
     }
 
-    private init(proto: SignalServiceProtos_SyncMessage.Blocked) {
+    private init(proto: SignalServiceProtos_SyncMessage.Blocked,
+                 blockedE164s: [SSKProtoSyncMessageBlockedBlockedE164],
+                 blockedAcis: [SSKProtoSyncMessageBlockedBlockedAci],
+                 blockedGroups: [SSKProtoSyncMessageBlockedBlockedGroup]) {
         self.proto = proto
+        self.blockedE164s = blockedE164s
+        self.blockedAcis = blockedAcis
+        self.blockedGroups = blockedGroups
     }
 
     @objc
@@ -11738,7 +12266,19 @@ public class SSKProtoSyncMessageBlocked: NSObject, Codable, NSSecureCoding {
     }
 
     fileprivate convenience init(_ proto: SignalServiceProtos_SyncMessage.Blocked) {
-        self.init(proto: proto)
+        var blockedE164s: [SSKProtoSyncMessageBlockedBlockedE164] = []
+        blockedE164s = proto.blockedE164S.map { SSKProtoSyncMessageBlockedBlockedE164($0) }
+
+        var blockedAcis: [SSKProtoSyncMessageBlockedBlockedAci] = []
+        blockedAcis = proto.blockedAcis.map { SSKProtoSyncMessageBlockedBlockedAci($0) }
+
+        var blockedGroups: [SSKProtoSyncMessageBlockedBlockedGroup] = []
+        blockedGroups = proto.blockedGroups.map { SSKProtoSyncMessageBlockedBlockedGroup($0) }
+
+        self.init(proto: proto,
+                  blockedE164s: blockedE164s,
+                  blockedAcis: blockedAcis,
+                  blockedGroups: blockedGroups)
     }
 
     public required convenience init(from decoder: Swift.Decoder) throws {
@@ -11791,6 +12331,9 @@ extension SSKProtoSyncMessageBlocked {
         builder.setAcis(acis)
         builder.setGroupIds(groupIds)
         builder.setAcisBinary(acisBinary)
+        builder.setBlockedE164s(blockedE164s)
+        builder.setBlockedAcis(blockedAcis)
+        builder.setBlockedGroups(blockedGroups)
         if let _value = unknownFields {
             builder.setUnknownFields(_value)
         }
@@ -11844,6 +12387,36 @@ public class SSKProtoSyncMessageBlockedBuilder: NSObject {
     @objc
     public func setAcisBinary(_ wrappedItems: [Data]) {
         proto.acisBinary = wrappedItems
+    }
+
+    @objc
+    public func addBlockedE164s(_ valueParam: SSKProtoSyncMessageBlockedBlockedE164) {
+        proto.blockedE164S.append(valueParam.proto)
+    }
+
+    @objc
+    public func setBlockedE164s(_ wrappedItems: [SSKProtoSyncMessageBlockedBlockedE164]) {
+        proto.blockedE164S = wrappedItems.map { $0.proto }
+    }
+
+    @objc
+    public func addBlockedAcis(_ valueParam: SSKProtoSyncMessageBlockedBlockedAci) {
+        proto.blockedAcis.append(valueParam.proto)
+    }
+
+    @objc
+    public func setBlockedAcis(_ wrappedItems: [SSKProtoSyncMessageBlockedBlockedAci]) {
+        proto.blockedAcis = wrappedItems.map { $0.proto }
+    }
+
+    @objc
+    public func addBlockedGroups(_ valueParam: SSKProtoSyncMessageBlockedBlockedGroup) {
+        proto.blockedGroups.append(valueParam.proto)
+    }
+
+    @objc
+    public func setBlockedGroups(_ wrappedItems: [SSKProtoSyncMessageBlockedBlockedGroup]) {
+        proto.blockedGroups = wrappedItems.map { $0.proto }
     }
 
     public func setUnknownFields(_ unknownFields: SwiftProtobuf.UnknownStorage) {

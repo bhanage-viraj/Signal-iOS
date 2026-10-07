@@ -141,6 +141,7 @@ message ContactRecord {
   optional AvatarColor avatarColor = 24;
   bytes aciBinary = 25; // 16-byte UUID
   bytes pniBinary = 26; // 16-byte UUID
+  uint64 blockedAtTimestamp = 27; // if `blocked` is true, 0 means unknown block time
   Name sharedName = 30; // Name shared from a third party
 }
 
@@ -173,6 +174,7 @@ message GroupV2Record {
   StorySendMode storySendMode = 10;
   optional AvatarColor avatarColor = 11;
   bytes verifiedNameHash = 12; // SHA-256 of last verified group name
+  uint64 blockedAtTimestamp = 13; // if `blocked` is true, 0 means unknown block time
 }
 
 message AccountRecord {

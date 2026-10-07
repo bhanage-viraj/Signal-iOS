@@ -59,11 +59,13 @@ class BlockListViewController: OWSTableViewController2 {
         struct BlockedRecipient {
             var address: SignalServiceAddress
             var comparableName: ComparableDisplayName
+            var blockedAt: BlockedTimestamp
         }
         struct BlockedGroup {
             var groupId: Data
             var groupName: String
             var groupAvatar: UIImage?
+            var blockedAt: BlockedTimestamp
         }
         let blockedRecipients: [BlockedRecipient]
         let blockedGroups: [BlockedGroup]
@@ -75,8 +77,12 @@ class BlockListViewController: OWSTableViewController2 {
                 return BlockedRecipient(
                     address: recipient.address,
                     comparableName: comparableName,
+                    blockedAt: recipient.blockedAt,
                 )
             }.sorted(by: {
+                if $0.blockedAt != $1.blockedAt {
+                    return $0.blockedAt > $1.blockedAt
+                }
                 return $0.comparableName < $1.comparableName
             })
             let groupResult: [BlockedGroup]
@@ -107,8 +113,12 @@ class BlockListViewController: OWSTableViewController2 {
                     groupId: groupRecord.groupId,
                     groupName: groupName,
                     groupAvatar: groupAvatarImage,
+                    blockedAt: groupRecord.blockedAt,
                 )
             }.sorted(by: {
+                if $0.blockedAt != $1.blockedAt {
+                    return $0.blockedAt > $1.blockedAt
+                }
                 switch $0.groupName.localizedCaseInsensitiveCompare($1.groupName) {
                 case .orderedAscending:
                     return true
@@ -125,10 +135,11 @@ class BlockListViewController: OWSTableViewController2 {
             OWSTableItem(
                 dequeueCellBlock: { tableView in
                     let cell = tableView.dequeueReusableCell(ContactTableViewCell.self).owsFailUnwrap("must exist")
-                    let config = ContactCellView.Configuration(
+                    var config = ContactCellView.Configuration(
                         address: blockedRecipient.address,
                         localUserDisplayMode: .asUser,
                     )
+                    config.attributedSubtitle = Self.localizedBlockedAt(blockedRecipient.blockedAt).map(NSAttributedString.init(string:))
                     databaseStorage.read { tx in
                         cell.configure(configuration: config, transaction: tx)
                     }
@@ -159,10 +170,11 @@ class BlockListViewController: OWSTableViewController2 {
             return OWSTableItem(
                 dequeueCellBlock: { tableView in
                     let cell = tableView.dequeueReusableCell(ContactTableViewCell.self).owsFailUnwrap("must exist")
-                    let config = ContactCellView.Configuration(
+                    var config = ContactCellView.Configuration(
                         name: blockedGroup.groupName,
                         avatar: blockedGroup.groupAvatar,
                     )
+                    config.attributedSubtitle = Self.localizedBlockedAt(blockedGroup.blockedAt).map(NSAttributedString.init(string:))
                     databaseStorage.read { tx in
                         cell.configure(configuration: config, transaction: tx)
                     }
@@ -194,6 +206,17 @@ class BlockListViewController: OWSTableViewController2 {
         }
 
         setContents(contents, shouldReload: reloadTableView)
+    }
+
+    private static func localizedBlockedAt(_ blockedAt: BlockedTimestamp) -> String? {
+        guard let blockedAtDate = blockedAt.asDate else {
+            return nil
+        }
+        let format = OWSLocalizedString(
+            "BLOCKED_AT",
+            comment: "Shown as a subtitle for recipients & groups you've blocked to indicate when you blocked them. The replacement is a formatted date.",
+        )
+        return String.nonPluralLocalizedStringWithFormat(format, DateUtil.dateFormatter.string(from: blockedAtDate))
     }
 }
 
