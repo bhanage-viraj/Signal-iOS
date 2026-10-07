@@ -122,4 +122,6 @@ public class OutgoingUnpinMessage: TransientOutgoingMessage {
             tx: tx,
         )
     }
+
+    override public var isUrgent: Bool { false }
 }
