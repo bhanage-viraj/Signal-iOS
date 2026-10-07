@@ -7,7 +7,6 @@ extension BackupArchive {
     enum ProtoInputStreamReadResult<T> {
         case success(T, moreBytesAvailable: Bool)
         case emptyFinalFrame
-        case invalidByteLengthDelimiter
         case protoDeserializationError(Swift.Error)
     }
 }

@@ -1005,8 +1005,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 backupInfo = header
                 hasMoreFrames = moreBytesAvailable
                 framesRestored += 1
-            case .invalidByteLengthDelimiter:
-                throw OWSAssertionError("invalid byte length delimiter on header")
             case .emptyFinalFrame:
                 throw OWSAssertionError("invalid empty header frame")
             case .protoDeserializationError(let error):
@@ -1129,19 +1127,11 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                         frame = _frame
                         hasMoreFrames = moreBytesAvailable
                         framesRestored += 1
-                    case .invalidByteLengthDelimiter:
-                        throw OWSAssertionError("invalid byte length delimiter on header")
                     case .emptyFinalFrame:
                         frame = nil
                         hasMoreFrames = false
                     case .protoDeserializationError(let error):
-                        // fail the whole thing if we fail to deserialize one frame
-                        owsFailDebug("Failed to deserialize proto frame!")
-                        if BuildFlags.Backups.restoreFailOnAnyError {
-                            throw error
-                        } else {
-                            return
-                        }
+                        throw OWSAssertionError("Failed to deserialize proto frame! \(error)")
                     }
 
                     guard
@@ -1217,9 +1207,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                                 frameErrors.append(contentsOf: errors)
                             case .failure(let errors):
                                 frameErrors.append(contentsOf: errors)
-                                if BuildFlags.Backups.restoreFailOnAnyError {
-                                    throw BackupError()
-                                }
                             }
                         case .chat(let chat):
                             let chatResult = chatArchiver.restore(
@@ -1236,9 +1223,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                                 frameErrors.append(contentsOf: errors)
                             case .failure(let errors):
                                 frameErrors.append(contentsOf: errors)
-                                if BuildFlags.Backups.restoreFailOnAnyError {
-                                    throw BackupError()
-                                }
                             }
                         case .chatItem(let chatItem):
                             let chatItemResult = chatItemArchiver.restore(
@@ -1255,9 +1239,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                                 frameErrors.append(contentsOf: errors)
                             case .failure(let errors):
                                 frameErrors.append(contentsOf: errors)
-                                if BuildFlags.Backups.restoreFailOnAnyError {
-                                    throw BackupError()
-                                }
                             }
                         case .account(let backupProtoAccountData):
                             let accountDataResult = accountDataArchiver.restore(
@@ -1294,9 +1275,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                                 frameErrors.append(contentsOf: errors)
                             case .failure(let errors):
                                 frameErrors.append(contentsOf: errors)
-                                if BuildFlags.Backups.restoreFailOnAnyError {
-                                    throw BackupError()
-                                }
                             }
                         case .adHocCall(let backupProtoAdHocCall):
                             let adHocCallResult = adHocCallArchiver.restore(
@@ -1313,9 +1291,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                                 frameErrors.append(contentsOf: errors)
                             case .failure(let errors):
                                 frameErrors.append(contentsOf: errors)
-                                if BuildFlags.Backups.restoreFailOnAnyError {
-                                    throw BackupError()
-                                }
                             }
                         case .notificationProfile:
                             // Notification profiles are unsupported on iOS and

@@ -335,8 +335,6 @@ class BackupArchiveIntegrationTests: XCTestCase {
         switch stream.readHeader() {
         case .success(let _backupInfo, _):
             backupInfo = _backupInfo
-        case .invalidByteLengthDelimiter:
-            throw TestError.failure("Invalid byte length delimiter!")
         case .emptyFinalFrame:
             throw TestError.failure("Invalid empty header frame!")
         case .protoDeserializationError(let error):

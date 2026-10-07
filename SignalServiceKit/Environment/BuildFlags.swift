@@ -35,7 +35,6 @@ public enum BuildFlags {
     public enum Backups {
         public static let showOptimizeMedia = build <= .dev
 
-        public static let restoreFailOnAnyError = build <= .beta
         public static let detailedBenchLogging = build <= .internal
         public static let archiveErrorDisplay = build <= .internal
 
