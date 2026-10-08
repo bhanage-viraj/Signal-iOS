@@ -825,10 +825,24 @@ class RecipientMergerImpl: RecipientMerger {
                 // TODO: Should we clean up any more state related to the discarded recipient?
                 sessionStore.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, localIdentity: .aci, tx: tx)
                 identityManager.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
-                if affectedRecipient.isBlocked, !mergedRecipient.isBlocked {
+
+                switch (affectedRecipient.status, mergedRecipient.status) {
+                case (.unspecified, _):
+                    // Old recipient has no status to take precedence.
+                    break
+                case (_, .blocked):
+                    // Don't undo blocking as a result of merging.
+                    break
+                case (.whitelisted, .whitelisted):
+                    break
+                case (.blocked, .unspecified), (.blocked, .whitelisted):
                     mergedRecipient.status = .blocked
                     mergedRecipient.blockedAt = affectedRecipient.blockedAt
+                case (.whitelisted, .unspecified):
+                    mergedRecipient.status = .whitelisted
+                    mergedRecipient.blockedAt = .unspecified
                 }
+
                 storyRecipientStore.mergeRecipient(affectedRecipient, into: mergedRecipient, tx: tx)
                 pinnedThreadMerger.mergeRecipientId(affectedRecipient.id, into: mergedRecipient.id, updateStorageService: shouldUpdateStorageService, tx: tx)
                 recipientDatabaseTable.removeRecipient(affectedRecipient, transaction: tx)
