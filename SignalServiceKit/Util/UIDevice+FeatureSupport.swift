@@ -84,6 +84,9 @@ public extension UIDevice {
         case 1920, 2208:
             // iPhone 6+/6S+/7+/8+//
             return true
+        case 2034:
+            // iPhone Duo
+            return true
         case 2340:
             // iPhone 12 Mini
             return false
