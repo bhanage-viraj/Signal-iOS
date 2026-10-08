@@ -2960,7 +2960,6 @@
 		D959F1172FE4581900006744 /* ScreenshotBlocking.swift in Sources */ = {isa = PBXBuildFile; fileRef = D959F1162FE4580E00006744 /* ScreenshotBlocking.swift */; };
 		D95A79A82AB125D80013DB00 /* CallRecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95A79A72AB125D80013DB00 /* CallRecordStore.swift */; };
 		D95C39E6296DE9E900A9DA23 /* OWSRequestFactory+BoostPayments.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95C39E5296DE9E900A9DA23 /* OWSRequestFactory+BoostPayments.swift */; };
-		D95C39E8296DEBFB00A9DA23 /* OWSRequestFactory+Usernames.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95C39E7296DEBFB00A9DA23 /* OWSRequestFactory+Usernames.swift */; };
 		D95C39EA296E108100A9DA23 /* UsernameSelectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95C39E9296E108100A9DA23 /* UsernameSelectionViewController.swift */; };
 		D95C39EC296E1BC600A9DA23 /* PrefixedLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95C39EB296E1BC600A9DA23 /* PrefixedLogger.swift */; };
 		D95D9D302E56866200855DE4 /* BackupKeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95D9D2F2E56866200855DE4 /* BackupKeyService.swift */; };
@@ -7378,7 +7377,6 @@
 		D959F1162FE4580E00006744 /* ScreenshotBlocking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotBlocking.swift; sourceTree = "<group>"; };
 		D95A79A72AB125D80013DB00 /* CallRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallRecordStore.swift; sourceTree = "<group>"; };
 		D95C39E5296DE9E900A9DA23 /* OWSRequestFactory+BoostPayments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OWSRequestFactory+BoostPayments.swift"; sourceTree = "<group>"; };
-		D95C39E7296DEBFB00A9DA23 /* OWSRequestFactory+Usernames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OWSRequestFactory+Usernames.swift"; sourceTree = "<group>"; };
 		D95C39E9296E108100A9DA23 /* UsernameSelectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsernameSelectionViewController.swift; sourceTree = "<group>"; };
 		D95C39EB296E1BC600A9DA23 /* PrefixedLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefixedLogger.swift; sourceTree = "<group>"; };
 		D95D9D2F2E56866200855DE4 /* BackupKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupKeyService.swift; sourceTree = "<group>"; };
@@ -15952,7 +15950,6 @@
 				C18806352BD947970024044A /* OWSRequestFactory+Backups.swift */,
 				D95C39E5296DE9E900A9DA23 /* OWSRequestFactory+BoostPayments.swift */,
 				F9D5BFCC2979A017001737E5 /* OWSRequestFactory+Spam.swift */,
-				D95C39E7296DEBFB00A9DA23 /* OWSRequestFactory+Usernames.swift */,
 				F9C5CAE2289453B200548EEE /* OWSRequestFactory.swift */,
 				F9C5C9C7289453B100548EEE /* RemoteAttestationAuthFetcher.swift */,
 				66C2B1302A05D28A008DDE72 /* TSRequest.swift */,
@@ -20267,7 +20264,6 @@
 				C18806362BD947970024044A /* OWSRequestFactory+Backups.swift in Sources */,
 				D95C39E6296DE9E900A9DA23 /* OWSRequestFactory+BoostPayments.swift in Sources */,
 				F9D5BFCD2979A017001737E5 /* OWSRequestFactory+Spam.swift in Sources */,
-				D95C39E8296DEBFB00A9DA23 /* OWSRequestFactory+Usernames.swift in Sources */,
 				F9C5CDB5289453B400548EEE /* OWSRequestFactory.swift in Sources */,
 				F9C5CC52289453B300548EEE /* OWSRequestMaker.swift in Sources */,
 				66062E712E43F83600D5F8C1 /* OWSSequentialProgress.swift in Sources */,
