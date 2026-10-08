@@ -1676,6 +1676,22 @@ Prøv igjen om %1$d timer.</string>
 			<string>Sett av &lt;bold&gt;%1$d&lt;/bold&gt;</string>
 		</dict>
 	</dict>
+	<key>THREAD_DETAILS_MEMBERS_AND_INVITED_%ld</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ (+%1$ld invited)</string>
+			<key>other</key>
+			<string>%2$@ (+%1$ld invited)</string>
+		</dict>
+	</dict>
 	<key>THREAD_DETAILS_MORE_MUTUAL_GROUP_%3$ld</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
@@ -1786,6 +1802,86 @@ Prøv igjen om %1$d timer.</string>
 			<string>Brukernavnet må inneholde minst %1$d tegn.</string>
 			<key>other</key>
 			<string>Brukernavnet må inneholde minst %1$d tegn.</string>
+		</dict>
+	</dict>
+	<key>UnreadReminderJob__mentions_many</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d mention of you by %2$@ and others</string>
+			<key>other</key>
+			<string>%1$d mentions of you by %2$@ and others</string>
+		</dict>
+	</dict>
+	<key>UnreadReminderJob__mentions_two</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d mention of you by %2$@ and %3$@</string>
+			<key>other</key>
+			<string>%1$d mentions of you by %2$@ and %3$@</string>
+		</dict>
+	</dict>
+	<key>UnreadReminderJob__messages</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d unread message</string>
+			<key>other</key>
+			<string>%1$d unread messages</string>
+		</dict>
+	</dict>
+	<key>UnreadReminderJob__replies_many</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d reply from %2$@ and others</string>
+			<key>other</key>
+			<string>%1$d replies from %2$@ and others</string>
+		</dict>
+	</dict>
+	<key>UnreadReminderJob__replies_two</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@text@</string>
+		<key>text</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d reply from %2$@ and %3$@</string>
+			<key>other</key>
+			<string>%1$d replies from %2$@ and %3$@</string>
 		</dict>
 	</dict>
 </dict>

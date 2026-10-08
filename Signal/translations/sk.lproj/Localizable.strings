@@ -887,7 +887,7 @@
 "BACKUP_SETTINGS_BACKUP_PLAN_PAID_BUT_IAP_NOT_FOUND_LOCALLY_DESCRIPTION" = "Predplatné sa na tomto zariadení nenašlo. Obnovte ho, aby ste mohli Zálohy Signal používať aj naďalej.";
 
 /* Text on the landing page describing that the user's backup plan is paid, but free for them as a tester. */
-"BACKUP_SETTINGS_BACKUP_PLAN_PAID_COMPLIMENTARY_DESCRIPTION" = "Your backup plan is paid (complimentary for TestFlight users)";
+"BACKUP_SETTINGS_BACKUP_PLAN_PAID_COMPLIMENTARY_DESCRIPTION" = "Váš plán zálohovania je platený (bezplatný pre používateľov TestFlight)";
 
 /* Header describing what the paid backup plan includes. */
 "BACKUP_SETTINGS_BACKUP_PLAN_PAID_HEADER" = "Zálohovanie všetkých správ a médií";
@@ -1461,6 +1461,9 @@
 
 /* An explanation of the consequences of blocking another user. */
 "BLOCK_USER_BEHAVIOR_EXPLANATION" = "Blokovaní používatelia vám nebudú môcť volať ani posielať správy.";
+
+/* Shown as a subtitle for recipients & groups you've blocked to indicate when you blocked them. The replacement is a formatted date. */
+"BLOCKED_AT" = "Blocked on %1$@";
 
 /* Default text for the custom amount field of the boost view. */
 "BOOST_VIEW_CUSTOM_AMOUNT_PLACEHOLDER" = "Zadať vlastnú čiastku";
@@ -2375,10 +2378,10 @@
 "CONTACT_FIELD_NAME_SUFFIX" = "Titul za";
 
 /* Label for the 'nickname' field of a contact. */
-"CONTACT_FIELD_NICKNAME" = "Nickname";
+"CONTACT_FIELD_NICKNAME" = "Prezývka";
 
 /* Label for the 'notes' field of a contact. */
-"CONTACT_FIELD_NOTES" = "Notes";
+"CONTACT_FIELD_NOTES" = "Poznámky";
 
 /* Label for the 'organization' field of a contact. */
 "CONTACT_FIELD_ORGANIZATION" = "Organizácia";
@@ -2437,14 +2440,44 @@
 /* navbar title for contact picker when sharing a contact */
 "CONTACT_PICKER_TITLE" = "Vybrať kontakt";
 
+/* Button on a shared contact in a group conversation that adds the contact to that group. It can share a row with other buttons, so a short label is preferred. */
+"CONTACT_SHARE_ADD_TO_GROUP_BUTTON" = "Add to Group";
+
+/* Button in the confirmation shown before adding a shared contact to the current group that adds the contact. */
+"CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_BUTTON" = "Add to Group";
+
+/* Confirmation shown before adding a shared contact to the current group. Embeds {{ %1$@ contact name, %2$@ group name }}. */
+"CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_FORMAT" = "Add %1$@ to “%2$@”?";
+
 /* Title for the 'Approve contact share' view. */
 "CONTACT_SHARE_APPROVAL_VIEW_TITLE" = "Zdieľať kontakt";
+
+/* Name of the option to share a contact without a photo, which shows their initials instead. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_NO_PHOTO" = "No photo";
+
+/* Title for the sheet for choosing which photo to include when sharing a contact. */
+"CONTACT_SHARE_AVATAR_PICKER_TITLE" = "Select a photo to share";
+
+/* Accessibility label for the row that chooses which photo to include when sharing a contact. */
+"CONTACT_SHARE_AVATAR_ROW_LABEL" = "Photo";
+
+/* Name of the option to share a contact's Signal profile photo. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_SIGNAL_PHOTO" = "Signal profile photo";
+
+/* Name of the option to share a contact's photo from the phone's contacts. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_SYSTEM_CONTACT_PHOTO" = "Contacts photo";
 
 /* Title for the 'edit contact share name' view. */
 "CONTACT_SHARE_EDIT_NAME_VIEW_TITLE" = "Upraviť meno";
 
 /* Error indicating that an invalid contact cannot be shared. */
 "CONTACT_SHARE_INVALID_CONTACT" = "Neplatný kontakt.";
+
+/* Button on a shared contact that opens a chat with that contact. It can share a row with other buttons, so a short label is preferred. */
+"CONTACT_SHARE_MESSAGE_BUTTON" = "Message";
+
+/* Notice at the top of the 'Share Contact' view when the shared contact includes their Signal account. Embeds {{ contact name }}. */
+"CONTACT_SHARE_SIGNAL_ACCOUNT_NOTICE_FORMAT" = "Anyone you share this profile with will be able to message %1$@ on Signal.";
 
 /* Alert body when contacts disabled while trying to share a contact. */
 "CONTACT_SHARING_NO_ACCESS_BODY" = "Signal potrebuje prístup k vašim kontaktom. Prejdite do nastavení iOS a zapnite kontakty. Vaše kontakty sú šifrované a nie sú viditeľné pre službu Signal.";
@@ -2852,7 +2885,7 @@
 "CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_TO_DOWNLOAD" = "Zobraziť celú správu";
 
 /* Label for a button in a message bubble that opens a sticker pack */
-"CONVERSATION_VIEW_VIEW_STICKER_PACK" = "View Pack";
+"CONVERSATION_VIEW_VIEW_STICKER_PACK" = "Zobraziť balíček";
 
 /* Indicator that a value has been copied to the clipboard. */
 "COPIED_TO_CLIPBOARD" = "Okopírované do schránky";
@@ -3803,7 +3836,7 @@
 "EMPTY_CONTACTS_LABEL_LINE2" = "Prečo niekoho nepozvete?";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to turn on backups. */
-"ENABLE_BACKUPS_AUTHENTICATION_REASON" = "Authenticate to turn on backups";
+"ENABLE_BACKUPS_AUTHENTICATION_REASON" = "Overte totožnosť na zapnutie záloh";
 
 /* Label for a toast that confirms that local backups are enabled. */
 "ENABLE_LOCAL_FILE_BACKUPS_TOAST_CONFIRM" = "Zálohovanie na zariadení je povolené";
@@ -7814,7 +7847,7 @@
 "QUICK_RESTORE_URL_OPENED_ACTION_SHEET_EXTERNAL_URL_MESSAGE" = "Ak chcete tento účet preniesť do nového zariadenia, ťuknite na „Pokračovať“ a naskenujte QR kód pomocou fotoaparátu Signal. Uistite sa, že skenujete iba QR kódy priamo z aplikácie Signal.";
 
 /* Label to show above a sticker used to reply to a message */
-"QUOTE_REPLY_STICKER" = "Reply";
+"QUOTE_REPLY_STICKER" = "Odpovedať";
 
 /* Accessibility label stating the author of the message to which you are replying. Embeds: {{ the author of the message to which you are replying }} {{ original message }}. */
 "QUOTED_REPLY_ACCESSIBILITY_LABEL_FORMAT" = "Odpoveď pre používateľa %1$@. %2$@";
@@ -7943,7 +7976,7 @@
 "RECIPIENT_PICKER_INVITE_TITLE" = "Pozvať do Signalu";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode during a periodic reminder to record your recovery key. */
-"RECOVERY_KEY_REMINDER_AUTHENTICATION_REASON" = "Authenticate to view your recovery key";
+"RECOVERY_KEY_REMINDER_AUTHENTICATION_REASON" = "Overte totožnosť na zobrazenie kľúča na obnovenie";
 
 /* Alert title explaining what happens if you forget your 'two-factor auth pin'. */
 "REGISTER_2FA_FORGOT_PIN_ALERT_TITLE" = "Potrebujete pomoc?";
@@ -7970,7 +8003,7 @@
 "REGISTER_RATE_LIMITING_ERROR" = "Pokúšali ste sa pričasto. Pred ďalším pokusom, prosím, chvíľu počkajte.";
 
 /* A button in registration that allows the user to register by purchasing a Signal Login rather than providing their phone number. */
-"REGISTER_WITHOUT_NUMBER" = "Register Without Number";
+"REGISTER_WITHOUT_NUMBER" = "Registrovať sa bez čísla";
 
 /* Short description for a sheet warning users about an incorrect recovery key used for registration. */
 "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_BODY" = "Možno ste zadali nesprávny kľúč na obnovenie. \n\nUistite sa, že sa registrujete pomocou rovnakého telefónneho čísla a kľúča na obnovenie, ktorý ste si uložili pri povolení bezpečných Záloh Signal.";
@@ -8002,6 +8035,9 @@
 /* Body for a sheet warning users about a generic backup manual restore failure. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_BODY" = "Vyskytla sa chyba a váš účet sa nepodarilo preniesť.";
 
+/* Title for a sheet warning users about an error during backup restore. */
+"REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_CANT_RESTORE_TITLE" = "Can't Restore Backup";
+
 /* Body for a sheet warning users about a generic backup restore failure. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_RETRY_BODY" = "Vyskytla sa chyba a váš účet sa nepodarilo preniesť. Skúste to znova naskenovaním QR kódu a zvolením spôsobu prenosu.";
 
@@ -8025,6 +8061,9 @@
 
 /* Title for a sheet warning users about an invalid local backup location */
 "REGISTRATION_BACKUP_RESTORE_ERROR_LOCAL_BACKUP_LOCATION_TITLE" = "Nepodarilo sa obnoviť zálohu";
+
+/* Message for a sheet telling the user that their phone number is mismatched with their recovery key used for making a local backup */
+"REGISTRATION_BACKUP_RESTORE_ERROR_MISMATCHED_LOCAL_BACKUP_MESSAGE" = "The backup you are attempting to restore was created using a different Signal account. To restore this backup you must use the same phone number and recovery key you saved when enabling on-device backups.";
 
 /* Body for a sheet warning users about a network error during backup restore. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_NETWORK_BODY" = "Vašu zálohu nie je momentálne možné obnoviť. Skontrolujte internetové pripojenie a skúste to znova.";
@@ -8207,64 +8246,70 @@
 "REGISTRATION_SCAN_QR_CODE_TUTORIAL_TAP_CAMERA" = "Ťuknite na ikonu fotoaparátu";
 
 /* Description for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_BODY" = "Enter your account ID followed by your recovery key to restore your account.";
+"REGISTRATION_SIGNAL_LOGIN_BODY" = "Ak chcete obnoviť svoj účet, zadajte ID účtu a potom kľúč na obnovenie.";
 
 /* Label above the partially hidden account ID on the 'Signal Login details' screen. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_ACCOUNT_LABEL" = "Account";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_ACCOUNT_LABEL" = "Účet";
 
 /* Description for the 'Signal Login details' screen shown after purchasing a Signal Login. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_BODY" = "Thanks for your purchase. Use your Signal Login to register and restore your account. If you forget your keys, you will not be able to recover your account.";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_BODY" = "Ďakujeme za nákup. Použite váš Signal Login na registráciu a obnovenie vášho účtu. Ak zabudnete svoj kľúč, nebudete môcť obnoviť svoj účet.";
 
 /* Accessibility label for a partially hidden value on the Signal Login card. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_MASKED_VALUE_ACCESSIBILITY_FORMAT" = "Ending in %1$@";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_MASKED_VALUE_ACCESSIBILITY_FORMAT" = "Končí sa s %1$@";
 
 /* Label above the partially hidden recovery key on the 'Signal Login details' screen. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_RECOVERY_LABEL" = "Recovery";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_RECOVERY_LABEL" = "Obnovenie";
 
 /* Button on the 'Signal Login details' screen to save the Signal Login manually. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_MANUALLY_BUTTON" = "Save Manually";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_MANUALLY_BUTTON" = "Uložiť manuálne";
 
 /* Button on the 'Signal Login details' screen to save the Signal Login to a password manager. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_TO_PASSWORD_MANAGER_BUTTON" = "Save to Password Manager";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_TO_PASSWORD_MANAGER_BUTTON" = "Uložiť do správcu hesiel";
 
 /* Title text for the 'Signal Login details' screen shown after purchasing a Signal Login. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_TITLE" = "Your Signal Login";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_TITLE" = "Váš Signal Login";
 
 /* Button on the Signal Login card on the 'Signal Login details' screen to show the full account ID and recovery key. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_VIEW_DETAILS_BUTTON" = "View Details";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_VIEW_DETAILS_BUTTON" = "Zobraziť podrobnosti";
+
+/* Explanation text for the 'Signal Login' screen. */
+"REGISTRATION_SIGNAL_LOGIN_EXPLANATION" = "Register without a phone number using Signal Login. With a one-time purchase, you’ll receive an account ID to get started.";
 
 /* Toast shown after copying the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_COPIED_TOAST" = "Account ID copied";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_COPIED_TOAST" = "ID účtu bolo skopírované";
 
 /* Header above the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_HEADER" = "Account ID";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_HEADER" = "ID účtu";
 
 /* Accessibility label for the button that copies the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_ACCOUNT_ID_ACCESSIBILITY" = "Copy account ID";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_ACCOUNT_ID_ACCESSIBILITY" = "Skopírovať ID účtu";
 
 /* Accessibility label for the button that copies the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_RECOVERY_KEY_ACCESSIBILITY" = "Copy recovery key";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_RECOVERY_KEY_ACCESSIBILITY" = "Skopírovať kľúč na obnovenie";
 
 /* Button on the 'Signal Login' details sheet to save login to a password manager. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_PASSWORD_MANAGER_BUTTON" = "Save to Password Manager";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_PASSWORD_MANAGER_BUTTON" = "Uložiť do správcu hesiel";
 
 /* Toast shown after copying the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_COPIED_TOAST" = "Recovery Key copied";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_COPIED_TOAST" = "Kľúč na obnovenie bol skopírovaný";
 
 /* Header above the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_HEADER" = "Recovery Key";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_HEADER" = "Kľúč na obnovenie";
 
 /* Button on the 'Signal Login' details sheet to save the login details as a PDF. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_SAVE_AS_PDF_BUTTON" = "Save as PDF";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_SAVE_AS_PDF_BUTTON" = "Uložiť ako PDF";
 
 /* Title for the sheet showing the accountID and recovery key of a Signal Login. */
 "REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_TITLE" = "Signal Login";
 
 /* Title for help button for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_HELP_BODY" = "Your Signal Login contains a 32-character Account ID along with a 64-character Recovery Key. \n\nIf you’ve lost your Signal Login, Signal can’t help restore your account. If you have your old device you can view your Signal Login in Settings > Account.";
+"REGISTRATION_SIGNAL_LOGIN_HELP_BODY" = "Váš Signal Login obsahuje 32-miestne ID účtu spolu so 64-miestnym kľúčom na obnovenie.\n\nV prípade straty svojho Signal Login vám Signal nebude môcť pomôcť pri obnovení vášho účtu. Ak máte svoje staré zariadenie, svoj Signal Login si môžete pozrieť v časti Nastavenia > Účet.";
 
 /* Title for help button for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_NEED_HELP_TITLE" = "Need Help?";
+"REGISTRATION_SIGNAL_LOGIN_NEED_HELP_TITLE" = "Potrebujete pomoc?";
+
+/* Button to initiate a purchase on the 'Signal Login' screen. The replacement is a localized cost (e.g., $2.99). */
+"REGISTRATION_SIGNAL_LOGIN_PAY" = "Pay %1$@";
 
 /* Title text for the 'Signal Login' screen. */
 "REGISTRATION_SIGNAL_LOGIN_TITLE" = "Signal Login";
@@ -8759,34 +8804,34 @@
 "SELECT_ALL" = "Vybrať všetko";
 
 /* Shown on the 'Select Contact' view when access to the user's contacts is restricted, for example by Screen Time or device management. */
-"SELECT_CONTACT_FOR_SHARING_ACCESS_RESTRICTED" = "Access to phone contacts is restricted on this device.";
+"SELECT_CONTACT_FOR_SHARING_ACCESS_RESTRICTED" = "Prístup k telefónnym kontaktom je na tomto zariadení obmedzený.";
 
 /* Shown on the 'Select Contact' view after the user has dismissed the contacts permission prompt without deciding. The text inside the <link> tags is tappable and asks iOS for access to the user's contacts. */
-"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS" = "To see your phone contacts here, <link>allow access</link>.";
+"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS" = "Ak tu chcete vidieť svoje telefónne kontakty, <link>povoľte prístup</link>.";
 
 /* Shown on the 'Select Contact' view when the user has denied access to their contacts. Followed by a 'Learn More' link. */
-"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS_IN_SETTINGS_FOOTER" = "To see your phone contacts here, allow access in your device settings.";
+"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS_IN_SETTINGS_FOOTER" = "Ak tu chcete vidieť svoje telefónne kontakty, povoľte prístup v nastaveniach zariadenia.";
 
 /* Subtitle shown on the 'Select Contact' view when the user has no contacts. */
-"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_SUBTITLE" = "Your contacts will appear here.";
+"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_SUBTITLE" = "Vaše kontakty sa zobrazia tu.";
 
 /* Title shown on the 'Select Contact' view when the user has no contacts. */
-"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_TITLE" = "No Contacts";
+"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_TITLE" = "Žiadne kontakty";
 
 /* Title shown on the 'Select Contact' view when no contacts match the user's search. */
-"SELECT_CONTACT_FOR_SHARING_NO_SEARCH_RESULTS_TITLE" = "No Results";
+"SELECT_CONTACT_FOR_SHARING_NO_SEARCH_RESULTS_TITLE" = "Žiadne výsledky";
 
 /* Button on the 'Select Contact' view's contacts permission prompt that asks iOS for access to the user's contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_ALLOW_BUTTON" = "Allow Access";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_ALLOW_BUTTON" = "Povoliť prístup";
 
 /* Body of the prompt on the 'Select Contact' view that asks the user to allow access to their contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_BODY" = "Allow access to your contacts. Your contacts are encrypted and not visible to the Signal service.";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_BODY" = "Povoľte prístup ku kontaktom. Vaše kontakty sú šifrované a nie sú viditeľné pre službu Signal.";
 
 /* Button on the 'Select Contact' view's contacts permission prompt that hides the prompt. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_DISMISS_BUTTON" = "No Thanks";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_DISMISS_BUTTON" = "Nie, ďakujem";
 
 /* Title of the prompt on the 'Select Contact' view that asks the user to allow access to their contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_TITLE" = "Find people you know on Signal";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_TITLE" = "Nájdite v aplikácii Signal ľudí, ktorých poznáte";
 
 /* Placeholder text for the search bar on the 'Select Contact' view */
 "SELECT_CONTACT_FOR_SHARING_SEARCH_BAR_PLACEHOLDER" = "Hľadať";
@@ -9306,6 +9351,16 @@
 
 /* Explanation for the button that resets all notification settings. */
 "SETTINGS_NOTIFICATIONS_RESET_FOOTER" = "Resetovať nastavenia upozornení na predvolené, vrátane vlastných nastavení pre vaše čety.";
+
+/* Label for the switch controlling whether reminders about unread messages are shown.
+   Label for the switch controlling whether reminders about unread messages in muted chats are shown. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS" = "Unread Reminders";
+
+/* Explanation for the switch controlling whether reminders about unread messages are shown in this chat while it is muted. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_CHAT_FOOTER" = "Occasionally notify when there are unread messages while this chat is muted.";
+
+/* Explanation for the switch controlling whether reminders about unread messages in muted chats are shown. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_FOOTER" = "Occasionally notify when there are unread messages in muted chats.";
 
 /* Label for the 'agree to payments terms' button in the 'activate payments confirmation' UI in the payment settings. */
 "SETTINGS_PAYMENTS_ACTIVATE_PAYMENTS_CONFIRM_AGREE" = "Aktivovať";
@@ -10052,10 +10107,10 @@
 "SIGNAL_CALL" = "Signal hovor";
 
 /* Placeholder of the 'Account ID' username field. */
-"SIGNAL_LOGIN_ACCOUNT_ID_PLACEHOLDER_TITLE" = "Account ID";
+"SIGNAL_LOGIN_ACCOUNT_ID_PLACEHOLDER_TITLE" = "ID účtu";
 
 /* Placeholder of the 'Recovery Key' password field. */
-"SIGNAL_LOGIN_RECOVERY_KEY_PLACEHOLDER_TITLE" = "Recovery Key";
+"SIGNAL_LOGIN_RECOVERY_KEY_PLACEHOLDER_TITLE" = "Kľúč na obnovenie";
 
 /* Title for the sheet presented when user taps on Signal Proxy link in chat. */
 "SIGNAL_PROXY" = "Signal proxy server";
@@ -10688,7 +10743,7 @@
 "TIME_AMOUNT_WEEKS_SHORT_FORMAT" = "%1$@t";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to transfer your account to a new device. */
-"TRANSFER_ACCOUNT_AUTHENTICATION_REASON" = "Authenticate to transfer your account";
+"TRANSFER_ACCOUNT_AUTHENTICATION_REASON" = "Overte totožnosť na prenos svojho účtu";
 
 /* Button for bottom sheet shown when device transfer completes on the receiving device. Tapping will terminate the Signal app and trigger a notification to relaunch. */
 "TRANSFER_COMPLETE_SHEET_BUTTON" = "Zatvoriť Signal";
@@ -10791,6 +10846,33 @@
 
 /* Pressing this button marks a thread as unread */
 "UNREAD_ACTION" = "Neprečítané";
+
+/* Notification placeholder for three or more recipients who sent unread messages */
+"UnreadReminderJob__authors_many" = "%1$@ and others";
+
+/* Notification placeholder for a single recipient who sent unread messages */
+"UnreadReminderJob__authors_one" = "%1$@";
+
+/* Notification placeholder for two recipients who sent unread messages */
+"UnreadReminderJob__authors_two" = "%1$@ and %2$@";
+
+/* Notification body for unread reminders. First placeholder is unread messages or unread calls */
+"UnreadReminderJob__calls_or_unread" = "You have %1$@.";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a list of people who sent them */
+"UnreadReminderJob__calls_or_unread_author" = "You have %1$@ from %2$@.";
+
+/* Notification placeholder that sums up a single unread mention. Placeholder is the name of the person who sent the message */
+"UnreadReminderJob__mentions_one" = "a mention of you by %1$@";
+
+/* Notification placeholder that sums up a single unread reply. Placeholder is the name of the person who sent the message */
+"UnreadReminderJob__replies_one" = "a reply from %1$@";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a summary of unread mentions, third replies */
+"UnreadReminderJob__unread_both_summary" = "You have %1$@, including %2$@ and %3$@.";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a summary of either unread mentions or replies */
+"UnreadReminderJob__unread_one_summary" = "You have %1$@, including %2$@.";
 
 /* No comment provided by engineer. */
 "UNSUPPORTED_ATTACHMENT" = "Bol prijatý nepodporovaný typ prílohy.";
@@ -11018,7 +11100,7 @@
 "VIEW_PHOTO" = "Zobraziť fotku";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to view your recovery key. */
-"VIEW_RECOVERY_KEY_AUTHENTICATION_REASON" = "Authenticate to view your recovery key";
+"VIEW_RECOVERY_KEY_AUTHENTICATION_REASON" = "Overte totožnosť na zobrazenie kľúča na obnovenie";
 
 /* View the story of a group or user */
 "VIEW_STORY" = "Zobraziť príbeh";

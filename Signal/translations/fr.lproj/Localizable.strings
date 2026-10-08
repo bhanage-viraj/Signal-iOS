@@ -887,7 +887,7 @@
 "BACKUP_SETTINGS_BACKUP_PLAN_PAID_BUT_IAP_NOT_FOUND_LOCALLY_DESCRIPTION" = "Abonnement introuvable sur cet appareil. Pour continuer d'utiliser les sauvegardes Signal, nous vous invitons à renouveler votre abonnement.";
 
 /* Text on the landing page describing that the user's backup plan is paid, but free for them as a tester. */
-"BACKUP_SETTINGS_BACKUP_PLAN_PAID_COMPLIMENTARY_DESCRIPTION" = "Your backup plan is paid (complimentary for TestFlight users)";
+"BACKUP_SETTINGS_BACKUP_PLAN_PAID_COMPLIMENTARY_DESCRIPTION" = "Ce forfait de sauvegarde est payant (mais offert aux utilisateurs de TestFlight)";
 
 /* Header describing what the paid backup plan includes. */
 "BACKUP_SETTINGS_BACKUP_PLAN_PAID_HEADER" = "Messages texte + tous les médias";
@@ -1461,6 +1461,9 @@
 
 /* An explanation of the consequences of blocking another user. */
 "BLOCK_USER_BEHAVIOR_EXPLANATION" = "Les utilisateurs bloqués ne pourront ni vous appeler, ni vous envoyer des messages.";
+
+/* Shown as a subtitle for recipients & groups you've blocked to indicate when you blocked them. The replacement is a formatted date. */
+"BLOCKED_AT" = "Blocked on %1$@";
 
 /* Default text for the custom amount field of the boost view. */
 "BOOST_VIEW_CUSTOM_AMOUNT_PLACEHOLDER" = "Saisir un montant personnalisé";
@@ -2375,7 +2378,7 @@
 "CONTACT_FIELD_NAME_SUFFIX" = "Suffixe";
 
 /* Label for the 'nickname' field of a contact. */
-"CONTACT_FIELD_NICKNAME" = "Nickname";
+"CONTACT_FIELD_NICKNAME" = "Pseudo";
 
 /* Label for the 'notes' field of a contact. */
 "CONTACT_FIELD_NOTES" = "Notes";
@@ -2437,14 +2440,44 @@
 /* navbar title for contact picker when sharing a contact */
 "CONTACT_PICKER_TITLE" = "Sélectionner un contact";
 
+/* Button on a shared contact in a group conversation that adds the contact to that group. It can share a row with other buttons, so a short label is preferred. */
+"CONTACT_SHARE_ADD_TO_GROUP_BUTTON" = "Add to Group";
+
+/* Button in the confirmation shown before adding a shared contact to the current group that adds the contact. */
+"CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_BUTTON" = "Add to Group";
+
+/* Confirmation shown before adding a shared contact to the current group. Embeds {{ %1$@ contact name, %2$@ group name }}. */
+"CONTACT_SHARE_ADD_TO_GROUP_CONFIRMATION_FORMAT" = "Add %1$@ to “%2$@”?";
+
 /* Title for the 'Approve contact share' view. */
 "CONTACT_SHARE_APPROVAL_VIEW_TITLE" = "Partager ce contact";
+
+/* Name of the option to share a contact without a photo, which shows their initials instead. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_NO_PHOTO" = "No photo";
+
+/* Title for the sheet for choosing which photo to include when sharing a contact. */
+"CONTACT_SHARE_AVATAR_PICKER_TITLE" = "Select a photo to share";
+
+/* Accessibility label for the row that chooses which photo to include when sharing a contact. */
+"CONTACT_SHARE_AVATAR_ROW_LABEL" = "Photo";
+
+/* Name of the option to share a contact's Signal profile photo. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_SIGNAL_PHOTO" = "Signal profile photo";
+
+/* Name of the option to share a contact's photo from the phone's contacts. Read by VoiceOver on the option, and as the current value of the photo row when it's selected. */
+"CONTACT_SHARE_AVATAR_SYSTEM_CONTACT_PHOTO" = "Contacts photo";
 
 /* Title for the 'edit contact share name' view. */
 "CONTACT_SHARE_EDIT_NAME_VIEW_TITLE" = "Renommer";
 
 /* Error indicating that an invalid contact cannot be shared. */
 "CONTACT_SHARE_INVALID_CONTACT" = "Contact non valide.";
+
+/* Button on a shared contact that opens a chat with that contact. It can share a row with other buttons, so a short label is preferred. */
+"CONTACT_SHARE_MESSAGE_BUTTON" = "Message";
+
+/* Notice at the top of the 'Share Contact' view when the shared contact includes their Signal account. Embeds {{ contact name }}. */
+"CONTACT_SHARE_SIGNAL_ACCOUNT_NOTICE_FORMAT" = "Anyone you share this profile with will be able to message %1$@ on Signal.";
 
 /* Alert body when contacts disabled while trying to share a contact. */
 "CONTACT_SHARING_NO_ACCESS_BODY" = "Signal doit accéder à vos contacts. Ouvrez les réglages iOS et autorisez l'accès aux contacts. Votre liste de contacts est chiffrée : le service Signal n'en a jamais connaissance.";
@@ -2852,7 +2885,7 @@
 "CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_TO_DOWNLOAD" = "Afficher tout le message";
 
 /* Label for a button in a message bubble that opens a sticker pack */
-"CONVERSATION_VIEW_VIEW_STICKER_PACK" = "View Pack";
+"CONVERSATION_VIEW_VIEW_STICKER_PACK" = "Afficher le pack";
 
 /* Indicator that a value has been copied to the clipboard. */
 "COPIED_TO_CLIPBOARD" = "Copié dans le presse-papiers";
@@ -3803,7 +3836,7 @@
 "EMPTY_CONTACTS_LABEL_LINE2" = "Et si vous invitiez vos amis ?";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to turn on backups. */
-"ENABLE_BACKUPS_AUTHENTICATION_REASON" = "Authenticate to turn on backups";
+"ENABLE_BACKUPS_AUTHENTICATION_REASON" = "Authentifiez-vous pour activer les sauvegardes";
 
 /* Label for a toast that confirms that local backups are enabled. */
 "ENABLE_LOCAL_FILE_BACKUPS_TOAST_CONFIRM" = "Sauvegardes locales activées";
@@ -7814,7 +7847,7 @@
 "QUICK_RESTORE_URL_OPENED_ACTION_SHEET_EXTERNAL_URL_MESSAGE" = "Pour transférer ce compte vers un nouvel appareil, appuyez sur \"Continuer\", puis scannez le code QR avec l'appareil photo intégré à l'application. Attention : ne scannez que les codes QR qui proviennent directement de Signal.";
 
 /* Label to show above a sticker used to reply to a message */
-"QUOTE_REPLY_STICKER" = "Reply";
+"QUOTE_REPLY_STICKER" = "Réagir";
 
 /* Accessibility label stating the author of the message to which you are replying. Embeds: {{ the author of the message to which you are replying }} {{ original message }}. */
 "QUOTED_REPLY_ACCESSIBILITY_LABEL_FORMAT" = "Vous répondez à %1$@. %2$@";
@@ -7943,7 +7976,7 @@
 "RECIPIENT_PICKER_INVITE_TITLE" = "Inviter sur Signal";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode during a periodic reminder to record your recovery key. */
-"RECOVERY_KEY_REMINDER_AUTHENTICATION_REASON" = "Authenticate to view your recovery key";
+"RECOVERY_KEY_REMINDER_AUTHENTICATION_REASON" = "Authentifiez-vous pour afficher votre clé de récupération";
 
 /* Alert title explaining what happens if you forget your 'two-factor auth pin'. */
 "REGISTER_2FA_FORGOT_PIN_ALERT_TITLE" = "Besoin d'aide ?";
@@ -7970,7 +8003,7 @@
 "REGISTER_RATE_LIMITING_ERROR" = "Trop grand nombre de tentatives. Veuillez patienter une minute avant de réessayer.";
 
 /* A button in registration that allows the user to register by purchasing a Signal Login rather than providing their phone number. */
-"REGISTER_WITHOUT_NUMBER" = "Register Without Number";
+"REGISTER_WITHOUT_NUMBER" = "S'inscrire sans numéro";
 
 /* Short description for a sheet warning users about an incorrect recovery key used for registration. */
 "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_BODY" = "Vous avez peut-être mal saisi votre clé de récupération.\n\nVérifiez que vous utilisez bien le même numéro de téléphone, ainsi que la clé de récupération que vous avez enregistrée au moment d'activer les sauvegardes sécurisées Signal.";
@@ -8002,6 +8035,9 @@
 /* Body for a sheet warning users about a generic backup manual restore failure. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_BODY" = "Une erreur nous empêche de transférer votre compte.";
 
+/* Title for a sheet warning users about an error during backup restore. */
+"REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_CANT_RESTORE_TITLE" = "Can't Restore Backup";
+
 /* Body for a sheet warning users about a generic backup restore failure. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_GENERIC_RETRY_BODY" = "Une erreur nous empêche de transférer votre compte. Scannez le code QR et choisissez une autre méthode de transfert, puis réessayez.";
 
@@ -8025,6 +8061,9 @@
 
 /* Title for a sheet warning users about an invalid local backup location */
 "REGISTRATION_BACKUP_RESTORE_ERROR_LOCAL_BACKUP_LOCATION_TITLE" = "Impossible de restaurer la sauvegarde";
+
+/* Message for a sheet telling the user that their phone number is mismatched with their recovery key used for making a local backup */
+"REGISTRATION_BACKUP_RESTORE_ERROR_MISMATCHED_LOCAL_BACKUP_MESSAGE" = "The backup you are attempting to restore was created using a different Signal account. To restore this backup you must use the same phone number and recovery key you saved when enabling on-device backups.";
 
 /* Body for a sheet warning users about a network error during backup restore. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_NETWORK_BODY" = "Signal ne peut pas restaurer votre sauvegarde pour le moment. Vérifiez votre connexion Internet et réessayez.";
@@ -8207,67 +8246,73 @@
 "REGISTRATION_SCAN_QR_CODE_TUTORIAL_TAP_CAMERA" = "Touchez l'icône de l'appareil photo";
 
 /* Description for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_BODY" = "Enter your account ID followed by your recovery key to restore your account.";
+"REGISTRATION_SIGNAL_LOGIN_BODY" = "Pour restaurer votre compte, saisissez votre identifiant de compte, puis votre clé de récupération.";
 
 /* Label above the partially hidden account ID on the 'Signal Login details' screen. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_ACCOUNT_LABEL" = "Account";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_ACCOUNT_LABEL" = "Compte";
 
 /* Description for the 'Signal Login details' screen shown after purchasing a Signal Login. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_BODY" = "Thanks for your purchase. Use your Signal Login to register and restore your account. If you forget your keys, you will not be able to recover your account.";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_BODY" = "Merci pour votre achat. Votre login Signal vous permet de vous inscrire, mais aussi de restaurer votre compte. Attention : sans les clés ci-dessous, il vous sera impossible de récupérer votre compte.";
 
 /* Accessibility label for a partially hidden value on the Signal Login card. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_MASKED_VALUE_ACCESSIBILITY_FORMAT" = "Ending in %1$@";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_MASKED_VALUE_ACCESSIBILITY_FORMAT" = "Identifiant se terminant par %1$@";
 
 /* Label above the partially hidden recovery key on the 'Signal Login details' screen. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_RECOVERY_LABEL" = "Recovery";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_RECOVERY_LABEL" = "Récupération";
 
 /* Button on the 'Signal Login details' screen to save the Signal Login manually. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_MANUALLY_BUTTON" = "Save Manually";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_MANUALLY_BUTTON" = "Enregistrer manuellement";
 
 /* Button on the 'Signal Login details' screen to save the Signal Login to a password manager. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_TO_PASSWORD_MANAGER_BUTTON" = "Save to Password Manager";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_SAVE_TO_PASSWORD_MANAGER_BUTTON" = "Enregistrer dans le gestionnaire de mots de passe";
 
 /* Title text for the 'Signal Login details' screen shown after purchasing a Signal Login. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_TITLE" = "Your Signal Login";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_TITLE" = "Votre login Signal";
 
 /* Button on the Signal Login card on the 'Signal Login details' screen to show the full account ID and recovery key. */
-"REGISTRATION_SIGNAL_LOGIN_DETAILS_VIEW_DETAILS_BUTTON" = "View Details";
+"REGISTRATION_SIGNAL_LOGIN_DETAILS_VIEW_DETAILS_BUTTON" = "Afficher les identifiants";
+
+/* Explanation text for the 'Signal Login' screen. */
+"REGISTRATION_SIGNAL_LOGIN_EXPLANATION" = "Register without a phone number using Signal Login. With a one-time purchase, you’ll receive an account ID to get started.";
 
 /* Toast shown after copying the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_COPIED_TOAST" = "Account ID copied";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_COPIED_TOAST" = "Identifiant de compte copié";
 
 /* Header above the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_HEADER" = "Account ID";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_ACCOUNT_ID_HEADER" = "Identifiant de compte";
 
 /* Accessibility label for the button that copies the account ID on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_ACCOUNT_ID_ACCESSIBILITY" = "Copy account ID";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_ACCOUNT_ID_ACCESSIBILITY" = "Copier l'identifiant de compte";
 
 /* Accessibility label for the button that copies the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_RECOVERY_KEY_ACCESSIBILITY" = "Copy recovery key";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_COPY_RECOVERY_KEY_ACCESSIBILITY" = "Copier la clé de récupération";
 
 /* Button on the 'Signal Login' details sheet to save login to a password manager. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_PASSWORD_MANAGER_BUTTON" = "Save to Password Manager";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_PASSWORD_MANAGER_BUTTON" = "Enregistrer dans le gestionnaire de mots de passe";
 
 /* Toast shown after copying the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_COPIED_TOAST" = "Recovery Key copied";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_COPIED_TOAST" = "Clé de récupération copiée";
 
 /* Header above the recovery key on the 'Signal Login' details sheet. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_HEADER" = "Recovery Key";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_RECOVERY_KEY_HEADER" = "Clé de récupération";
 
 /* Button on the 'Signal Login' details sheet to save the login details as a PDF. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_SAVE_AS_PDF_BUTTON" = "Save as PDF";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_SAVE_AS_PDF_BUTTON" = "Enregistrer au format PDF";
 
 /* Title for the sheet showing the accountID and recovery key of a Signal Login. */
-"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_TITLE" = "Signal Login";
+"REGISTRATION_SIGNAL_LOGIN_FULL_DETAILS_TITLE" = "Login Signal";
 
 /* Title for help button for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_HELP_BODY" = "Your Signal Login contains a 32-character Account ID along with a 64-character Recovery Key. \n\nIf you’ve lost your Signal Login, Signal can’t help restore your account. If you have your old device you can view your Signal Login in Settings > Account.";
+"REGISTRATION_SIGNAL_LOGIN_HELP_BODY" = "Votre login Signal comprend un identifiant de compte de 32 caractères et une clé de récupération de 64 caractères.\n\nSans ce login, Signal ne peut pas vous aider à restaurer votre compte. Si vous avez toujours accès à votre ancien appareil, vous pouvez retrouver votre login sous Paramètres > Compte.";
 
 /* Title for help button for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_NEED_HELP_TITLE" = "Need Help?";
+"REGISTRATION_SIGNAL_LOGIN_NEED_HELP_TITLE" = "Besoin d'aide ?";
+
+/* Button to initiate a purchase on the 'Signal Login' screen. The replacement is a localized cost (e.g., $2.99). */
+"REGISTRATION_SIGNAL_LOGIN_PAY" = "Pay %1$@";
 
 /* Title text for the 'Signal Login' screen. */
-"REGISTRATION_SIGNAL_LOGIN_TITLE" = "Signal Login";
+"REGISTRATION_SIGNAL_LOGIN_TITLE" = "Login Signal";
 
 /* Button when sending a verification code via sms failed, but resending via voice call might succeed. */
 "REGISTRATION_SMS_CODE_FAILED_TRY_VOICE_BUTTON" = "Appel vocal";
@@ -8759,34 +8804,34 @@
 "SELECT_ALL" = "Tout sélectionner";
 
 /* Shown on the 'Select Contact' view when access to the user's contacts is restricted, for example by Screen Time or device management. */
-"SELECT_CONTACT_FOR_SHARING_ACCESS_RESTRICTED" = "Access to phone contacts is restricted on this device.";
+"SELECT_CONTACT_FOR_SHARING_ACCESS_RESTRICTED" = "Sur cet appareil, l'accès aux contacts du téléphone est limité.";
 
 /* Shown on the 'Select Contact' view after the user has dismissed the contacts permission prompt without deciding. The text inside the <link> tags is tappable and asks iOS for access to the user's contacts. */
-"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS" = "To see your phone contacts here, <link>allow access</link>.";
+"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS" = "Pour que les contacts de votre téléphone s'affichent ici, <link>autorisez l'accès</link>.";
 
 /* Shown on the 'Select Contact' view when the user has denied access to their contacts. Followed by a 'Learn More' link. */
-"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS_IN_SETTINGS_FOOTER" = "To see your phone contacts here, allow access in your device settings.";
+"SELECT_CONTACT_FOR_SHARING_ALLOW_ACCESS_IN_SETTINGS_FOOTER" = "Pour que les contacts de votre téléphone s'affichent ici, autorisez Signal à y accéder via l'app Réglages d'iOS.";
 
 /* Subtitle shown on the 'Select Contact' view when the user has no contacts. */
-"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_SUBTITLE" = "Your contacts will appear here.";
+"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_SUBTITLE" = "Vos contacts s'afficheront ici.";
 
 /* Title shown on the 'Select Contact' view when the user has no contacts. */
-"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_TITLE" = "No Contacts";
+"SELECT_CONTACT_FOR_SHARING_NO_CONTACTS_TITLE" = "Aucun contact";
 
 /* Title shown on the 'Select Contact' view when no contacts match the user's search. */
-"SELECT_CONTACT_FOR_SHARING_NO_SEARCH_RESULTS_TITLE" = "No Results";
+"SELECT_CONTACT_FOR_SHARING_NO_SEARCH_RESULTS_TITLE" = "Aucun résultat";
 
 /* Button on the 'Select Contact' view's contacts permission prompt that asks iOS for access to the user's contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_ALLOW_BUTTON" = "Allow Access";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_ALLOW_BUTTON" = "Accorder l'accès";
 
 /* Body of the prompt on the 'Select Contact' view that asks the user to allow access to their contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_BODY" = "Allow access to your contacts. Your contacts are encrypted and not visible to the Signal service.";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_BODY" = "Autorisez l'accès à vos contacts. Votre liste de contacts est chiffrée : le service Signal n'en a jamais connaissance.";
 
 /* Button on the 'Select Contact' view's contacts permission prompt that hides the prompt. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_DISMISS_BUTTON" = "No Thanks";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_DISMISS_BUTTON" = "Non merci";
 
 /* Title of the prompt on the 'Select Contact' view that asks the user to allow access to their contacts. */
-"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_TITLE" = "Find people you know on Signal";
+"SELECT_CONTACT_FOR_SHARING_PERMISSION_PROMPT_TITLE" = "Rechercher des personnes que vous connaissez sur Signal";
 
 /* Placeholder text for the search bar on the 'Select Contact' view */
 "SELECT_CONTACT_FOR_SHARING_SEARCH_BAR_PLACEHOLDER" = "Rechercher";
@@ -9306,6 +9351,16 @@
 
 /* Explanation for the button that resets all notification settings. */
 "SETTINGS_NOTIFICATIONS_RESET_FOOTER" = "Réinitialiser les paramètres de notification par défaut, y compris les paramètres personnalisés définis pour chaque conversation.";
+
+/* Label for the switch controlling whether reminders about unread messages are shown.
+   Label for the switch controlling whether reminders about unread messages in muted chats are shown. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS" = "Unread Reminders";
+
+/* Explanation for the switch controlling whether reminders about unread messages are shown in this chat while it is muted. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_CHAT_FOOTER" = "Occasionally notify when there are unread messages while this chat is muted.";
+
+/* Explanation for the switch controlling whether reminders about unread messages in muted chats are shown. */
+"SETTINGS_NOTIFICATIONS_UNREAD_REMINDERS_FOOTER" = "Occasionally notify when there are unread messages in muted chats.";
 
 /* Label for the 'agree to payments terms' button in the 'activate payments confirmation' UI in the payment settings. */
 "SETTINGS_PAYMENTS_ACTIVATE_PAYMENTS_CONFIRM_AGREE" = "Activer";
@@ -9836,7 +9891,7 @@
 "SETTINGS_PIN_REMINDER_SWITCH_LABEL" = "Rappels de code PIN";
 
 /* Footer for the 'PINs' section of the privacy settings. */
-"SETTINGS_PINS_FOOTER" = "Avec un code PIN, les informations stockées dans Signal restent chiffrées, et vous seul y avez accès. Votre profil, vos contacts et vos paramètres sont restaurés si vous réinstallez Signal. Attention : vous ne pouvez pas récupérer votre code PIN si vous l'oubliez.";
+"SETTINGS_PINS_FOOTER" = "Avec un code PIN, les informations stockées dans Signal restent chiffrées, et vous seul y avez accès. Si vous réinstallez Signal, votre profil, vos paramètres et vos contacts sont restaurés. Attention : vous ne pouvez pas récupérer votre code PIN si vous l'oubliez.";
 
 /* Label for the 'pins' item of the privacy settings when the user does have a pin. */
 "SETTINGS_PINS_ITEM" = "Changer de code PIN";
@@ -10052,10 +10107,10 @@
 "SIGNAL_CALL" = "Appel Signal";
 
 /* Placeholder of the 'Account ID' username field. */
-"SIGNAL_LOGIN_ACCOUNT_ID_PLACEHOLDER_TITLE" = "Account ID";
+"SIGNAL_LOGIN_ACCOUNT_ID_PLACEHOLDER_TITLE" = "Identifiant de compte";
 
 /* Placeholder of the 'Recovery Key' password field. */
-"SIGNAL_LOGIN_RECOVERY_KEY_PLACEHOLDER_TITLE" = "Recovery Key";
+"SIGNAL_LOGIN_RECOVERY_KEY_PLACEHOLDER_TITLE" = "Clé de récupération";
 
 /* Title for the sheet presented when user taps on Signal Proxy link in chat. */
 "SIGNAL_PROXY" = "Serveur proxy Signal";
@@ -10688,7 +10743,7 @@
 "TIME_AMOUNT_WEEKS_SHORT_FORMAT" = "%1$@ sem";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to transfer your account to a new device. */
-"TRANSFER_ACCOUNT_AUTHENTICATION_REASON" = "Authenticate to transfer your account";
+"TRANSFER_ACCOUNT_AUTHENTICATION_REASON" = "Authentifiez-vous pour transférer votre compte";
 
 /* Button for bottom sheet shown when device transfer completes on the receiving device. Tapping will terminate the Signal app and trigger a notification to relaunch. */
 "TRANSFER_COMPLETE_SHEET_BUTTON" = "Fermer Signal";
@@ -10791,6 +10846,33 @@
 
 /* Pressing this button marks a thread as unread */
 "UNREAD_ACTION" = "Non lu";
+
+/* Notification placeholder for three or more recipients who sent unread messages */
+"UnreadReminderJob__authors_many" = "%1$@ and others";
+
+/* Notification placeholder for a single recipient who sent unread messages */
+"UnreadReminderJob__authors_one" = "%1$@";
+
+/* Notification placeholder for two recipients who sent unread messages */
+"UnreadReminderJob__authors_two" = "%1$@ and %2$@";
+
+/* Notification body for unread reminders. First placeholder is unread messages or unread calls */
+"UnreadReminderJob__calls_or_unread" = "You have %1$@.";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a list of people who sent them */
+"UnreadReminderJob__calls_or_unread_author" = "You have %1$@ from %2$@.";
+
+/* Notification placeholder that sums up a single unread mention. Placeholder is the name of the person who sent the message */
+"UnreadReminderJob__mentions_one" = "a mention of you by %1$@";
+
+/* Notification placeholder that sums up a single unread reply. Placeholder is the name of the person who sent the message */
+"UnreadReminderJob__replies_one" = "a reply from %1$@";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a summary of unread mentions, third replies */
+"UnreadReminderJob__unread_both_summary" = "You have %1$@, including %2$@ and %3$@.";
+
+/* Notification body for unread reminders. First placeholder is unread messages, second is a summary of either unread mentions or replies */
+"UnreadReminderJob__unread_one_summary" = "You have %1$@, including %2$@.";
 
 /* No comment provided by engineer. */
 "UNSUPPORTED_ATTACHMENT" = "Le type de fichier reçu n'est pas pris en charge.";
@@ -11018,7 +11100,7 @@
 "VIEW_PHOTO" = "Afficher la photo";
 
 /* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to view your recovery key. */
-"VIEW_RECOVERY_KEY_AUTHENTICATION_REASON" = "Authenticate to view your recovery key";
+"VIEW_RECOVERY_KEY_AUTHENTICATION_REASON" = "Authentifiez-vous pour afficher votre clé de récupération";
 
 /* View the story of a group or user */
 "VIEW_STORY" = "Afficher la story";
