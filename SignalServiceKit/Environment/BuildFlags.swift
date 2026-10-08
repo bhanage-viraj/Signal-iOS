@@ -98,7 +98,7 @@ public enum BuildFlags {
     static let hardDeleteGroupThreadsDuringRefresh = true
 
     /// New notification settings. Don't enable until Storage Service is integrated
-    public static let improvedNotifications = build <= .dev
+    public static let improvedNotifications = true
 
     /// The new contact sharing picker, which can share signal contacts by ACI. We plan to turn this
     /// on after receive support has baked in prod for a bit so that more devices can handle the
