@@ -49,8 +49,11 @@ extension BackupArchive {
             /// We were unable to fetch the OWSRecipientIdentity for a recipient.
             case unableToFetchRecipientIdentity(RawError)
 
-            /// An error generating the master key for a group, causing the group to be skipped.
+            /// A V2 group *thread* that lacks a master key.
             case groupMasterKeyError(RawError)
+
+            /// A V2 group *record* (without a thread) that lacks a master key.
+            case groupMasterKeyWarning(RawError)
 
             /// A contact thread has an invalid or missing address information, causing the
             /// thread to be skipped.
@@ -304,6 +307,7 @@ extension BackupArchive {
             case
                 .fileIOError,
                 .groupMasterKeyError,
+                .groupMasterKeyWarning,
                 .themedCustomChatColor,
                 .unableToFetchRecipientIdentity,
                 .distributionListMissingDistributionId,
@@ -443,6 +447,9 @@ extension BackupArchive {
                 .pollEndMissingPersistableData,
                 .pinMessageChatUpdateMissingPersistableData:
                 return .error
+            case .groupMasterKeyWarning:
+                // Groups might be blocked without having a master key.
+                return .warning
             case .invalidInteractionDatabaseRow:
                 // We've seen real world databases with interaction rows that
                 // failed to deserialize into TSInteraciton instances. We'll

@@ -138,6 +138,7 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
             return
         }
 
+        let masterKey: GroupMasterKey
         let groupPair: (thread: TSGroupThread, model: TSGroupModelV2)?
         if let groupThread = threadStore.fetchThread(forGroupId: groupId, tx: context.tx) {
             guard let groupModel = groupThread.groupModel as? TSGroupModelV2 else {
@@ -145,13 +146,19 @@ public class BackupArchiveGroupRecipientArchiver: BackupArchiveProtoStreamWriter
                 return
             }
             groupPair = (groupThread, groupModel)
+            guard let _masterKey = groupRecord.masterKey else {
+                // If we have a V2 thread, we expect to have a master key.
+                errors.append(.archiveFrameError(.groupMasterKeyError(OWSGenericError("missing master key for group with thread"))))
+                return
+            }
+            masterKey = _masterKey
         } else {
             groupPair = nil
-        }
-
-        guard let masterKey = groupRecord.masterKey else {
-            errors.append(.archiveFrameError(.groupMasterKeyError(OWSGenericError("missing master key"))))
-            return
+            guard let _masterKey = groupRecord.masterKey else {
+                errors.append(.archiveFrameError(.groupMasterKeyWarning(OWSGenericError("missing master key for group without thread"))))
+                return
+            }
+            masterKey = _masterKey
         }
 
         var group = BackupProto_Group()
