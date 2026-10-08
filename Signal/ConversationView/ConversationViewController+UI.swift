@@ -276,8 +276,9 @@ extension ConversationViewController {
         let attributes: [NSAttributedString.Key: Any] = [.font: subtitleFont]
         let hairSpace = "\u{200a}"
         let thinSpace = "\u{2009}"
-        let iconSpacer = UIDevice.current.isNarrowerThanIPhone6 ? hairSpace : thinSpace
-        let betweenItemSpacer = UIDevice.current.isNarrowerThanIPhone6 ? " " : "  "
+        let isNarrowScreen = view.frame.size.smallerAxis < 375
+        let iconSpacer = isNarrowScreen ? hairSpace : thinSpace
+        let betweenItemSpacer = isNarrowScreen ? " " : "  "
 
         let needsMutedBadge = threadViewModel.isMuted && !thread.isReleaseNotesThread
         let hasTimer = disappearingMessagesConfiguration.isEnabled

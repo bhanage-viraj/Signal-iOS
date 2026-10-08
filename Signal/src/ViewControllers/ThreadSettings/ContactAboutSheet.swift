@@ -100,23 +100,11 @@ class ContactAboutSheet: StackSheetViewController {
     }
 
     override var stackViewInsets: UIEdgeInsets {
-        let hMargin: CGFloat = {
-            if UIDevice.current.isNarrowerThanIPhone6 {
-                return 20
-            } else {
-                return 32
-            }
-        }()
-
-        return .init(
-            top: 24,
-            leading: hMargin,
-            bottom: 20,
-            trailing: hMargin,
-        )
+        var insets = super.stackViewInsets
+        insets.bottom = 20
+        return insets
     }
 
-    override var minimumBottomInsetIncludingSafeArea: CGFloat { 32 }
     override var sheetBackgroundColor: UIColor {
         UIColor.Signal.secondaryBackground
     }
