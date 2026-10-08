@@ -382,6 +382,38 @@ public struct NotificationPreferencesManager {
         return enabledSettingNames.formatted(.list(type: .and, width: .narrow))
     }
 
+    // MARK: - Backups
+
+    // The raw value stored, `nil` when unset rather than filling in the default setting
+
+    func storedIncludeMutedThreadsInBadgeCount(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.includeMutedThreadsInBadgeCount, tx: tx)
+    }
+
+    func storedAreReactionNotificationsEnabled(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.areReactionNotificationsEnabled, tx: tx)
+    }
+
+    func storedGlobalNotifyForCallsWhenMuted(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.notifyForCallsWhenMuted, tx: tx)
+    }
+
+    func storedGlobalNotifyForMentionsWhenMuted(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.notifyForMentionsWhenMuted, tx: tx)
+    }
+
+    func storedGlobalNotifyForRepliesWhenMuted(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.notifyForRepliesWhenMuted, tx: tx)
+    }
+
+    func storedGlobalShowUnreadReminders(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.showUnreadReminders, tx: tx)
+    }
+
+    func storedShouldNotifyOfNewAccounts(tx: DBReadTransaction) -> Bool? {
+        kvStore.fetchValue(Bool.self, forKey: Key.shouldNotifyOfNewAccounts, tx: tx)
+    }
+
     // MARK: - Reset
 
     public func resetAll(tx: DBWriteTransaction) {

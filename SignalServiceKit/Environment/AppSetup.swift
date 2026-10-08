@@ -1579,6 +1579,7 @@ extension AppSetup.GlobalsContinuation {
                 linkPreviewSettingStore: linkPreviewSettingStore,
                 localUsernameManager: localUsernameManager,
                 mediaBandwidthPreferenceStore: mediaBandwidthPreferenceStore,
+                notificationPreferencesManager: notificationPreferencesManager,
                 ows2FAManager: BackupArchive.Wrappers.OWS2FAManager(ows2FAManager),
                 phoneNumberDiscoverabilityManager: phoneNumberDiscoverabilityManager,
                 preferences: BackupArchive.Wrappers.Preferences(preferences: preferences),

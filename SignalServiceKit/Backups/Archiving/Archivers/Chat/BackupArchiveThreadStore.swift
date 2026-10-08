@@ -98,30 +98,57 @@ public final class BackupArchiveThreadStore {
     /// We _have_ to do this in a separate step from group thread creation; we create the group
     /// thread when we process the group's Recipient frame, but only have mention state later
     /// when processing the group's Chat frame.
+    ///
+    /// For the optional values, `nil` inherits the global setting.
     func update(
         thread: BackupArchive.ChatThread,
         dontNotifyForMentionsIfMuted: Bool,
+        shouldNotifyForCallsWhenMuted: Bool?,
+        shouldNotifyForMentionsWhenMuted: Bool?,
+        shouldNotifyForRepliesWhenMuted: Bool?,
+        shouldNotifyForUnreadRemindersWhenMuted: Bool?,
         context: BackupArchive.ChatRestoringContext,
     ) throws {
-        guard dontNotifyForMentionsIfMuted else {
-            // We only need to set if its not the default (false)
+        guard
+            dontNotifyForMentionsIfMuted
+            || shouldNotifyForCallsWhenMuted != nil
+            || shouldNotifyForMentionsWhenMuted != nil
+            || shouldNotifyForRepliesWhenMuted != nil
+            || shouldNotifyForUnreadRemindersWhenMuted != nil
+        else {
+            // We only need to set if they're not the defaults
             return
         }
 
         // Technically, this isn't relevant for contact threads (they can't have mentions
         // in them anyway), but the boolean does exist for them and the backup integration
         // tests have contact threads with muted mentions. So we set for all thread types.
+        let mentionNotificationMode: TSThread.MentionNotificationMode = if dontNotifyForMentionsIfMuted {
+            .doNotNotifyWhenMuted
+        } else {
+            .notifyWhenMuted
+        }
 
         try context.tx.database.execute(
             sql: """
             UPDATE \(TSThread.databaseTableName)
             SET
                 \(threadColumn: .mentionNotificationMode) = ?,
-                \(threadColumn: .shouldNotifyForMentionsWhenMuted) = 0
+                \(threadColumn: .shouldNotifyForCallsWhenMuted) = ?,
+                \(threadColumn: .shouldNotifyForMentionsWhenMuted) = ?,
+                \(threadColumn: .shouldNotifyForRepliesWhenMuted) = ?,
+                \(threadColumn: .shouldNotifyForUnreadRemindersWhenMuted) = ?
             WHERE
                 \(threadColumn: .id) = ?;
             """,
-            arguments: [TSThread.MentionNotificationMode.doNotNotifyWhenMuted.rawValue, thread.threadRowId],
+            arguments: [
+                mentionNotificationMode.rawValue,
+                shouldNotifyForCallsWhenMuted,
+                dontNotifyForMentionsIfMuted ? false : shouldNotifyForMentionsWhenMuted,
+                shouldNotifyForRepliesWhenMuted,
+                shouldNotifyForUnreadRemindersWhenMuted,
+                thread.threadRowId,
+            ],
         )
     }
 

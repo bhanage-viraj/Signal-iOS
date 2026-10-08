@@ -240,8 +240,6 @@ public class BackupArchiveChatArchiver: BackupArchiveProtoStreamWriter {
             tx: context.tx,
         ).asVersionedToken
 
-        let dontNotifyForMentionsIfMuted = !thread.tsThread.shouldNotifyForMentionsWhenMutedLegacy
-
         var chat = BackupProto_Chat()
         chat.id = context.assignChatId(to: thread.tsThread).value
         chat.recipientID = recipientId.value
@@ -262,7 +260,30 @@ public class BackupArchiveChatArchiver: BackupArchiveProtoStreamWriter {
             }
         }
         chat.markedUnread = thread.tsThread.isMarkedUnread
-        chat.dontNotifyForMentionsIfMuted = dontNotifyForMentionsIfMuted
+
+        if let shouldNotifyForCallsWhenMuted = thread.tsThread.shouldNotifyForCallsWhenMuted {
+            chat.notifyForCallsIfMuted = shouldNotifyForCallsWhenMuted
+        }
+        if let shouldNotifyForUnreadRemindersWhenMuted = thread.tsThread.shouldNotifyForUnreadRemindersWhenMuted {
+            chat.showUnreadReminders = shouldNotifyForUnreadRemindersWhenMuted
+        }
+
+        switch thread.threadType {
+        case .contact(let contactThread):
+            chat.dontNotifyForMentionsIfMuted = !contactThread.shouldNotifyForMentionsWhenMutedLegacy
+        case .groupV2(let groupThread):
+            let dontNotifyForMentionsIfMuted = groupThread.shouldNotifyForMentionsWhenMuted == false
+            chat.dontNotifyForMentionsIfMuted = dontNotifyForMentionsIfMuted
+            // dontNotifyForMentionsIfMuted = true and notifyForMentionsIfMuted = true is rejected
+            if dontNotifyForMentionsIfMuted {
+                chat.notifyForMentionsIfMuted = false
+            } else if let shouldNotifyForMentionsWhenMuted = groupThread.shouldNotifyForMentionsWhenMuted {
+                chat.notifyForMentionsIfMuted = shouldNotifyForMentionsWhenMuted
+            }
+            if let shouldNotifyForRepliesWhenMuted = groupThread.shouldNotifyForRepliesWhenMuted {
+                chat.notifyForRepliesIfMuted = shouldNotifyForRepliesWhenMuted
+            }
+        }
 
         let chatStyleResult = chatStyleArchiver.archiveChatStyle(
             thread: thread,
@@ -419,10 +440,28 @@ public class BackupArchiveChatArchiver: BackupArchiveProtoStreamWriter {
             tx: context.tx,
         )
 
+        var shouldNotifyForMentionsWhenMuted: Bool?
+        var shouldNotifyForRepliesWhenMuted: Bool?
+        if case .groupV2 = chatThread.threadType {
+            if chat.dontNotifyForMentionsIfMuted {
+                shouldNotifyForMentionsWhenMuted = false
+            } else if chat.hasNotifyForMentionsIfMuted {
+                shouldNotifyForMentionsWhenMuted = chat.notifyForMentionsIfMuted
+            }
+
+            if chat.hasNotifyForRepliesIfMuted {
+                shouldNotifyForRepliesWhenMuted = chat.notifyForRepliesIfMuted
+            }
+        }
+
         do {
             try threadStore.update(
                 thread: chatThread,
                 dontNotifyForMentionsIfMuted: chat.dontNotifyForMentionsIfMuted,
+                shouldNotifyForCallsWhenMuted: chat.hasNotifyForCallsIfMuted ? chat.notifyForCallsIfMuted : nil,
+                shouldNotifyForMentionsWhenMuted: shouldNotifyForMentionsWhenMuted,
+                shouldNotifyForRepliesWhenMuted: shouldNotifyForRepliesWhenMuted,
+                shouldNotifyForUnreadRemindersWhenMuted: chat.hasShowUnreadReminders ? chat.showUnreadReminders : nil,
                 context: context,
             )
         } catch let error {
