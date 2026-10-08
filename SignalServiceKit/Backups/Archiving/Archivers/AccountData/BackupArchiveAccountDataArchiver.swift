@@ -703,6 +703,7 @@ public class BackupArchiveAccountDataArchiver: BackupArchiveProtoStreamWriter {
             if settings.hasShowUnreadReminders {
                 notificationPreferencesManager.setGlobalShowUnreadReminders(
                     settings.showUnreadReminders,
+                    updateStorageService: false,
                     tx: context.tx,
                 )
             }

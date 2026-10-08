@@ -239,7 +239,12 @@ class SoundAndNotificationsSettingsViewController: OWSTableViewController2 {
             },
             actionBlock: { [db, unreadReminderManager] uiSwitch in
                 db.write { tx in
-                    unreadReminderManager.setShowUnreadReminders(uiSwitch.isOn, thread: thread, tx: tx)
+                    unreadReminderManager.setShowUnreadReminders(
+                        uiSwitch.isOn,
+                        thread: thread,
+                        updateStorageService: true,
+                        tx: tx,
+                    )
                 }
             },
         ))

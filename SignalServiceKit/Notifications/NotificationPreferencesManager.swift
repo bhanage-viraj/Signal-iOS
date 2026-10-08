@@ -311,8 +311,15 @@ public struct NotificationPreferencesManager {
 
     /// Prefer `UnreadReminderManager.setGlobalShowUnreadReminders`, which
     /// also reschedules or cancels pending reminders.
-    func setGlobalShowUnreadReminders(_ value: Bool, tx: DBWriteTransaction) {
+    func setGlobalShowUnreadReminders(
+        _ value: Bool,
+        updateStorageService: Bool,
+        tx: DBWriteTransaction,
+    ) {
         kvStore.writeValue(value, forKey: Key.showUnreadReminders, tx: tx)
+        if updateStorageService {
+            storageServiceManager.recordPendingLocalAccountUpdates()
+        }
     }
 
     public func showUnreadReminders(thread: TSThread, tx: DBReadTransaction) -> Bool {
@@ -323,9 +330,16 @@ public struct NotificationPreferencesManager {
     ///
     /// Prefer `UnreadReminderManager.setShowUnreadReminders`, which also
     /// reschedules or cancels the chat's pending reminder.
-    func setShowUnreadReminders(_ value: Bool?, thread: TSThread, tx: DBWriteTransaction) {
+    func setShowUnreadReminders(
+        _ value: Bool?,
+        thread: TSThread,
+        updateStorageService: Bool,
+        tx: DBWriteTransaction,
+    ) {
         thread.updateWithShouldNotifyForUnreadRemindersWhenMuted(value, transaction: tx)
-        // [Notifications] TODO: Storage Service sync
+        if updateStorageService {
+            thread.recordPendingUpdates(storageServiceManager: storageServiceManager)
+        }
     }
 
     // MARK: -
@@ -454,7 +468,7 @@ public struct NotificationPreferencesManager {
                 setNotifyForCallsWhenMuted(nil, thread: thread, tx: tx)
             }
             if thread.shouldNotifyForUnreadRemindersWhenMuted != nil {
-                setShowUnreadReminders(nil, thread: thread, tx: tx)
+                setShowUnreadReminders(nil, thread: thread, updateStorageService: true, tx: tx)
             }
         }
     }

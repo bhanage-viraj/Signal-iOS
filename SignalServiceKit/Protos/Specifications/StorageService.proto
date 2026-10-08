@@ -143,6 +143,7 @@ message ContactRecord {
   bytes pniBinary = 26; // 16-byte UUID
   uint64 blockedAtTimestamp = 27; // if `blocked` is true, 0 means unknown block time
   OptionalBool notifyForCallsIfMuted = 28; // If unset, use the default settings
+  OptionalBool showUnreadReminders = 29; // If unset, use the default settings
   Name sharedName = 30; // Name shared from a third party
 }
 
@@ -179,6 +180,7 @@ message GroupV2Record {
   OptionalBool notifyForCallsIfMuted = 14; // If unset, use the default settings
   OptionalBool notifyForMentionsIfMuted = 15; // If unset, use the default settings. If [dontNotifyForMentionsIfMuted] is true, this should be initialized to false.
   OptionalBool notifyForRepliesIfMuted = 16; // If unset, use the default settings
+  OptionalBool showUnreadReminders = 17; // If unset, use the default settings
 }
 
 message AccountRecord {
@@ -302,6 +304,7 @@ message AccountRecord {
   OptionalBool notifyForCallsIfMuted = 56; // If unset, consider this off
   OptionalBool notifyForMentionsIfMuted = 57; // If unset, consider this on
   OptionalBool notifyForRepliesIfMuted = 58; // If unset, consider this on
+  OptionalBool showUnreadReminders = 59; // If unset, consider this on
   OptionalBool notifyWhenContactJoins = 60; // If unset, consider this off
 }
 

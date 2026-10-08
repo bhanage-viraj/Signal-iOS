@@ -197,6 +197,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
     private let signalServiceAddressCache: SignalServiceAddressCache
     private let threadMuteManager: ThreadMuteManager
     private let tsAccountManager: TSAccountManager
+    private let unreadReminderManager: UnreadReminderManager
     private let usernameLookupManager: UsernameLookupManager
 
     init(
@@ -219,6 +220,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         signalServiceAddressCache: SignalServiceAddressCache,
         threadMuteManager: ThreadMuteManager,
         tsAccountManager: TSAccountManager,
+        unreadReminderManager: UnreadReminderManager,
         usernameLookupManager: UsernameLookupManager,
     ) {
         self.localIdentifiers = localIdentifiers
@@ -241,6 +243,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
         self.signalServiceAddressCache = signalServiceAddressCache
         self.threadMuteManager = threadMuteManager
         self.tsAccountManager = tsAccountManager
+        self.unreadReminderManager = unreadReminderManager
         self.usernameLookupManager = usernameLookupManager
     }
 
@@ -376,6 +379,7 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
             builder.setMarkedUnread(thread.isMarkedUnread)
             builder.setMutedUntilTimestamp(thread.mutedUntilTimestamp)
             builder.setNotifyForCallsIfMuted(StorageServiceProtoOptionalBool(thread.shouldNotifyForCallsWhenMuted))
+            builder.setShowUnreadReminders(StorageServiceProtoOptionalBool(thread.shouldNotifyForUnreadRemindersWhenMuted))
         }
 
         if let aci = contact.aci, let associatedData = StoryFinder.getAssociatedData(forAci: aci, tx: tx) {
@@ -667,6 +671,18 @@ class StorageServiceContactRecordUpdater: StorageServiceRecordUpdater {
             record.notifyForCallsIfMuted.boolValue != localThread.shouldNotifyForCallsWhenMuted
         {
             localThread.updateWithShouldNotifyForCallsWhenMuted(record.notifyForCallsIfMuted.boolValue, transaction: tx)
+        }
+
+        if
+            !record.showUnreadReminders.isUnrecognized,
+            record.showUnreadReminders.boolValue != localThread.shouldNotifyForUnreadRemindersWhenMuted
+        {
+            unreadReminderManager.setShowUnreadReminders(
+                record.showUnreadReminders.boolValue,
+                thread: localThread,
+                updateStorageService: false,
+                tx: tx,
+            )
         }
 
         if let aci = serviceIds.aci {
@@ -980,6 +996,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
     private let groupsV2: GroupsV2
     private let profileManager: ProfileManager
     private let threadMuteManager: ThreadMuteManager
+    private let unreadReminderManager: UnreadReminderManager
 
     init(
         authedAccount: AuthedAccount,
@@ -989,6 +1006,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
         groupsV2: GroupsV2,
         profileManager: ProfileManager,
         threadMuteManager: ThreadMuteManager,
+        unreadReminderManager: UnreadReminderManager,
     ) {
         self.authedAccount = authedAccount
         self.isPrimaryDevice = isPrimaryDevice
@@ -998,6 +1016,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
         self.groupsV2 = groupsV2
         self.profileManager = profileManager
         self.threadMuteManager = threadMuteManager
+        self.unreadReminderManager = unreadReminderManager
     }
 
     func unknownFields(for record: StorageServiceProtoGroupV2Record) -> UnknownStorage? { record.unknownFields }
@@ -1056,6 +1075,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             builder.setNotifyForCallsIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForCallsWhenMuted))
             builder.setNotifyForMentionsIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForMentionsWhenMuted))
             builder.setNotifyForRepliesIfMuted(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForRepliesWhenMuted))
+            builder.setShowUnreadReminders(StorageServiceProtoOptionalBool(groupThread.shouldNotifyForUnreadRemindersWhenMuted))
             builder.setDontNotifyForMentionsIfMuted(groupThread.shouldNotifyForMentionsWhenMuted == false)
             builder.setStorySendMode(groupThread.storyViewMode.storageServiceMode)
         } else if
@@ -1077,6 +1097,7 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
             builder.setNotifyForCallsIfMuted(enqueuedRecord.notifyForCallsIfMuted)
             builder.setNotifyForMentionsIfMuted(enqueuedRecord.notifyForMentionsIfMuted)
             builder.setNotifyForRepliesIfMuted(enqueuedRecord.notifyForRepliesIfMuted)
+            builder.setShowUnreadReminders(enqueuedRecord.showUnreadReminders)
             builder.setStorySendMode(enqueuedRecord.storySendMode)
         }
 
@@ -1178,6 +1199,18 @@ class StorageServiceGroupV2RecordUpdater: StorageServiceRecordUpdater {
                 groupThread.updateWithShouldNotifyForMentionsWhenMuted(
                     remoteNotifyForMentionsWhenMuted,
                     transaction: transaction,
+                )
+            }
+
+            if
+                !record.showUnreadReminders.isUnrecognized,
+                record.showUnreadReminders.boolValue != groupThread.shouldNotifyForUnreadRemindersWhenMuted
+            {
+                unreadReminderManager.setShowUnreadReminders(
+                    record.showUnreadReminders.boolValue,
+                    thread: groupThread,
+                    updateStorageService: false,
+                    tx: transaction,
                 )
             }
 
@@ -1328,6 +1361,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
     private let blockingManager: BlockingManager
     private let threadMuteManager: ThreadMuteManager
     private let threadStore: ThreadStore
+    private let unreadReminderManager: UnreadReminderManager
 
     init(
         localIdentifiers: LocalIdentifiers,
@@ -1362,6 +1396,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         blockingManager: BlockingManager,
         threadMuteManager: ThreadMuteManager,
         threadStore: ThreadStore,
+        unreadReminderManager: UnreadReminderManager,
     ) {
         self.localIdentifiers = localIdentifiers
         self.isPrimaryDevice = isPrimaryDevice
@@ -1396,6 +1431,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
         self.blockingManager = blockingManager
         self.threadMuteManager = threadMuteManager
         self.threadStore = threadStore
+        self.unreadReminderManager = unreadReminderManager
     }
 
     func unknownFields(for record: StorageServiceProtoAccountRecord) -> UnknownStorage? { record.unknownFields }
@@ -1549,7 +1585,7 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
 
         builder.setReactionNotifications(StorageServiceProtoOptionalBool(notificationPreferencesManager.areReactionNotificationsEnabled(tx: tx)))
 
-        // [Notifications] TODO: Unread reminders here
+        builder.setShowUnreadReminders(.init(notificationPreferencesManager.globalShowUnreadReminders(tx: tx)))
 
         builder.setNotifyWhenContactJoins(StorageServiceProtoOptionalBool(notificationPreferencesManager.shouldNotifyOfNewAccounts(tx: tx)))
 
@@ -1982,7 +2018,11 @@ class StorageServiceAccountRecordUpdater: StorageServiceRecordUpdater {
             setter: notificationPreferencesManager.setAreReactionNotificationsEnabled(_:updateStorageService:tx:),
         )
 
-        // [Notifications] TODO: Unread reminders here
+        setIfMismatched(
+            localValue: notificationPreferencesManager.globalShowUnreadReminders(tx: tx),
+            recordValue: record.showUnreadReminders,
+            setter: unreadReminderManager.setGlobalShowUnreadReminders(_:updateStorageService:tx:),
+        )
 
         setIfMismatched(
             localValue: notificationPreferencesManager.shouldNotifyOfNewAccounts(tx: tx),

@@ -150,7 +150,11 @@ class NotificationSettingsViewController: OWSTableViewController2 {
             },
             actionBlock: { uiSwitch in
                 db.write { tx in
-                    DependenciesBridge.shared.unreadReminderManager.setGlobalShowUnreadReminders(uiSwitch.isOn, tx: tx)
+                    DependenciesBridge.shared.unreadReminderManager.setGlobalShowUnreadReminders(
+                        uiSwitch.isOn,
+                        updateStorageService: true,
+                        tx: tx,
+                    )
                 }
             },
         ))

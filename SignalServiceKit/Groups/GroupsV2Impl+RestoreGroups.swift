@@ -168,6 +168,7 @@ public extension GroupsV2Impl {
                         groupsV2: SSKEnvironment.shared.groupsV2Ref,
                         profileManager: SSKEnvironment.shared.profileManagerRef,
                         threadMuteManager: DependenciesBridge.shared.threadMuteManager,
+                        unreadReminderManager: DependenciesBridge.shared.unreadReminderManager,
                     )
                     switch recordUpdater.mergeRecord(groupRecord, transaction: tx) {
                     case .merged(needsUpdate: true, let mergedMasterKeyData):
